@@ -31,7 +31,7 @@ Flags:
 
 Create a test `example.gorules` file:
 
-```
+```js
 // Find suspicious expressions that have duplicated side-effect free LHS and RHS.
 //
 //error: suspicious identical LHS and RHS
