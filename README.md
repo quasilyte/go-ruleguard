@@ -77,7 +77,7 @@ example.go:7:5: error: suspicious identical LHS and RHS
 
 ## Documentation
 
-* [Example gorules file](analyzer/testdata/src/go-critic/go-critic.gorules)
+* [Example gorules file](analyzer/testdata/src/gocritic/gocritic.gorules)
 * [gorules file format documentation](docs/gorules.md)
 
 ## Extra references
