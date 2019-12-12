@@ -14,6 +14,8 @@ type rulesRunner struct {
 }
 
 func (rr *rulesRunner) run(f *ast.File) {
+	// TODO(quasilyte): run local rules as well.
+
 	for _, rule := range rr.rules.universal.uncategorized {
 		rule.pat.Match(f, func(m gogrep.MatchData) {
 			rr.handleMatch(rule, m)
