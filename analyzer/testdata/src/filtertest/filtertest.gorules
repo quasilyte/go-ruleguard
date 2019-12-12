@@ -1,0 +1,25 @@
+//information: concat
+//$x: is(string)
+//$y: is(string)
+typeTest($x + $y)
+
+//information: addition
+//$x: is(int)
+//$y: is(int)
+typeTest($x + $y)
+
+//information: $x is !int
+//$x: !is(int)
+typeTest($x > $y)
+
+//information: $x is !string and is pure
+//$x: !is(string) && pure
+typeTest($x > $y)
+
+//information: pure
+//$x: pure
+pureTest($x)
+
+//information: !pure
+//$x: !pure
+pureTest($x)

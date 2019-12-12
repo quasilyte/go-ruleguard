@@ -1,0 +1,75 @@
+//warning: suspicious self-assignment in $$
+$x = $x
+
+//hint: can use parallel assignment like $x,$y=$y,$x
+$tmp := $x; $x = $y; $y = $tmp
+
+//warning: suspicious duplicated args in $$
+io.Copy($x, $x)
+copy($x, $x)
+
+//information: $dst=append($x,$a,$b) is faster
+$dst = append($x, $a); $dst = append($x, $b)
+
+//error: n=0 argument does nothing, maybe n=-1 is indended?
+strings.Replace($_, $_, $_, 0)
+
+//error: append called with 1 argument does nothing
+append($_)
+
+//hint: can write copy($b, $s) without type conversion
+//$s: is(string)
+copy($b, []byte($s))
+
+//hint: can simplify to $x++
+$x = $x + 1
+//hint: can simplify to $x--
+$x = $x - 1
+
+//hint: can simplify to $x+=$y
+$x = $x + $y
+//hint: can simplify to $x-=$y
+$x = $x - $y
+//hint: can simplify to $x*=$y
+$x = $x * $y
+
+//hint: can simplify !!$x to $x
+!!$x
+//hint: can simplify !($x!=$y) to $x==$y
+!($x != $y)
+//hint: can simplify !($x==$y) to $x!=$y
+!($x == $y)
+
+//error: suspicious duplicated $x in condition
+$x && $_ && $x
+$x && $_ && $_ && $x
+
+//error: suspicious identical LHS and RHS
+//$x: pure
+$x || $x
+$x && $x
+$x | $x
+$x & $x
+$x ^ $x
+$x < $x
+$x > $x
+$x &^ $x
+$x % $s
+$x == $x
+$x != $x
+$x <= $x
+$x >= $x
+$x / $x
+$x - $x
+
+//error: suspicious duplicate key $k
+//$k: pure
+map[$_]$_{$*_, $k: $_, $*_, $k: $_, $*_}
+
+//hint: can use MustCompile for const patterns
+//$pat: constant
+regexp.Compile($pat)
+regexp.CompilePOSIX($pat)
+
+//warning: yoda-style expression
+nil != $_
