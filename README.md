@@ -20,13 +20,13 @@ ruleguard: execute dynamic gogrep-based rules
 
 Usage: ruleguard [-flag] [package]
 
-Flags:  -V	print version and exit
+Flags:
+  -rules string
+    	path to a gorules file
   -c int
     	display offending line with this many lines of context (default -1)
   -json
     	emit JSON output
-  -rules string
-    	path to a gorules file
 ```
 
 Create a test `example.gorules` file:
