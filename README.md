@@ -2,7 +2,10 @@
 
 [analysis](https://godoc.org/golang.org/x/tools/go/analysis)-based Go linter that runs dynamically loaded rules.
 
-No compilation or plugins are needed.
+You write the rules, `ruleguard` checks whether they are satisfied.
+
+* No re-compilations is required. It also doesn't use plugins.
+* Diagnostics (rules) are written in a declarative way.
 
 ## Quick start
 
@@ -39,6 +42,9 @@ Create a test `example.gorules` file:
 $x || $x
 $x && $x
 
+// And a few simple boolean expression simplification rules below.
+// Note that matching nodes can be interpolated into the associated message template.
+
 //hint: can simplify !($x!=$y) to $x==$y
 !($x != $y)
 //hint: can simplify !($x==$y) to $x!=$y
@@ -69,8 +75,12 @@ example.go:6:10: hint: can simplify !(v1==v2) to v1!=v2
 example.go:7:5: error: suspicious identical LHS and RHS
 ```
 
-## References
+## Documentation
 
-* [gogrep](https://github.com/mvdan/gogrep)
-* [Example rule file](analyzer/testdata/go-critic/go-critic.gorules)
-* [NoVerify: Dynamic Rules for Static Analysis](https://medium.com/@vktech/noverify-dynamic-rules-for-static-analysis-8f42859e9253).
+* [Example gorules file](analyzer/testdata/go-critic/go-critic.gorules)
+* [gorules file format documentation](docs/gorules.md)
+
+## Extra references
+
+* [gogrep](https://github.com/mvdan/gogrep) - underlying AST matching engine
+* [NoVerify: Dynamic Rules for Static Analysis](https://medium.com/@vktech/noverify-dynamic-rules-for-static-analysis-8f42859e9253)
