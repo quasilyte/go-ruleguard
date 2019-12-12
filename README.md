@@ -4,6 +4,10 @@
 
 No compilation or plugins are needed.
 
+## Overview
+
+TODO.
+
 ## Quick start
 
 To install `ruleguard` binary under your `$(go env GOPATH)/bin`:
@@ -71,6 +75,6 @@ example.go:7:5: error: suspicious identical LHS and RHS
 
 ## References
 
-* [gogrep](https://github.com/mvdan/gogrep)
+* [gogrep](https://github.com/mvdan/gogrep) - underlying AST matching engine
 * [Example rule file](analyzer/testdata/go-critic/go-critic.gorules)
 * [NoVerify: Dynamic Rules for Static Analysis](https://medium.com/@vktech/noverify-dynamic-rules-for-static-analysis-8f42859e9253).
