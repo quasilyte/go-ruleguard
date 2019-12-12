@@ -3,7 +3,7 @@ package ruleguard
 import (
 	"go/types"
 
-	"github.com/quasilyte/go-ruleguard/ruleguard/internal/mvdan.cc/gogrep"
+	"github.com/quasilyte/go-ruleguard/internal/mvdan.cc/gogrep"
 )
 
 type scopedGoRuleSet struct {

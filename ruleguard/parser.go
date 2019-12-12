@@ -11,7 +11,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/quasilyte/go-ruleguard/ruleguard/internal/mvdan.cc/gogrep"
+	"github.com/quasilyte/go-ruleguard/internal/mvdan.cc/gogrep"
 )
 
 var filterPragmaRE = regexp.MustCompile(`^\$([^:]+):(.*)`)

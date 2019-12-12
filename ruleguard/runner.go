@@ -5,7 +5,7 @@ import (
 	"go/printer"
 	"strings"
 
-	"github.com/quasilyte/go-ruleguard/ruleguard/internal/mvdan.cc/gogrep"
+	"github.com/quasilyte/go-ruleguard/internal/mvdan.cc/gogrep"
 )
 
 type rulesRunner struct {
