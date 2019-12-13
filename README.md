@@ -25,30 +25,39 @@ Usage: ruleguard [-flag] [package]
 
 Flags:
   -rules string
-    	path to a gorules file
+    	path to a rules.go file
   -c int
     	display offending line with this many lines of context (default -1)
   -json
     	emit JSON output
 ```
 
-Create a test `example.gorules` file:
+Create a test `example.rules.go` file:
 
-```js
-// Find suspicious expressions that have duplicated side-effect free LHS and RHS.
-//
-//error: suspicious identical LHS and RHS
-//$x: pure
-$x || $x
-$x && $x
+```go
+package gorules
 
-// And a few simple boolean expression simplification rules below.
-// Note that matching nodes can be interpolated into the associated message template.
+import . "github.com/quasilyte/go-ruleguard/dsl"
 
-//hint: can simplify !($x!=$y) to $x==$y
-!($x != $y)
-//hint: can simplify !($x==$y) to $x!=$y
-!($x == $y)
+func _(x Var) {
+	Match(
+		`$x || $x`,
+		`$x && $x`,
+	)
+	Filter(x.Pure)
+	Error(`suspicious identical LHS and RHS`)
+}
+
+func _() {
+	// It's possible to write several match-filter-yield sequences
+	// inside one rule function.
+
+	Match(`!($x != $y)`)
+	Hint(`can simplify !($x==$y) to $x!=$y`)
+
+	Match(`!($x == $y)`)
+	Hint(`can simplify !($x==$y) to $x!=$y`)
+}
 ```
 
 Create a test `example.go` target file:
@@ -69,7 +78,7 @@ func main() {
 Run `ruleguard` on that target file:
 
 ```
-$ ruleguard -rules example.gorules example.go
+$ ruleguard -rules example.rules.go example.go
 example.go:5:10: hint: can simplify !(v1!=v2) to v1==v2
 example.go:6:10: hint: can simplify !(v1==v2) to v1!=v2
 example.go:7:5: error: suspicious identical LHS and RHS
@@ -77,8 +86,7 @@ example.go:7:5: error: suspicious identical LHS and RHS
 
 ## Documentation
 
-* [Example gorules file](analyzer/testdata/src/gocritic/gocritic.gorules)
-* [gorules file format documentation](docs/gorules.md)
+* [Example rules.go file](analyzer/testdata/src/gocritic/gocritic.rules.go)
 
 ## Extra references
 
