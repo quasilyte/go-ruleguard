@@ -7,8 +7,8 @@ import (
 )
 
 func selfAssign(x int, ys []string) {
-	x = x         // want `warning: suspicious self-assignment in x = x`
-	ys[0] = ys[0] // want `warning: suspicious self-assignment in ys\[0\] = ys\[0\]`
+	x = x         // want `warn: suspicious self-assignment in x = x`
+	ys[0] = ys[0] // want `warn: suspicious self-assignment in ys\[0\] = ys\[0\]`
 }
 
 func valSwap1(x, y int) (int, int) {
@@ -27,12 +27,12 @@ func valSwap2(xs, ys []int) {
 }
 
 func dupArgs(xs []int, rw io.ReadWriter) {
-	copy(xs, xs)    // want `warning: suspicious duplicated args in copy\(xs, xs\)`
-	io.Copy(rw, rw) // want `warning: suspicious duplicated args in io\.Copy\(rw, rw\)`
+	copy(xs, xs)    // want `warn: suspicious duplicated args in copy\(xs, xs\)`
+	io.Copy(rw, rw) // want `warn: suspicious duplicated args in io\.Copy\(rw, rw\)`
 }
 
 func appendCombine1(xs []int, x, y int) []int {
-	xs = append(xs, x) // want `information: xs=append\(xs,x,y\) is faster`
+	xs = append(xs, x) // want `info: xs=append\(xs,x,y\) is faster`
 	xs = append(xs, y)
 	return xs
 }
@@ -97,5 +97,5 @@ func regexpMust(pat string) {
 }
 
 func yodaStyleExpr(p *int) {
-	_ = nil != p // want `warning: yoda-style expression`
+	_ = nil != p // want `warn: yoda-style expression`
 }

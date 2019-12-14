@@ -14,12 +14,8 @@ type Context struct {
 }
 
 func ParseRules(filename string, fset *token.FileSet, r io.Reader) (*GoRuleSet, error) {
-	var p rulesParser
-	if err := p.init(filename, fset, r); err != nil {
-		return nil, err
-	}
-	err := p.parseTop()
-	return p.res, err
+	p := newRulesParser()
+	return p.ParseFile(filename, fset, r)
 }
 
 func RunRules(ctx *Context, f *ast.File, rules *GoRuleSet) {
