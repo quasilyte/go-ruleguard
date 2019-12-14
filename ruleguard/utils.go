@@ -1,13 +1,18 @@
 package ruleguard
 
 import (
-	"fmt"
 	"go/ast"
+	"go/parser"
 	"go/printer"
 	"go/token"
 	"go/types"
+	"strconv"
 	"strings"
 )
+
+func unquoteNode(lit *ast.BasicLit) string {
+	return lit.Value[1 : len(lit.Value)-1]
+}
 
 func sprintNode(fset *token.FileSet, n ast.Node) string {
 	if fset == nil {
@@ -20,17 +25,87 @@ func sprintNode(fset *token.FileSet, n ast.Node) string {
 	return buf.String()
 }
 
+var basicTypeByName = map[string]types.Type{
+	"bool":       types.Typ[types.Bool],
+	"int":        types.Typ[types.Int],
+	"int8":       types.Typ[types.Int8],
+	"int16":      types.Typ[types.Int16],
+	"int32":      types.Typ[types.Int32],
+	"int64":      types.Typ[types.Int64],
+	"uint":       types.Typ[types.Uint],
+	"uint8":      types.Typ[types.Uint8],
+	"uint16":     types.Typ[types.Uint16],
+	"uint32":     types.Typ[types.Uint32],
+	"uint64":     types.Typ[types.Uint64],
+	"uintptr":    types.Typ[types.Uintptr],
+	"float32":    types.Typ[types.Float32],
+	"float64":    types.Typ[types.Float64],
+	"complex64":  types.Typ[types.Complex64],
+	"complex128": types.Typ[types.Complex128],
+	"string":     types.Typ[types.String],
+}
+
+func typeFromString(s string) (types.Type, error) {
+	n, err := parser.ParseExpr(s)
+	if err != nil {
+		return nil, err
+	}
+	return typeFromNode(n), nil
+}
+
 func typeFromNode(e ast.Expr) types.Type {
 	switch e := e.(type) {
 	case *ast.Ident:
-		switch e.Name {
-		case "string":
-			return types.Typ[types.String]
-		case "int":
-			return types.Typ[types.Int]
+		basic, ok := basicTypeByName[e.Name]
+		if ok {
+			return basic
+		}
+
+	case *ast.ArrayType:
+		elem := typeFromNode(e.Elt)
+		if elem == nil {
+			return nil
+		}
+		if e.Len == nil {
+			return types.NewSlice(elem)
+		}
+		lit, ok := e.Len.(*ast.BasicLit)
+		if !ok || lit.Kind != token.INT {
+			return nil
+		}
+		length, err := strconv.Atoi(lit.Value)
+		if err != nil {
+			return nil
+		}
+		types.NewArray(elem, int64(length))
+
+	case *ast.MapType:
+		keyType := typeFromNode(e.Key)
+		if keyType == nil {
+			return nil
+		}
+		valType := typeFromNode(e.Value)
+		if valType == nil {
+			return nil
+		}
+		return types.NewMap(keyType, valType)
+
+	case *ast.StarExpr:
+		typ := typeFromNode(e.X)
+		if typ != nil {
+			return types.NewPointer(typ)
+		}
+
+	case *ast.ParenExpr:
+		return typeFromNode(e.X)
+
+	case *ast.InterfaceType:
+		if len(e.Methods.List) == 0 {
+			return types.NewInterfaceType(nil, nil)
 		}
 	}
-	panic(fmt.Sprintf("can't convert %T to a type", e))
+
+	return nil
 }
 
 // isPure reports whether expr is a softly safe expression and contains
