@@ -39,22 +39,19 @@ Flags:
 Create a test `example.rules.go` file:
 
 ```go
+// +build ignore
+
 package gorules
 
 import . "github.com/quasilyte/go-ruleguard/dsl"
 
-func _(x Var) {
+func _(m MatchResult) {
 	Match(
 		`$x || $x`,
 		`$x && $x`,
 	)
-	Filter(x.Pure)
+	Filter(m["x"].Pure)
 	Error(`suspicious identical LHS and RHS`)
-}
-
-func _() {
-	// It's possible to write several match-filter-yield sequences
-	// inside one rule function.
 
 	Match(`!($x != $y)`)
 	Hint(`can simplify !($x==$y) to $x!=$y`)
