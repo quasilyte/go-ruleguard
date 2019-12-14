@@ -2,7 +2,10 @@
 
 [analysis](https://godoc.org/golang.org/x/tools/go/analysis)-based Go linter that runs dynamically loaded rules.
 
-No compilation or plugins are needed.
+You write the rules, `ruleguard` checks whether they are satisfied.
+
+* No re-compilations is required. It also doesn't use plugins.
+* Diagnostics (rules) are written in a declarative way.
 
 ## Overview
 
@@ -26,27 +29,39 @@ Usage: ruleguard [-flag] [package]
 
 Flags:
   -rules string
-    	path to a gorules file
+    	path to a rules.go file
   -c int
     	display offending line with this many lines of context (default -1)
   -json
     	emit JSON output
 ```
 
-Create a test `example.gorules` file:
+Create a test `example.rules.go` file:
 
-```js
-// Find suspicious expressions that have duplicated side-effect free LHS and RHS.
-//
-//error: suspicious identical LHS and RHS
-//$x: pure
-$x || $x
-$x && $x
+```go
+package gorules
 
-//hint: can simplify !($x!=$y) to $x==$y
-!($x != $y)
-//hint: can simplify !($x==$y) to $x!=$y
-!($x == $y)
+import . "github.com/quasilyte/go-ruleguard/dsl"
+
+func _(x Var) {
+	Match(
+		`$x || $x`,
+		`$x && $x`,
+	)
+	Filter(x.Pure)
+	Error(`suspicious identical LHS and RHS`)
+}
+
+func _() {
+	// It's possible to write several match-filter-yield sequences
+	// inside one rule function.
+
+	Match(`!($x != $y)`)
+	Hint(`can simplify !($x==$y) to $x!=$y`)
+
+	Match(`!($x == $y)`)
+	Hint(`can simplify !($x==$y) to $x!=$y`)
+}
 ```
 
 Create a test `example.go` target file:
@@ -67,14 +82,17 @@ func main() {
 Run `ruleguard` on that target file:
 
 ```
-$ ruleguard -rules example.gorules example.go
+$ ruleguard -rules example.rules.go example.go
 example.go:5:10: hint: can simplify !(v1!=v2) to v1==v2
 example.go:6:10: hint: can simplify !(v1==v2) to v1!=v2
 example.go:7:5: error: suspicious identical LHS and RHS
 ```
 
-## References
+## Documentation
+
+* [Example rules.go file](analyzer/testdata/src/gocritic/gocritic.rules.go)
+
+## Extra references
 
 * [gogrep](https://github.com/mvdan/gogrep) - underlying AST matching engine
-* [Example rule file](analyzer/testdata/go-critic/go-critic.gorules)
-* [NoVerify: Dynamic Rules for Static Analysis](https://medium.com/@vktech/noverify-dynamic-rules-for-static-analysis-8f42859e9253).
+* [NoVerify: Dynamic Rules for Static Analysis](https://medium.com/@vktech/noverify-dynamic-rules-for-static-analysis-8f42859e9253)
