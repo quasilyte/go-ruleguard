@@ -1,5 +1,7 @@
 # go-ruleguard
 
+## Overview
+
 [analysis](https://godoc.org/golang.org/x/tools/go/analysis)-based Go linter that runs dynamically loaded rules.
 
 You write the rules, `ruleguard` checks whether they are satisfied.
@@ -7,9 +9,16 @@ You write the rules, `ruleguard` checks whether they are satisfied.
 * No re-compilations is required. It also doesn't use plugins.
 * Diagnostics (rules) are written in a declarative way.
 
-## Overview
+`ruleguard` parses [gorules](docs/gorules.md) on the start to load the rule set. Instantiated
+rules are then used to check the specified targets (Go files, packages).
 
-TODO.
+Every rule is composed of at least 2 clauses:
+1. **pattern clause** contains a [gogrep](https://github.com/mvdan/gogrep) pattern that is used to match a part of a Go program.
+2. **yield clause** contains an associated report message as well as its severity.
+
+There can be a **filter clause** in between `(1)` and `(2)` that can reject the match using the
+given constraints. Constraints are usually type-based, but can also include properties
+like "an expression is side-effect free".
 
 ## Quick start
 
