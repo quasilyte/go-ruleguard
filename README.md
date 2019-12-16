@@ -98,6 +98,7 @@ example.go:7:5: error: suspicious identical LHS and RHS
 ## Documentation
 
 * [Example rules.go file](analyzer/testdata/src/gocritic/gocritic.rules.go)
+* [rules.go](docs/gorules.md) documentation
 
 ## Extra references
 
