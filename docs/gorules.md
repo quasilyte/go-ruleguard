@@ -63,14 +63,28 @@ There is a special case of `$$` which can be used to inject the entire pattern m
 
 ## Filters
 
-Right now there are only variable-based filters.
+Right now there are only match variable-based filters.
 
-A variable describes a named submatch of a pattern.
+A match variable describes a named submatch of a pattern.
 
 Here are some examples of supported filters:
 * Submatch expression type is identical to `T`
 * Submatch expression type is assignable to `T`
 * Submatch expression is side-effect free
 * Submatch expression is a const expression
+
+Filters can be added throught `Filter(<expr>)` call, where `<expr>` is a boolean expression that
+combines several constraints with `&&` operator.
+
+A match variable can be accessed with `MatchResult` function argument indexing:
+
+```go
+Filter(m["a"].Type.Is(`int`) && !m["b"].Type.AssignableTo(`[]string`))
+```
+
+If we had a pattern with `$a` and `$b` match variables, a filter above would only accept it
+if `$a` expression had a type of `int` while `$b` is anything that is **not** assignable to `[]string`.
+
+The filter concept is crucial to avoid false-positives in rules.
 
 Please refer to the godoc page of a `dsl` package to get an up-to-date documentation on what filters are supported.
