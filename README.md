@@ -1,5 +1,7 @@
 # go-ruleguard
 
+![Logo](docs/ruleguard.png)
+
 ## Overview
 
 [analysis](https://godoc.org/golang.org/x/tools/go/analysis)-based Go linter that runs dynamically loaded rules.
