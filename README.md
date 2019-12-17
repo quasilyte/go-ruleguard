@@ -12,20 +12,11 @@
 
 You write the rules, `ruleguard` checks whether they are satisfied.
 
+**Features:**
+
 * No re-compilations is required. It also doesn't use plugins.
 * Diagnostics (rules) are written in a declarative way.
-
-`ruleguard` parses [gorules](docs/gorules.md) during the start to load the rule set.  
-Instantiated rules are then used to check the specified targets (Go files, packages).
-
-Every rule is composed of at least 2 clauses:
-1. **pattern clause** contains a [gogrep](https://github.com/mvdan/gogrep) pattern that is used to match a part of a Go program.
-2. **yield clause** contains an associated report message as well as its severity.
-
-There can be a **filter clause** in between `(1)` and `(2)` that can reject the match using the
-given constraints.  
-Constraints are usually type-based, but can also include properties
-like "an expression is side-effect free".
+* Powerful match filtering features, like expression type pattern matching.
 
 ## Quick start
 
@@ -100,6 +91,22 @@ example.go:5:10: hint: can simplify !(v1!=v2) to v1==v2
 example.go:6:10: hint: can simplify !(v1==v2) to v1!=v2
 example.go:7:5: error: suspicious identical LHS and RHS
 ```
+
+## How does it work?
+
+`ruleguard` parses [gorules](docs/gorules.md) during the start to load the rule set.  
+Instantiated rules are then used to check the specified targets (Go files, packages).
+
+Every rule is composed of at least 2 clauses:
+1. **pattern clause** contains a [gogrep](https://github.com/mvdan/gogrep) pattern that is used to match a part of a Go program.
+2. **yield clause** contains an associated report message as well as its severity.
+
+There can be a **filter clause** in between `(1)` and `(2)` that can reject the match using the
+given constraints.  
+Constraints are usually type-based, but can also include properties
+like "an expression is side-effect free".
+
+To learn more, check out the documentation and/or the source code.
 
 ## Documentation
 
