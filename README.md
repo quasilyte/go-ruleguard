@@ -1,5 +1,9 @@
 # go-ruleguard
 
+[![Build Status](https://travis-ci.com/quasilyte/go-ruleguard.svg?branch=master)](https://travis-ci.com/quasilyte/go-ruleguard)
+[![GoDoc](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl?status.svg)](https://godoc.org/github.com/quasilyte/go-ruleguard)
+[![Go Report Card](https://goreportcard.com/badge/github.com/quasilyte/go-ruleguard)](https://goreportcard.com/report/github.com/quasilyte/go-ruleguard)
+
 ![Logo](docs/logo_small.png)
 
 ## Overview
@@ -101,6 +105,8 @@ example.go:7:5: error: suspicious identical LHS and RHS
 
 * [Example rules.go file](analyzer/testdata/src/gocritic/gocritic.rules.go)
 * [rules.go](docs/gorules.md) documentation
+* [dsl package reference](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl)
+* [ruleguard package reference](https://godoc.org/github.com/quasilyte/go-ruleguard/ruleguard)
 
 ## Extra references
 
