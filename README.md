@@ -112,8 +112,8 @@ To learn more, check out the documentation and/or the source code.
 
 * [Example rules.go file](analyzer/testdata/src/gocritic/gocritic.rules.go)
 * [rules.go](docs/gorules.md) documentation
-* [dsl package reference](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl)
-* [ruleguard package reference](https://godoc.org/github.com/quasilyte/go-ruleguard/ruleguard)
+* [dsl package](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl) reference
+* [ruleguard package](https://godoc.org/github.com/quasilyte/go-ruleguard/ruleguard) reference
 
 ## Extra references
 
