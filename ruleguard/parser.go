@@ -9,6 +9,7 @@ import (
 	"io"
 
 	"github.com/quasilyte/go-ruleguard/internal/mvdan.cc/gogrep"
+	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
 )
 
 type rulesParser struct {
@@ -201,16 +202,13 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 		if !ok {
 			return p.errorf(args[0], "expected a string literal argument")
 		}
-		y, err := typeFromString(typeString)
+		pat, err := typematch.Parse(typeString)
 		if err != nil {
 			return p.errorf(args[0], "parse type expr: %v", err)
 		}
-		if y == nil {
-			return p.errorf(args[0], "can't convert %s into a type constraint yet", typeString)
-		}
 		wantIdentical := !negate
 		filter.typePred = func(x types.Type) bool {
-			return wantIdentical == types.Identical(x, y)
+			return wantIdentical == pat.MatchIdentical(x)
 		}
 		dst[operand.varName] = filter
 	case "Type.AssignableTo":

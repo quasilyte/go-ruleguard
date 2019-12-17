@@ -46,6 +46,8 @@ var basicTypeByName = map[string]types.Type{
 }
 
 func typeFromString(s string) (types.Type, error) {
+	s = strings.ReplaceAll(s, "?", "__any")
+
 	n, err := parser.ParseExpr(s)
 	if err != nil {
 		return nil, err
