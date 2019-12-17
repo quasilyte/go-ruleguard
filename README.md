@@ -1,6 +1,6 @@
 # go-ruleguard
 
-![Logo](docs/ruleguard.png)
+![Logo](docs/logo_small.png)
 
 ## Overview
 
