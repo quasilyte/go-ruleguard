@@ -83,15 +83,15 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 }
 
 func (rr *rulesRunner) renderMessage(msg string, n ast.Node, nodes map[string]ast.Node) string {
-	if len(nodes) == 0 {
-		return msg
-	}
 	var buf strings.Builder
 	if strings.Contains(msg, "$$") {
 		if err := printer.Fprint(&buf, rr.ctx.Fset, n); err != nil {
 			panic(err)
 		}
 		msg = strings.ReplaceAll(msg, "$$", buf.String())
+	}
+	if len(nodes) == 0 {
+		return msg
 	}
 	for name, n := range nodes {
 		key := "$" + name

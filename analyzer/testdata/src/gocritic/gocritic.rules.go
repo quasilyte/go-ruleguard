@@ -43,6 +43,11 @@ func _(m MatchResult) {
 	Filter(m["x"].Pure)
 	Error(`suspicious identical LHS and RHS`)
 
+	Match(`strings.Replace($_, $_, $_, -1)`)
+	Hint(`use ReplaceAll`)
+	Match(`strings.SplitN($_, $_, -1)`)
+	Hint(`use Split`)
+
 	Match(
 		`regexp.Compile($pat)`,
 		`regexp.CompilePOSIX($pat)`,
@@ -88,4 +93,53 @@ func _(m MatchResult) {
 
 	Match(`nil != $_`)
 	Warn(`yoda-style expression`)
+
+	Match(`(*$arr)[$_]`)
+	Filter(m["arr"].Type.Is(`*[$_]$_`))
+	Hint(`explicit array deref is redundant`)
+
+	// Can factor into a single rule when || operator
+	// is supported in filters.
+	Match(`$s[:]`)
+	Filter(m["s"].Type.Is(`string`))
+	Hint(`can simplify $$ to $s`)
+	Match(`$s[:]`)
+	Filter(m["s"].Type.Is(`[]$_`))
+	Hint(`can simplify $$ to $s`)
+
+	Match(
+		`switch $_ {case $_: $*_}`,
+		`switch {case $_: $*_}`,
+		`switch $_ := $_.(type) {case $_: $*_}`,
+		`switch $_.(type) {case $_: $*_}`,
+	)
+	Warn(`should rewrite switch statement to if statement`)
+
+	Match(`switch true {$*_}`)
+	Hint(`can omit true in switch`)
+
+	Match(`len($_) >= 0`)
+	Error(`$$ is always true`)
+	Match(`len($_) < 0`)
+	Error(`$$ is always false`)
+	Match(`len($s) <= 0`)
+	Warn(`$$ is never negative, can rewrite as len($s)==0`)
+
+	Match(`*new(bool)`)
+	Hint(`replace $$ with false`)
+	Match(`*new(string)`)
+	Hint(`replace $$ with ""`)
+	Match(`*new(int)`)
+	Hint(`replace $$ with 0`)
+
+	Match(`len($s) == 0`)
+	Filter(m["s"].Type.Is(`string`))
+	Hint(`replace $$ with len($s) == ""`)
+	Match(`len($s) != 0`)
+	Filter(m["s"].Type.Is(`string`))
+	Hint(`replace $$ with len($s) != ""`)
+
+	Match(`$s[len($s)]`)
+	Filter(m["s"].Type.Is(`[]$elem`) && m["s"].Pure)
+	Error(`index expr always panics; maybe you wanted $s[len($s)-1]?`)
 }

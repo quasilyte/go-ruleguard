@@ -99,3 +99,178 @@ func regexpMust(pat string) {
 func yodaStyleExpr(p *int) {
 	_ = nil != p // want `warn: yoda-style expression`
 }
+
+func underef() {
+	var k *[5]int
+	(*k)[2] = 3 // want `hint: explicit array deref is redundant`
+
+	var k2 **[2]int
+	_ = (**k2)[0] // want `hint: explicit array deref is redundant`
+	k2ptr := &k2
+	_ = (***k2ptr)[1] // want `hint: explicit array deref is redundant`
+}
+
+func unslice() {
+	var s string
+	_ = s[:] // want `hint: can simplify s\[:\] to s`
+	_ = s[1:]
+	_ = s[:1]
+	_ = s
+
+	{
+		var xs []byte
+		var ys []byte
+		copy(
+			xs[:], // want `hint: can simplify xs\[:\] to xs`
+			ys[:], // want `hint: can simplify ys\[:\] to ys`
+		)
+	}
+	{
+		var xs [][]int
+		_ = xs[0][:] // want `hint: can simplify xs\[0\]\[:\] to xs\[0\]`
+	}
+
+	{
+		var xs []byte
+		var ys []byte
+		copy(xs[1:], ys[:2])
+	}
+	{
+		var xs []int
+		_ = xs[:len(xs)-1]
+	}
+	{
+		var xs [][]int
+		_ = xs[0][1:]
+	}
+	{
+		var xs []string
+		_ = xs[:0]
+	}
+	{
+		var xs []struct{}
+		_ = xs[0:]
+	}
+	{
+		var xs map[string][][]int
+		_ = xs["0"][0][:10]
+	}
+	{
+		var xs [3]int
+		_ = xs[:]
+	}
+}
+
+func switchWithOneCase1(x int) {
+	switch x { // want `warn: should rewrite switch statement to if statement`
+	case 1:
+		println("ok")
+	}
+}
+
+func switchWithOneCase2(x int) {
+	switch { // want `warn: should rewrite switch statement to if statement`
+	case x == 1:
+		println("ok")
+	}
+}
+
+func typeSwitchOneCase1(x interface{}) int {
+	switch x := x.(type) { // want `warn: should rewrite switch statement to if statement`
+	case int:
+		return x
+	}
+	return 0
+}
+
+func typeSwitchOneCase2(x interface{}) int {
+	switch x.(type) { // want `warn: should rewrite switch statement to if statement`
+	case int:
+		return 1
+	}
+	return 0
+}
+
+func switchTrue(b bool) {
+	switch true { // want `hint: can omit true in switch`
+	case b:
+		return
+	case !b:
+		panic("!b")
+	}
+
+	switch {
+	}
+
+	switch {
+	case true && false:
+		println("1")
+	case false && true:
+		fallthrough
+	default:
+		println("2")
+	}
+
+	switch x := 0; {
+	case x < 0:
+	case x > 0:
+	}
+}
+
+func sloppyLen() {
+	a := []int{}
+
+	_ = len(a) >= 0 // want `error: len\(a\) >= 0 is always true`
+	_ = len(a) < 0  // want `error: len\(a\) < 0 is always false`
+	_ = len(a) <= 0 // want `warn: len\(a\) <= 0 is never negative, can rewrite as len\(a\)==0`
+}
+
+func newDeref() {
+	_ = *new(bool)   // want `hint: replace \*new\(bool\) with false`
+	_ = *new(string) // want `hint: replace \*new\(string\) with ""`
+	_ = *new(int)    // want `hint: replace \*new\(int\) with 0`
+}
+
+func emptyStringTest(s string) {
+	sptr := &s
+
+	_ = len(s) == 0 // want `replace len\(s\) == 0 with len\(s\) == ""`
+	_ = len(s) != 0 // want `hint: replace len\(s\) != 0 with len\(s\) != ""`
+
+	_ = len(*sptr) == 0 // want `hint: replace len\(\*sptr\) == 0 with len\(\*sptr\) == ""`
+	_ = len(*sptr) != 0 // want `hint: replace len\(\*sptr\) != 0 with len\(\*sptr\) != ""`
+
+	_ = s == ""
+	_ = s != ""
+
+	_ = *sptr == ""
+	_ = *sptr != ""
+
+	var b []byte
+	_ = len(b) == 0
+	_ = len(b) != 0
+}
+
+func offBy1(xs []int, ys []string) {
+	_ = xs[len(xs)] // want `error: index expr always panics; maybe you wanted xs\[len\(xs\)-1\]\?`
+	_ = ys[len(ys)] // want `error: index expr always panics; maybe you wanted ys\[len\(ys\)-1\]\?`
+
+	_ = xs[len(xs)-1]
+	_ = ys[len(ys)-1]
+
+	// Conservative with function call.
+	// Might return different lengths for both calls.
+	_ = makeSlice()[len(makeSlice())]
+
+	var m map[int]int
+	// Not an error. Doesn't panic.
+	_ = m[len(m)]
+}
+
+func wrapperFunc(s string) {
+	_ = strings.SplitN(s, ".", -1)       // want `use Split`
+	_ = strings.Replace(s, "a", "b", -1) // want `use Replace`
+
+	_ = strings.Split(s, ".")
+	_ = strings.ReplaceAll(s, "a", "b")
+}
