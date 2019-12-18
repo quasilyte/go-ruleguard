@@ -50,18 +50,16 @@ Create a test `example.rules.go` file:
 
 package gorules
 
-import . "github.com/quasilyte/go-ruleguard/dsl"
+import "github.com/quasilyte/go-ruleguard/dsl/fluent"
 
-func _(m MatchResult) {
-	Report(`suspicious identical LHS and RHS`).
-		Matches(
-			`$x || $x`,
-			`$x && $x`,
-		).
-		Where(m["x"].Pure)
+func _(m fluent.Matcher) {
+	m.Match(`$x || $x`,
+		`$x && $x`).
+		Where(m["x"].Pure).
+		Report(`suspicious identical LHS and RHS`)
 
-	Report(`can simplify !($x==$y) to $x!=$y`).Matches(`!($x != $y)`)
-	Report(`can simplify !($x==$y) to $x!=$y`).Matches(`!($x == $y)`)
+	m.Match(`!($x != $y)`).Report(`can simplify !($x==$y) to $x!=$y`)
+	m.Match(`!($x == $y)`).Report(`can simplify !($x==$y) to $x!=$y`)
 }
 ```
 
@@ -92,13 +90,11 @@ example.go:7:5: error: suspicious identical LHS and RHS
 ## How does it work?
 
 `ruleguard` parses [gorules](docs/gorules.md) during the start to load the rule set.  
-Instantiated rules are then used to check the specified targets (Go files, packages).
+Loaded rules are then used to check the specified targets (Go files, packages).
 
-A rule definition starts from a call to a special function `Report` that takes a single string argument - a template for a report message on a successful match.
+From a `dsl/fluent` API point of view, a rule definition always starts from a `Match(patterns...)` method call and ends with a `Report(message)` method call.
 
-Second mandatory part is a `Matches` method call which contains a list of [gogrep](https://github.com/mvdan/gogrep) patterns that are used to match a relevant part of a Go program. If there is a match and all filter conditions are satisfied, a rule report is produced.
-
-Above mentioned filter conditions can be added by a call to a `Where` method, which applies constraints to a match to decide whether its accepted or rejected.
+There can be additional calls in between these two. For example, a `Where(cond)` call applies constraints to a match to decide whether its accepted or rejected. So even if there is a match for a pattern, it won't produce a report message unless it satisfies a `Where()` condition.
 
 To learn more, check out the documentation and/or the source code.
 
