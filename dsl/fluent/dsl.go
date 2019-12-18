@@ -37,16 +37,14 @@ type Var struct {
 	Const bool
 
 	// Type is a type of a matched expr.
-	Type exprType
+	Type ExprType
 }
 
-// IsPure asserts that expression matched by v is side-effect-free.
-func (v Var) IsPure() {}
-
-type exprType struct{}
+// ExprType describes a type of a matcher expr.
+type ExprType struct{}
 
 // AssignableTo reports whether a type is assign-compatible with a given type.
-func (exprType) AssignableTo(typ string) bool { return boolResult }
+func (ExprType) AssignableTo(typ string) bool { return boolResult }
 
 // Is reports whether a type is identical to a given type.
-func (exprType) Is(typ string) bool { return boolResult }
+func (ExprType) Is(typ string) bool { return boolResult }
