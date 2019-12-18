@@ -14,8 +14,8 @@ You write the rules, `ruleguard` checks whether they are satisfied.
 
 **Features:**
 
-* No re-compilations is required. It also doesn't use plugins.
-* Diagnostics (rules) are written in a declarative way.
+* Custom linting rules without re-compilation and Go plugins.
+* Diagnostics are written in a declarative way.
 * Powerful match filtering features, like expression type pattern matching.
 
 ## Quick start
@@ -102,9 +102,7 @@ Such function takes a report message template string as well as a list of clause
 
 Right now we have these clauses:
 1. **match clause** contains a [gogrep](https://github.com/mvdan/gogrep) pattern that is used to match a part of a Go program.
-2. **where clause** (optional) applies constraints to a match in order to decide whether its accepted or rejected.
-
-**where** constraints are usually type-based, but can also include properties like "an expression is side-effect free".
+2. **where clause** (optional) applies constraints to a match to decide whether its accepted or rejected.
 
 To learn more, check out the documentation and/or the source code.
 
