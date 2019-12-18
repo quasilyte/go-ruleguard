@@ -1,3 +1,3 @@
-package dsl
+package fluent
 
 var boolResult bool

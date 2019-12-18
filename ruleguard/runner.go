@@ -77,7 +77,11 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 		}
 	}
 
-	message := rule.severity + ": " + rr.renderMessage(rule.msg, m.Node, m.Values)
+	prefix := ""
+	if rule.severity != "" {
+		prefix = rule.severity + ": "
+	}
+	message := prefix + rr.renderMessage(rule.msg, m.Node, m.Values)
 	rr.ctx.Report(m.Node, message)
 	return true
 }
