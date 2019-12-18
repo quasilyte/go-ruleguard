@@ -95,13 +95,14 @@ example.go:7:5: error: suspicious identical LHS and RHS
 `ruleguard` parses [gorules](docs/gorules.md) during the start to load the rule set.  
 Instantiated rules are then used to check the specified targets (Go files, packages).
 
-A rule is defined by a call to a special function: `Error`, `Warn`, `Info` or `Hint`. The only difference is a severity of the report message severity.
+A rule is defined by a call to a special function: `Error`, `Warn`, `Info` or `Hint`.  
+The only difference is a severity of the report message severity.
 
 Such function takes a report message template string as well as a list of clauses.
 
 Right now we have these clauses:
 1. **match clause** contains a [gogrep](https://github.com/mvdan/gogrep) pattern that is used to match a part of a Go program.
-2. **where clause** (optional) contains constraints that are applied to a match in order to decide whether its accepted or rejected.
+2. **where clause** (optional) applies constraints to a match in order to decide whether its accepted or rejected.
 
 **where** constraints are usually type-based, but can also include properties like "an expression is side-effect free".
 
