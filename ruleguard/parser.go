@@ -35,6 +35,10 @@ func (p *rulesParser) ParseFile(filename string, fset *token.FileSet, r io.Reade
 		return nil, fmt.Errorf("parser error: %v", err)
 	}
 
+	if f.Name.Name != "gorules" {
+		return nil, fmt.Errorf("expected a gorules package name, found %s", f.Name.Name)
+	}
+
 	typechecker := types.Config{Importer: importer.Default()}
 	_, err = typechecker.Check("gorules", fset, []*ast.File{f}, nil)
 	if err != nil {
