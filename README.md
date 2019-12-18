@@ -92,7 +92,9 @@ example.go:7:5: error: suspicious identical LHS and RHS
 `ruleguard` parses [gorules](docs/gorules.md) during the start to load the rule set.  
 Loaded rules are then used to check the specified targets (Go files, packages).
 
-From a `dsl/fluent` API point of view, a rule definition always starts from a `Match(patterns...)` method call and ends with a `Report(message)` method call.
+A `rules.go` file, as interpreted by a `dsl/fluent` API, is a set of functions that serve as a rule groups. Every function accepts a single `fluent.Matcher` argument that is then used to define and configure rules inside the group.
+
+A rule definition always starts from a `Match(patterns...)` method call and ends with a `Report(message)` method call.
 
 There can be additional calls in between these two. For example, a `Where(cond)` call applies constraints to a match to decide whether its accepted or rejected. So even if there is a match for a pattern, it won't produce a report message unless it satisfies a `Where()` condition.
 
