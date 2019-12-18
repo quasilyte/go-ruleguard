@@ -96,7 +96,7 @@ example.go:7:5: error: suspicious identical LHS and RHS
 Instantiated rules are then used to check the specified targets (Go files, packages).
 
 A rule is defined by a call to a special function: `Error`, `Warn`, `Info` or `Hint`.  
-The only difference is a severity of the report message severity.
+The only difference is a severity of the report message.
 
 Such function takes a report message template string as well as a list of clauses.
 
