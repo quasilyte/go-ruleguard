@@ -89,8 +89,9 @@ example.go:7:5: error: suspicious identical LHS and RHS
 
 ## How does it work?
 
-`ruleguard` parses [gorules](docs/gorules.md) during the start to load the rule set.  
-Loaded rules are then used to check the specified targets (Go files, packages).
+`ruleguard` parses [gorules](docs/gorules.md) (e.g. `rules.go`) during the start to load the rule set.  
+Loaded rules are then used to check the specified targets (Go files, packages).  
+The `rules.go` file itself is never compiled, nor executed.
 
 A `rules.go` file, as interpreted by a `dsl/fluent` API, is a set of functions that serve as a rule groups. Every function accepts a single `fluent.Matcher` argument that is then used to define and configure rules inside the group.
 
