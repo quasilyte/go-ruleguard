@@ -16,16 +16,19 @@ The downside is that it makes rule files slightly more verbose.
 
 ## Structure
 
-Every `gorules` file is a valid Go file:
+Every `gorules` file is a valid Go file.
 
-* It has a package clause. By convenience, we use `gorules` package name, but
-  it doesn't have any effect right now.
-* An import clause (you need at least `github.com/quasilyte/go-ruleguard/dsl`).
-* Every **rule** lives inside a **rule group**. A rule group is a function that is defined
-  on a top level.
-* Every **rule** has mandatory **match** and **yield** clauses. There can also
-  be an optional **filter** clause.
-* Every clause if a special function call.
+We can describe a file structure like this:
+
+1. It has a package clause (package name should be `gorules`).
+2. An import clause (you need at least `github.com/quasilyte/go-ruleguard/dsl/fluent`).
+3. Function declarations.
+
+Functions play a special role: they serve as a **rule groups**.
+
+Every function accepts exactly 1 arguement, a [`fluent.Matcher`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher), and defines some **rules**.
+
+Every **rule** definition starts with a [`Match`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher.Match) method call that specifies one or more [AST patterns](https://github.com/mvdan/gogrep) that should represent what kind of Go code rule supposed to match. Another mandatory method is [`Report`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher.Report) that describes a message template that is going to be printed when the rule match is accepted.
 
 Here is a small yet useful, example of `gorules` file:
 
@@ -34,36 +37,24 @@ Here is a small yet useful, example of `gorules` file:
 
 package gorules
 
-import . "github.com/quasilyte/go-ruleguard/dsl"
+import "github.com/quasilyte/go-ruleguard/dsl/fluent"
 
-func _(m MatchResult) {
-	Match(
-		`regexp.Compile($pat)`,
-		`regexp.CompilePOSIX($pat)`,
-	)
-	Filter(m["pat"].Const)
-	Hint(`can use MustCompile for const patterns`)
+func _(m fluent.Matcher) {
+	m.Match(`regexp.Compile($pat)`,
+		`regexp.CompilePOSIX($pat)`).
+		Where(m["pat"].Const).
+		Report(`can use MustCompile for const patterns`)
 }
 ```
 
-> Note: right now it's impossible not to use dot-import for a `dsl`, but it can be fixed in future.
-
 A rule group that has `_` function name is called anonymous. You can have as much anonymous groups as you like.
 
-The `MatchResult`, `Match`, `Filter` and `Warn` symbols are defined in the [dsl](https://github.com/quasilyte/go-ruleguard/blob/master/dsl/dsl.go) package.
-
-* `Match()` is for **match clause**,
-* `Filter()` is for **filter clause** and
-* `Hint()` is for **yield clause**.
-
-You can also use `Error`, `Warn` and `Info` functions in **yield clause**. They control the severity level of a produced report.
-
-A warning message can use `$<varname>` to interpolate the named pattern submatches into the report message.
+A `Report` argument string can use `$<varname>` notation to interpolate the named pattern submatches into the report message.
 There is a special case of `$$` which can be used to inject the entire pattern match into the message.
 
 ## Filters
 
-Right now there are only match variable-based filters.
+Right now there are only match variable-based filters that can be added with a [`Where`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher.Where) call.
 
 A match variable describes a named submatch of a pattern.
 
@@ -73,10 +64,7 @@ Here are some examples of supported filters:
 * Submatch expression is side-effect free
 * Submatch expression is a const expression
 
-Filters can be added throught `Filter(<expr>)` call, where `<expr>` is a boolean expression that
-combines several constraints with `&&` operator.
-
-A match variable can be accessed with `MatchResult` function argument indexing:
+A match variable can be accessed with `fluent.Matcher` function argument indexing:
 
 ```go
 Filter(m["a"].Type.Is(`int`) && !m["b"].Type.AssignableTo(`[]string`))
@@ -87,4 +75,15 @@ if `$a` expression had a type of `int` while `$b` is anything that is **not** as
 
 The filter concept is crucial to avoid false-positives in rules.
 
-Please refer to the godoc page of a `dsl` package to get an up-to-date documentation on what filters are supported.
+Please refer to the godoc page of a [`dsl/fluent`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent) package to get an up-to-date list of supported filters.
+
+## Type pattern matching
+
+Methods like [`ExprType.Is()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#ExprType.Is) accept a string argument that describes a Go type. It can be as simple as `"[]string"` that matches only a string slice, but it can also include a pattern-like variables:
+
+* `[]$T` matches any slice.
+* `[$len]$T` matches any array.
+* `map[$K]$V` matches any map.
+* `map[$T]$T` matches a map where a key and value types are the same.
+
+You may recognize that it's the same pattern behavior as in AST patterns.
