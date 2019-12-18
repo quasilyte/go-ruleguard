@@ -14,8 +14,8 @@ You write the rules, `ruleguard` checks whether they are satisfied.
 
 **Features:**
 
-* No re-compilations is required. It also doesn't use plugins.
-* Diagnostics (rules) are written in a declarative way.
+* Custom linting rules without re-compilation and Go plugins.
+* Diagnostics are written in a declarative way.
 * Powerful match filtering features, like expression type pattern matching.
 
 ## Quick start
@@ -53,18 +53,16 @@ package gorules
 import . "github.com/quasilyte/go-ruleguard/dsl"
 
 func _(m MatchResult) {
-	Match(
-		`$x || $x`,
-		`$x && $x`,
+	Error(`suspicious identical LHS and RHS`,
+		Match(
+			`$x || $x`,
+			`$x && $x`,
+		),
+		Filter(m["x"].Pure),
 	)
-	Filter(m["x"].Pure)
-	Error(`suspicious identical LHS and RHS`)
-
-	Match(`!($x != $y)`)
-	Hint(`can simplify !($x==$y) to $x!=$y`)
-
-	Match(`!($x == $y)`)
-	Hint(`can simplify !($x==$y) to $x!=$y`)
+	
+	Hint(`can simplify !($x==$y) to $x!=$y`, Match(`!($x != $y)`))
+	Hint(`can simplify !($x==$y) to $x!=$y`, Match(`!($x == $y)`))
 }
 ```
 
@@ -97,14 +95,14 @@ example.go:7:5: error: suspicious identical LHS and RHS
 `ruleguard` parses [gorules](docs/gorules.md) during the start to load the rule set.  
 Instantiated rules are then used to check the specified targets (Go files, packages).
 
-Every rule is composed of at least 2 clauses:
-1. **pattern clause** contains a [gogrep](https://github.com/mvdan/gogrep) pattern that is used to match a part of a Go program.
-2. **yield clause** contains an associated report message as well as its severity.
+A rule is defined by a call to a special function: `Error`, `Warn`, `Info` or `Hint`.  
+The only difference is a severity of the report message.
 
-There can be a **filter clause** in between `(1)` and `(2)` that can reject the match using the
-given constraints.  
-Constraints are usually type-based, but can also include properties
-like "an expression is side-effect free".
+Such function takes a report message template string as well as a list of clauses.
+
+Right now we have these clauses:
+1. **match clause** contains a [gogrep](https://github.com/mvdan/gogrep) pattern that is used to match a part of a Go program.
+2. **where clause** (optional) applies constraints to a match to decide whether its accepted or rejected.
 
 To learn more, check out the documentation and/or the source code.
 
