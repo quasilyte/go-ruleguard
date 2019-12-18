@@ -93,11 +93,11 @@ example.go:7:5: error: suspicious identical LHS and RHS
 Loaded rules are then used to check the specified targets (Go files, packages).  
 The `rules.go` file itself is never compiled, nor executed.
 
-A `rules.go` file, as interpreted by a `dsl/fluent` API, is a set of functions that serve as a rule groups. Every function accepts a single `fluent.Matcher` argument that is then used to define and configure rules inside the group.
+A `rules.go` file, as interpreted by a [`dsl/fluent`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent) API, is a set of functions that serve as a rule groups. Every function accepts a single [`fluent.Matcher`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher) argument that is then used to define and configure rules inside the group.
 
-A rule definition always starts from a `Match(patterns...)` method call and ends with a `Report(message)` method call.
+A rule definition always starts from a [`Match(patterns...)`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher.Match) method call and ends with a [`Report(message)`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher.Report) method call.
 
-There can be additional calls in between these two. For example, a `Where(cond)` call applies constraints to a match to decide whether its accepted or rejected. So even if there is a match for a pattern, it won't produce a report message unless it satisfies a `Where()` condition.
+There can be additional calls in between these two. For example, a [`Where(cond)`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher.Where) call applies constraints to a match to decide whether its accepted or rejected. So even if there is a match for a pattern, it won't produce a report message unless it satisfies a `Where()` condition.
 
 To learn more, check out the documentation and/or the source code.
 
@@ -105,7 +105,7 @@ To learn more, check out the documentation and/or the source code.
 
 * [Example rules.go file](analyzer/testdata/src/gocritic/gocritic.rules.go)
 * [rules.go](docs/gorules.md) documentation
-* [dsl package](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl) reference
+* [dsl/fluent package](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent) reference
 * [ruleguard package](https://godoc.org/github.com/quasilyte/go-ruleguard/ruleguard) reference
 
 ## Extra references
