@@ -47,7 +47,7 @@ func _(m fluent.Matcher) {
 }
 ```
 
-A rule group that has `_` function name is called anonymous. You can have as much anonymous groups as you like.
+A rule group that has `_` function name is called **anonymous**. You can have as much anonymous groups as you like.
 
 A `Report` argument string can use `$<varname>` notation to interpolate the named pattern submatches into the report message.
 There is a special case of `$$` which can be used to inject the entire pattern match into the message.
