@@ -2,34 +2,38 @@
 
 package gorules
 
-import . "github.com/quasilyte/go-ruleguard/dsl"
+import "github.com/quasilyte/go-ruleguard/dsl/fluent"
 
-func _(m MatchResult) {
-	Match(`typeTest($x + $y)`)
-	Filter(m["x"].Type.Is(`string`) && m["y"].Type.Is("string"))
-	Info(`concat`)
+func _(m fluent.Matcher) {
+	m.Match(`typeTest($x + $y)`).
+		Where(m["x"].Type.Is(`string`) && m["y"].Type.Is("string")).
+		Report(`concat`)
 
-	Match(`typeTest($x + $y)`)
-	Filter(m["x"].Type.Is(`int`) && m["y"].Type.Is("int"))
-	Info(`addition`)
+	m.Match(`typeTest($x + $y)`).
+		Where(m["x"].Type.Is(`string`) && m["y"].Type.Is("string")).
+		Report(`concat`)
 
-	Match(`typeTest($x > $y)`)
-	Filter(!m["x"].Type.Is(`int`))
-	Info(`$x !is(int)`)
+	m.Match(`typeTest($x + $y)`).
+		Where(m["x"].Type.Is(`int`) && m["y"].Type.Is("int")).
+		Report(`addition`)
 
-	Match(`typeTest($x > $y)`)
-	Filter(!m["x"].Type.Is(`string`) && m["x"].Pure)
-	Info(`$x !is(string) && pure`)
+	m.Match(`typeTest($x > $y)`).
+		Where(!m["x"].Type.Is(`int`)).
+		Report(`$x !is(int)`)
 
-	Match(`typeTest($s, $s)`)
-	Filter(m["s"].Type.Is(`[]string`))
-	Info(`$s is([]string)`)
+	m.Match(`typeTest($x > $y)`).
+		Where(!m["x"].Type.Is(`string`) && m["x"].Pure).
+		Report(`$x !is(string) && pure`)
 
-	Match(`pureTest($x)`)
-	Filter(m["x"].Pure)
-	Info("pure")
+	m.Match(`typeTest($s, $s)`).
+		Where(m["s"].Type.Is(`[]string`)).
+		Report(`$s is([]string)`)
 
-	Match(`pureTest($x)`)
-	Filter(!m["x"].Pure)
-	Info("!pure")
+	m.Match(`pureTest($x)`).
+		Where(m["x"].Pure).
+		Report("pure")
+
+	m.Match(`pureTest($x)`).
+		Where(!m["x"].Pure).
+		Report("!pure")
 }

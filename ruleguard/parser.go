@@ -3,6 +3,7 @@ package ruleguard
 import (
 	"fmt"
 	"go/ast"
+	"go/importer"
 	"go/parser"
 	"go/token"
 	"go/types"
@@ -31,11 +32,21 @@ func (p *rulesParser) ParseFile(filename string, fset *token.FileSet, r io.Reade
 	parserFlags := parser.Mode(0)
 	f, err := parser.ParseFile(fset, filename, r, parserFlags)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parser error: %v", err)
+	}
+
+	typechecker := types.Config{Importer: importer.Default()}
+	_, err = typechecker.Check("gorules", fset, []*ast.File{f}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("typechecker error: %v", err)
 	}
 
 	for _, decl := range f.Decls {
-		if err := p.parseDecl(decl); err != nil {
+		decl, ok := decl.(*ast.FuncDecl)
+		if !ok {
+			continue
+		}
+		if err := p.parseRuleGroup(decl); err != nil {
 			return nil, err
 		}
 	}
@@ -43,24 +54,22 @@ func (p *rulesParser) ParseFile(filename string, fset *token.FileSet, r io.Reade
 	return p.res, nil
 }
 
-func (p *rulesParser) parseDecl(d ast.Decl) error {
-	switch d := d.(type) {
-	case *ast.FuncDecl:
-		return p.parseFuncDecl(d)
-	}
-	return nil
-}
-
-func (p *rulesParser) parseFuncDecl(f *ast.FuncDecl) error {
+func (p *rulesParser) parseRuleGroup(f *ast.FuncDecl) error {
 	if f.Body == nil {
 		return p.errorf(f, "unexpected empty function body")
 	}
+	if f.Type.Results != nil {
+		return p.errorf(f.Type.Results, "rule group function should not return anything")
+	}
+	params := f.Type.Params.List
+	if len(params) != 1 || len(params[0].Names) != 1 {
+		return p.errorf(f.Type.Params, "rule group function should accept exactly 1 Matcher param")
+	}
+	// TODO(quasilyte): do an actual matcher param type check?
+	matcher := params[0].Names[0].Name
 
-	list := f.Body.List
-	var err error
-	for len(list) > 0 {
-		list, err = p.parseRule(list)
-		if err != nil {
+	for _, stmt := range f.Body.List {
+		if err := p.parseRule(matcher, stmt); err != nil {
 			return err
 		}
 	}
@@ -68,81 +77,78 @@ func (p *rulesParser) parseFuncDecl(f *ast.FuncDecl) error {
 	return nil
 }
 
-func (p *rulesParser) parseRule(list []ast.Stmt) ([]ast.Stmt, error) {
+func (p *rulesParser) parseRule(matcher string, stmt ast.Stmt) error {
+	stmtExpr, ok := stmt.(*ast.ExprStmt)
+	if !ok {
+		return p.errorf(stmt, "expected a %s.Match method call, found %s", matcher, sprintNode(p.fset, stmt))
+	}
+	call, ok := stmtExpr.X.(*ast.CallExpr)
+	if !ok {
+		return p.errorf(stmt, "expected a %s.Match method call, found %s", matcher, sprintNode(p.fset, stmt))
+	}
+
+	var (
+		matchArgs  *[]ast.Expr
+		whereArgs  *[]ast.Expr
+		reportArgs *[]ast.Expr
+	)
+	for {
+		chain, ok := call.Fun.(*ast.SelectorExpr)
+		if !ok {
+			break
+		}
+		switch chain.Sel.Name {
+		case "Report":
+			reportArgs = &call.Args
+		case "Where":
+			whereArgs = &call.Args
+		case "Match":
+			matchArgs = &call.Args
+		}
+		call, ok = chain.X.(*ast.CallExpr)
+		if !ok {
+			break
+		}
+	}
+
 	dst := p.res.universal
 	filters := map[string]submatchFilter{}
-	proto := goRule{filters: filters}
+	proto := goRule{
+		filters: filters,
+	}
 	var alternatives []string
 
-	match := p.toCallExpr(list[0])
-	if match == nil || p.funcName(match) != "Match" {
-		return list, p.errorf(list[0], "expected a Match call, found %s", sprintNode(p.fset, list[0]))
+	if matchArgs == nil {
+		return p.errorf(call, "missing Match() call")
 	}
-	if len(match.Args) == 0 {
-		return list, p.errorf(match.Fun, "Match expects at least 1 argument")
-	}
-	for _, arg := range match.Args {
+	for _, arg := range *matchArgs {
 		alt, ok := p.toStringValue(arg)
 		if !ok {
-			return list, p.errorf(arg, "expected a string literal argument")
+			return p.errorf(arg, "expected a string literal argument")
 		}
 		alternatives = append(alternatives, alt)
 	}
-	list = list[1:]
 
-	if len(list) == 0 {
-		return list, p.errorf(match, "expected filter or yield clause, found nothing")
-	}
-	filter := p.toCallExpr(list[0])
-	if filter == nil {
-		return list, p.errorf(list[0], "expected filter or yield clause, found %s", sprintNode(p.fset, list[0]))
-	}
-	if p.funcName(filter) == "Filter" {
-		if len(filter.Args) != 1 {
-			return list, p.errorf(filter.Fun, "Filter expects exactly 1 argument, %d given", len(filter.Args))
+	if whereArgs != nil {
+		if err := p.walkFilter(filters, (*whereArgs)[0], false); err != nil {
+			return err
 		}
-		if err := p.walkFilter(filters, filter.Args[0], false); err != nil {
-			return list, err
-		}
-		list = list[1:]
 	}
 
-	if len(list) == 0 {
-		lastNode := filter
-		if lastNode == nil {
-			lastNode = match
-		}
-		return list, p.errorf(lastNode, "expected yield clause, found nothing")
+	if reportArgs == nil {
+		return p.errorf(call, "missing Report() call")
 	}
-	yield := p.toCallExpr(list[0])
-	yieldFunc := p.funcName(yield)
-	switch yieldFunc {
-	case "Error":
-		proto.severity = "error"
-	case "Warn":
-		proto.severity = "warn"
-	case "Info":
-		proto.severity = "info"
-	case "Hint":
-		proto.severity = "hint"
-	default:
-		return list, p.errorf(list[0], "expected a Error/Warn/Info/Hint call, found %s", sprintNode(p.fset, list[0]))
-	}
-	if len(yield.Args) != 1 {
-		return list, p.errorf(yield.Fun, "%s expects exactly 1 argument, %d given", yieldFunc, len(yield.Args))
-	}
-	message, ok := p.toStringValue(yield.Args[0])
+	message, ok := p.toStringValue((*reportArgs)[0])
 	if !ok {
-		return list, p.errorf(yield.Args[0], "expected string literal argument")
+		return p.errorf((*reportArgs)[0], "expected string literal argument")
 	}
 	proto.msg = message
-	list = list[1:]
 
 	for i, alt := range alternatives {
 		rule := proto
 		pat, err := gogrep.Parse(p.fset, alt)
 		if err != nil {
-			return list, p.errorf(match.Args[i], "gogrep parse: %v", err)
+			return p.errorf((*matchArgs)[i], "gogrep parse: %v", err)
 		}
 		rule.pat = pat
 		cat := categorizeNode(pat.Expr)
@@ -154,7 +160,7 @@ func (p *rulesParser) parseRule(list []ast.Stmt) ([]ast.Stmt, error) {
 		}
 	}
 
-	return list, nil
+	return nil
 }
 
 func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, negate bool) error {
@@ -236,39 +242,12 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 	return nil
 }
 
-func (p *rulesParser) funcName(call *ast.CallExpr) string {
-	if call == nil {
-		return ""
-	}
-	x := call.Fun
-	switch x := x.(type) {
-	case *ast.Ident:
-		return x.Name
-	case *ast.SelectorExpr:
-		left, ok := x.X.(*ast.Ident)
-		right := x.Sel
-		if ok {
-			return left.Name + "." + right.Name
-		}
-	}
-	return ""
-}
-
 func (p *rulesParser) toStringValue(x ast.Node) (string, bool) {
 	lit, ok := x.(*ast.BasicLit)
 	if !ok || lit.Kind != token.STRING {
 		return "", false
 	}
 	return unquoteNode(lit), true
-}
-
-func (p *rulesParser) toCallExpr(x ast.Node) *ast.CallExpr {
-	stmt, ok := x.(*ast.ExprStmt)
-	if !ok {
-		return nil
-	}
-	call, _ := stmt.X.(*ast.CallExpr)
-	return call
 }
 
 func (p *rulesParser) toFilterOperand(e ast.Expr) filterOperand {

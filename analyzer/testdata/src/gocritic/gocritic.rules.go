@@ -2,29 +2,23 @@
 
 package gorules
 
-import . "github.com/quasilyte/go-ruleguard/dsl"
+import "github.com/quasilyte/go-ruleguard/dsl/fluent"
 
-func _(m MatchResult) {
-	Match(`$x = $x`)
-	Warn(`suspicious self-assignment in $$`)
+func _(m fluent.Matcher) {
+	m.Match(`$x = $x`).Report(`suspicious self-assignment in $$`)
 
-	Match(`$tmp := $x; $x = $y; $y = $tmp`)
-	Hint(`can use parallel assignment like $x,$y=$y,$x`)
+	m.Match(`$tmp := $x; $x = $y; $y = $tmp`).
+		Report(`can use parallel assignment like $x,$y=$y,$x`)
 
-	Match(
-		`io.Copy($x, $x)`,
-		`copy($x, $x)`,
-	)
-	Warn(`suspicious duplicated args in $$`)
+	m.Match(`io.Copy($x, $x)`,
+		`copy($x, $x)`).
+		Report(`suspicious duplicated args in $$`)
 
-	Match(
-		`$x && $_ && $x`,
-		`$x && $_ && $_ && $x`,
-	)
-	Error(`suspicious duplicated $x in condition`)
+	m.Match(`$x && $_ && $x`,
+		`$x && $_ && $_ && $x`).
+		Report(`suspicious duplicated $x in condition`)
 
-	Match(
-		`$x || $x`,
+	m.Match(`$x || $x`,
 		`$x && $x`,
 		`$x | $x`,
 		`$x & $x`,
@@ -38,108 +32,85 @@ func _(m MatchResult) {
 		`$x <= $x`,
 		`$x >= $x`,
 		`$x / $x`,
-		`$x - $x`,
-	)
-	Filter(m["x"].Pure)
-	Error(`suspicious identical LHS and RHS`)
+		`$x - $x`).
+		Where(m["x"].Pure).
+		Report(`suspicious identical LHS and RHS`)
 
-	Match(`strings.Replace($_, $_, $_, -1)`)
-	Hint(`use ReplaceAll`)
-	Match(`strings.SplitN($_, $_, -1)`)
-	Hint(`use Split`)
+	m.Match(`strings.Replace($_, $_, $_, -1)`).Report(`use ReplaceAll`)
+	m.Match(`strings.SplitN($_, $_, -1)`).Report(`use Split`)
 
-	Match(
-		`regexp.Compile($pat)`,
-		`regexp.CompilePOSIX($pat)`,
-	)
-	Filter(m["pat"].Const)
-	Hint(`can use MustCompile for const patterns`)
+	m.Match(`regexp.Compile($pat)`,
+		`regexp.CompilePOSIX($pat)`).
+		Where(m["pat"].Const).
+		Report(`can use MustCompile for const patterns`)
 
-	Match(`map[$_]$_{$*_, $k: $_, $*_, $k: $_, $*_}`)
-	Filter(m["k"].Pure)
-	Error(`suspicious duplicate key $k`)
+	m.Match(`map[$_]$_{$*_, $k: $_, $*_, $k: $_, $*_}`).
+		Where(m["k"].Pure).
+		Report(`suspicious duplicate key $k`)
 
-	Match(`$dst = append($x, $a); $dst = append($x, $b)`)
-	Info(`$dst=append($x,$a,$b) is faster`)
+	m.Match(`$dst = append($x, $a); $dst = append($x, $b)`).
+		Report(`$dst=append($x,$a,$b) is faster`)
 
-	Match(`strings.Replace($_, $_, $_, 0)`)
-	Error(`n=0 argument does nothing, maybe n=-1 is indended?`)
+	m.Match(`strings.Replace($_, $_, $_, 0)`).
+		Report(`n=0 argument does nothing, maybe n=-1 is indended?`)
 
-	Match(`append($_)`)
-	Error(`append called with 1 argument does nothing`)
+	m.Match(`append($_)`).
+		Report(`append called with 1 argument does nothing`)
 
-	Match(`copy($b, []byte($s))`)
-	Filter(m["s"].Type.Is(`string`))
-	Hint(`can write copy($b, $s) without type conversion`)
+	m.Match(`copy($b, []byte($s))`).
+		Where(m["s"].Type.Is(`string`)).
+		Report(`can write copy($b, $s) without type conversion`)
 
-	Match(`$x = $x + 1`)
-	Hint(`can simplify to $x++`)
-	Match(`$x = $x - 1`)
-	Hint(`can simplify to $x--`)
+	m.Match(`$x = $x + 1`).Report(`can simplify to $x++`)
+	m.Match(`$x = $x - 1`).Report(`can simplify to $x--`)
 
-	Match(`$x = $x + $y`)
-	Hint(`can simplify to $x+=$y`)
-	Match(`$x = $x - $y`)
-	Hint(`can simplify to $x-=$y`)
-	Match(`$x = $x * $y`)
-	Hint(`can simplify to $x*=$y`)
+	m.Match(`$x = $x + $y`).Report(`can simplify to $x+=$y`)
+	m.Match(`$x = $x - $y`).Report(`can simplify to $x-=$y`)
+	m.Match(`$x = $x * $y`).Report(`can simplify to $x*=$y`)
 
-	Match(`!!$x`)
-	Hint(`can simplify !!$x to $x`)
-	Match(`!($x != $y)`)
-	Hint(`can simplify !($x!=$y) to $x==$y`)
-	Match(`!($x == $y)`)
-	Hint(`can simplify !($x==$y) to $x!=$y`)
+	m.Match(`!!$x`).Report(`can simplify !!$x to $x`)
+	m.Match(`!($x != $y)`).Report(`can simplify !($x!=$y) to $x==$y`)
+	m.Match(`!($x == $y)`).Report(`can simplify !($x==$y) to $x!=$y`)
 
-	Match(`nil != $_`)
-	Warn(`yoda-style expression`)
+	m.Match(`nil != $_`).Report(`yoda-style expression`)
 
-	Match(`(*$arr)[$_]`)
-	Filter(m["arr"].Type.Is(`*[$_]$_`))
-	Hint(`explicit array deref is redundant`)
+	m.Match(`(*$arr)[$_]`).
+		Where(m["arr"].Type.Is(`*[$_]$_`)).
+		Report(`explicit array deref is redundant`)
 
 	// Can factor into a single rule when || operator
 	// is supported in filters.
-	Match(`$s[:]`)
-	Filter(m["s"].Type.Is(`string`))
-	Hint(`can simplify $$ to $s`)
-	Match(`$s[:]`)
-	Filter(m["s"].Type.Is(`[]$_`))
-	Hint(`can simplify $$ to $s`)
+	m.Match(`$s[:]`).
+		Where(m["s"].Type.Is(`string`)).
+		Report(`can simplify $$ to $s`)
+	m.Match(`$s[:]`).
+		Where(m["s"].Type.Is(`[]$_`)).
+		Report(`can simplify $$ to $s`)
 
-	Match(
-		`switch $_ {case $_: $*_}`,
+	m.Match(`switch $_ {case $_: $*_}`,
 		`switch {case $_: $*_}`,
 		`switch $_ := $_.(type) {case $_: $*_}`,
-		`switch $_.(type) {case $_: $*_}`,
-	)
-	Warn(`should rewrite switch statement to if statement`)
+		`switch $_.(type) {case $_: $*_}`).
+		Report(`should rewrite switch statement to if statement`)
 
-	Match(`switch true {$*_}`)
-	Hint(`can omit true in switch`)
+	m.Match(`switch true {$*_}`).Report(`can omit true in switch`)
 
-	Match(`len($_) >= 0`)
-	Error(`$$ is always true`)
-	Match(`len($_) < 0`)
-	Error(`$$ is always false`)
-	Match(`len($s) <= 0`)
-	Warn(`$$ is never negative, can rewrite as len($s)==0`)
+	m.Match(`len($_) >= 0`).Report(`$$ is always true`)
+	m.Match(`len($_) < 0`).Report(`$$ is always false`)
+	m.Match(`len($s) <= 0`).Report(`$$ is never negative, can rewrite as len($s)==0`)
 
-	Match(`*new(bool)`)
-	Hint(`replace $$ with false`)
-	Match(`*new(string)`)
-	Hint(`replace $$ with ""`)
-	Match(`*new(int)`)
-	Hint(`replace $$ with 0`)
+	m.Match(`*new(bool)`).Report(`replace $$ with false`)
+	m.Match(`*new(string)`).Report(`replace $$ with ""`)
+	m.Match(`*new(int)`).Report(`replace $$ with 0`)
 
-	Match(`len($s) == 0`)
-	Filter(m["s"].Type.Is(`string`))
-	Hint(`replace $$ with len($s) == ""`)
-	Match(`len($s) != 0`)
-	Filter(m["s"].Type.Is(`string`))
-	Hint(`replace $$ with len($s) != ""`)
+	m.Match(`len($s) == 0`).
+		Where(m["s"].Type.Is(`string`)).
+		Report(`replace $$ with len($s) == ""`)
+	m.Match(`len($s) != 0`).
+		Where(m["s"].Type.Is(`string`)).
+		Report(`replace $$ with len($s) != ""`)
 
-	Match(`$s[len($s)]`)
-	Filter(m["s"].Type.Is(`[]$elem`) && m["s"].Pure)
-	Error(`index expr always panics; maybe you wanted $s[len($s)-1]?`)
+	m.Match(`$s[len($s)]`).
+		Where(m["s"].Type.Is(`[]$elem`) && m["s"].Pure).
+		Report(`index expr always panics; maybe you wanted $s[len($s)-1]?`)
 }
