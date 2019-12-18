@@ -50,19 +50,16 @@ Create a test `example.rules.go` file:
 
 package gorules
 
-import . "github.com/quasilyte/go-ruleguard/dsl"
+import "github.com/quasilyte/go-ruleguard/dsl/fluent"
 
-func _(m MatchResult) {
-	Error(`suspicious identical LHS and RHS`,
-		Match(
-			`$x || $x`,
-			`$x && $x`,
-		),
-		Filter(m["x"].Pure),
-	)
-	
-	Hint(`can simplify !($x==$y) to $x!=$y`, Match(`!($x != $y)`))
-	Hint(`can simplify !($x==$y) to $x!=$y`, Match(`!($x == $y)`))
+func _(m fluent.Matcher) {
+	m.Match(`$x || $x`,
+		`$x && $x`).
+		Where(m["x"].Pure).
+		Report(`suspicious identical LHS and RHS`)
+
+	m.Match(`!($x != $y)`).Report(`can simplify !($x==$y) to $x!=$y`)
+	m.Match(`!($x == $y)`).Report(`can simplify !($x==$y) to $x!=$y`)
 }
 ```
 
@@ -92,17 +89,15 @@ example.go:7:5: error: suspicious identical LHS and RHS
 
 ## How does it work?
 
-`ruleguard` parses [gorules](docs/gorules.md) during the start to load the rule set.  
-Instantiated rules are then used to check the specified targets (Go files, packages).
+`ruleguard` parses [gorules](docs/gorules.md) (e.g. `rules.go`) during the start to load the rule set.  
+Loaded rules are then used to check the specified targets (Go files, packages).  
+The `rules.go` file itself is never compiled, nor executed.
 
-A rule is defined by a call to a special function: `Error`, `Warn`, `Info` or `Hint`.  
-The only difference is a severity of the report message.
+A `rules.go` file, as interpreted by a `dsl/fluent` API, is a set of functions that serve as a rule groups. Every function accepts a single `fluent.Matcher` argument that is then used to define and configure rules inside the group.
 
-Such function takes a report message template string as well as a list of clauses.
+A rule definition always starts from a `Match(patterns...)` method call and ends with a `Report(message)` method call.
 
-Right now we have these clauses:
-1. **match clause** contains a [gogrep](https://github.com/mvdan/gogrep) pattern that is used to match a part of a Go program.
-2. **where clause** (optional) applies constraints to a match to decide whether its accepted or rejected.
+There can be additional calls in between these two. For example, a `Where(cond)` call applies constraints to a match to decide whether its accepted or rejected. So even if there is a match for a pattern, it won't produce a report message unless it satisfies a `Where()` condition.
 
 To learn more, check out the documentation and/or the source code.
 
