@@ -53,16 +53,15 @@ package gorules
 import . "github.com/quasilyte/go-ruleguard/dsl"
 
 func _(m MatchResult) {
-	Error(`suspicious identical LHS and RHS`,
-		Match(
+	Report(`suspicious identical LHS and RHS`).
+		Matches(
 			`$x || $x`,
 			`$x && $x`,
-		),
-		Filter(m["x"].Pure),
-	)
-	
-	Hint(`can simplify !($x==$y) to $x!=$y`, Match(`!($x != $y)`))
-	Hint(`can simplify !($x==$y) to $x!=$y`, Match(`!($x == $y)`))
+		).
+		Where(m["x"].Pure)
+
+	Report(`can simplify !($x==$y) to $x!=$y`).Matches(`!($x != $y)`)
+	Report(`can simplify !($x==$y) to $x!=$y`).Matches(`!($x == $y)`)
 }
 ```
 
@@ -95,14 +94,11 @@ example.go:7:5: error: suspicious identical LHS and RHS
 `ruleguard` parses [gorules](docs/gorules.md) during the start to load the rule set.  
 Instantiated rules are then used to check the specified targets (Go files, packages).
 
-A rule is defined by a call to a special function: `Error`, `Warn`, `Info` or `Hint`.  
-The only difference is a severity of the report message.
+A rule definition starts from a call to a special function `Report` that takes a single string argument - a template for a report message on a successful match.
 
-Such function takes a report message template string as well as a list of clauses.
+Second mandatory part is a `Matches` method call which contains a list of [gogrep](https://github.com/mvdan/gogrep) patterns that are used to match a relevant part of a Go program. If there is a match and all filter conditions are satisfied, a rule report is produced.
 
-Right now we have these clauses:
-1. **match clause** contains a [gogrep](https://github.com/mvdan/gogrep) pattern that is used to match a part of a Go program.
-2. **where clause** (optional) applies constraints to a match to decide whether its accepted or rejected.
+Above mentioned filter conditions can be added by a call to a `Where` method, which applies constraints to a match to decide whether its accepted or rejected.
 
 To learn more, check out the documentation and/or the source code.
 
