@@ -3,6 +3,9 @@ package extra
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"path"
+	"path/filepath"
 )
 
 func testFormatInt() {
@@ -65,4 +68,30 @@ func unparen(x, y int) {
 func contextTodo() {
 	_ = context.TODO() // want `might want to replace context.TODO\(\)`
 	_ = context.Background()
+}
+
+func filtepathJoin(bad, good []bool) []byte {
+	if bad[0] {
+		data, _ := ioutil.ReadFile(path.Join("a", "b")) // want `use filepath\.Join for file paths`
+		return data
+	}
+
+	if bad[1] {
+		p := path.Join("a", "b") // want `use filepath\.Join for file paths`
+		data, _ := ioutil.ReadFile(p)
+		return data
+	}
+
+	if good[0] {
+		data, _ := ioutil.ReadFile(filepath.Join("a", "b"))
+		return data
+	}
+
+	if good[1] {
+		p := filepath.Join("a", "b")
+		data, _ := ioutil.ReadFile(p)
+		return data
+	}
+
+	return nil
 }
