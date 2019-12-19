@@ -22,4 +22,9 @@ func _(m fluent.Matcher) {
 	m.Match(`_ = $v`).
 		Where(m["v"].Pure).
 		Report(`please remove the assignment to _`)
+
+	m.Match(`$err != nil`,
+		`$err == nil`).
+		Where(!m["err"].Pure && m["err"].Type.Is(`error`)).
+		Report(`assign $err to err and then do a nil check`)
 }

@@ -32,3 +32,21 @@ func testBlankAssign() {
 	// This is OK, could be for side-effects.
 	_ = foo()
 }
+
+func nilErrCheck() {
+	if mightFail() == nil { // want `assign mightFail\(\) to err and then do a nil check`
+	}
+	if mightFail() != nil { // want `assign mightFail\(\) to err and then do a nil check`
+	}
+
+	// Good.
+	if err := mightFail(); err != nil {
+	}
+	err := mightFail()
+	if err == nil {
+	}
+
+	// Not error-typed LHS.
+	if newInt() == nil {
+	}
+}

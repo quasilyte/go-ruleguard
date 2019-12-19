@@ -70,6 +70,7 @@ var basicTypeByName = map[string]types.Type{
 	"complex64":  types.Typ[types.Complex64],
 	"complex128": types.Typ[types.Complex128],
 	"string":     types.Typ[types.String],
+	"error":      types.Universe.Lookup("error").Type(),
 }
 
 func parseExpr(e ast.Expr) *pattern {
