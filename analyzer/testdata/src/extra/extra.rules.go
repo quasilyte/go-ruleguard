@@ -27,4 +27,7 @@ func _(m fluent.Matcher) {
 		`$err == nil`).
 		Where(!m["err"].Pure && m["err"].Type.Is(`error`)).
 		Report(`assign $err to err and then do a nil check`)
+
+	m.Match(`($a) || ($b)`).Report(`rewrite as '$a || $b'`)
+	m.Match(`($a) && ($b)`).Report(`rewrite as '$a && $b'`)
 }

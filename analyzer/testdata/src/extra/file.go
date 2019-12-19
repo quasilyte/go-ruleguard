@@ -50,3 +50,11 @@ func nilErrCheck() {
 	if newInt() == nil {
 	}
 }
+
+func unparen(x, y int) {
+	if (x == 0) || (y == 0) { // want `rewrite as 'x == 0 || y == 0'`
+	}
+
+	if (x != 5) && (y == 5) { // want `rewrite as 'x != 5 && y == 5'`
+	}
+}
