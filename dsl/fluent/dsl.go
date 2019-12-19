@@ -26,7 +26,15 @@ func (m Matcher) Where(cond bool) Matcher {
 // For every matched variable it's possible to interpolate
 // their printed representation into the message text with $<name>.
 // An entire match can be addressed with $$.
-func (Matcher) Report(message string) {}
+func (m Matcher) Report(message string) Matcher {
+	return m
+}
+
+// At binds the reported node to a named submatch.
+// If no explicit location is given, the outermost node ($$) is used.
+func (m Matcher) At(v Var) Matcher {
+	return m
+}
 
 // Var is a pattern variable that describes a named submatch.
 type Var struct {

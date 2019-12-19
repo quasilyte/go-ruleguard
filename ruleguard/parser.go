@@ -95,6 +95,7 @@ func (p *rulesParser) parseRule(matcher string, stmt ast.Stmt) error {
 		matchArgs  *[]ast.Expr
 		whereArgs  *[]ast.Expr
 		reportArgs *[]ast.Expr
+		atArgs     *[]ast.Expr
 	)
 	for {
 		chain, ok := call.Fun.(*ast.SelectorExpr)
@@ -102,12 +103,15 @@ func (p *rulesParser) parseRule(matcher string, stmt ast.Stmt) error {
 			break
 		}
 		switch chain.Sel.Name {
-		case "Report":
-			reportArgs = &call.Args
-		case "Where":
-			whereArgs = &call.Args
 		case "Match":
 			matchArgs = &call.Args
+		case "Where":
+			whereArgs = &call.Args
+		case "Report":
+			reportArgs = &call.Args
+		case "At":
+			atArgs = &call.Args
+
 		}
 		call, ok = chain.X.(*ast.CallExpr)
 		if !ok {
@@ -147,6 +151,18 @@ func (p *rulesParser) parseRule(matcher string, stmt ast.Stmt) error {
 		return p.errorf((*reportArgs)[0], "expected string literal argument")
 	}
 	proto.msg = message
+
+	if atArgs != nil {
+		index, ok := (*atArgs)[0].(*ast.IndexExpr)
+		if !ok {
+			return p.errorf((*atArgs)[0], "expected %s[`varname`] expression", matcher)
+		}
+		arg, ok := p.toStringValue(index.Index)
+		if !ok {
+			return p.errorf(index.Index, "expected a string literal index")
+		}
+		proto.location = arg
+	}
 
 	for i, alt := range alternatives {
 		rule := proto
