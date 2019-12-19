@@ -46,7 +46,8 @@ func _(m fluent.Matcher) {
 
 	m.Match(`map[$_]$_{$*_, $k: $_, $*_, $k: $_, $*_}`).
 		Where(m["k"].Pure).
-		Report(`suspicious duplicate key $k`)
+		Report(`suspicious duplicate key $k`).
+		At(m["k"])
 
 	m.Match(`$dst = append($x, $a); $dst = append($x, $b)`).
 		Report(`$dst=append($x,$a,$b) is faster`)

@@ -82,7 +82,11 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 		prefix = rule.severity + ": "
 	}
 	message := prefix + rr.renderMessage(rule.msg, m.Node, m.Values)
-	rr.ctx.Report(m.Node, message)
+	node := m.Node
+	if rule.location != "" {
+		node = m.Values[rule.location]
+	}
+	rr.ctx.Report(node, message)
 	return true
 }
 
