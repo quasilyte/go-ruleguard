@@ -1,6 +1,9 @@
 package extra
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 func testFormatInt() {
 	{
@@ -57,4 +60,9 @@ func unparen(x, y int) {
 
 	if (x != 5) && (y == 5) { // want `rewrite as 'x != 5 && y == 5'`
 	}
+}
+
+func contextTodo() {
+	_ = context.TODO() // want `might want to replace context.TODO\(\)`
+	_ = context.Background()
 }

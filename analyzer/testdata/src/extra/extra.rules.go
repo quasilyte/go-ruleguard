@@ -30,4 +30,6 @@ func _(m fluent.Matcher) {
 
 	m.Match(`($a) || ($b)`).Report(`rewrite as '$a || $b'`)
 	m.Match(`($a) && ($b)`).Report(`rewrite as '$a && $b'`)
+
+	m.Match(`context.TODO()`).Report(`might want to replace context.TODO()`)
 }
