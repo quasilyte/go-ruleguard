@@ -36,4 +36,7 @@ func _(m fluent.Matcher) {
 	m.Match(`$_, $_ := ioutil.ReadFile(path.Join($*_))`,
 		`$p := path.Join($*_); $_, $_ := ioutil.ReadFile($p)`).
 		Report(`use filepath.Join for file paths`)
+
+	m.Match(`new([$cap]$typ)[:$len]`).
+		Report(`rewrite as 'make([]$typ, $len, $cap)'`)
 }

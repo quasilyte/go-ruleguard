@@ -95,3 +95,8 @@ func filtepathJoin(bad, good []bool) []byte {
 
 	return nil
 }
+
+func makeExpr() {
+	_ = new([14]int)[:10] // want `rewrite as 'make\(\[\]int, 10, 14\)'`
+	_ = make([]int, 10, 14)
+}
