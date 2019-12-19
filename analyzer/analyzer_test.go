@@ -12,6 +12,7 @@ func TestAnalyzer(t *testing.T) {
 	tests := []string{
 		"gocritic",
 		"filtertest",
+		"extra",
 	}
 
 	for _, test := range tests {
