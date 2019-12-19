@@ -39,4 +39,9 @@ func _(m fluent.Matcher) {
 
 	m.Match(`new([$cap]$typ)[:$len]`).
 		Report(`rewrite as 'make([]$typ, $len, $cap)'`)
+
+	// Type check of $ch is not strictly needed, since
+	// Go would not permit having non-chan type in the select case clause.
+	m.Match(`for { select { case $_ := <-$ch: $*_ } }`).
+		Report(`can use for range over $ch`)
 }

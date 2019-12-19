@@ -100,3 +100,13 @@ func makeExpr() {
 	_ = new([14]int)[:10] // want `rewrite as 'make\(\[\]int, 10, 14\)'`
 	_ = make([]int, 10, 14)
 }
+
+func chanRange() int {
+	ch := make(chan int)
+	for { // want `can use for range over ch`
+		select {
+		case c := <-ch:
+			return c
+		}
+	}
+}
