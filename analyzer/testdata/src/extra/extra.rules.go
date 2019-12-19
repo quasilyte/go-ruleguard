@@ -45,5 +45,7 @@ func _(m fluent.Matcher) {
 	m.Match(`for { select { case $_ := <-$ch: $*_ } }`).
 		Report(`can use for range over $ch`)
 
-	m.Match(`time.Duration($x) * time.Second`).Report(`rewrite as '$x * time.Second'`)
+	m.Match(`time.Duration($x) * time.Second`).
+		Where(m["x"].Const).
+		Report(`rewrite as '$x * time.Second'`)
 }
