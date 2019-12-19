@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"path"
 	"path/filepath"
+	"time"
 )
 
 func testFormatInt() {
@@ -109,4 +110,9 @@ func chanRange() int {
 			return c
 		}
 	}
+}
+
+func unconvertTime() {
+	sink = time.Duration(4) * time.Second // want `rewrite as '4 \* time\.Second'`
+	sink = 4 * time.Second
 }

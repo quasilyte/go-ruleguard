@@ -44,4 +44,6 @@ func _(m fluent.Matcher) {
 	// Go would not permit having non-chan type in the select case clause.
 	m.Match(`for { select { case $_ := <-$ch: $*_ } }`).
 		Report(`can use for range over $ch`)
+
+	m.Match(`time.Duration($x) * time.Second`).Report(`rewrite as '$x * time.Second'`)
 }
