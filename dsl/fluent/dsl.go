@@ -52,7 +52,12 @@ type Var struct {
 type ExprType struct{}
 
 // AssignableTo reports whether a type is assign-compatible with a given type.
+// See https://golang.org/pkg/go/types/#AssignableTo.
 func (ExprType) AssignableTo(typ string) bool { return boolResult }
+
+// ConvertibleTo reports whether a type is conversible to a given type.
+// See https://golang.org/pkg/go/types/#ConvertibleTo.
+func (ExprType) ConvertibleTo(typ string) bool { return boolResult }
 
 // Is reports whether a type is identical to a given type.
 func (ExprType) Is(typ string) bool { return boolResult }

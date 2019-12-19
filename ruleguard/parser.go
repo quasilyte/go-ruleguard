@@ -237,9 +237,29 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 			return wantIdentical == pat.MatchIdentical(x)
 		}
 		dst[operand.varName] = filter
+	case "Type.ConvertibleTo":
+		if len(args) != 1 {
+			return p.errorf(e, "Type.ConvertibleTo() expects exactly 1 argument, %d given", len(args))
+		}
+		typeString, ok := p.toStringValue(args[0])
+		if !ok {
+			return p.errorf(args[0], "expected a string literal argument")
+		}
+		y, err := typeFromString(typeString)
+		if err != nil {
+			return p.errorf(args[0], "parse type expr: %v", err)
+		}
+		if y == nil {
+			return p.errorf(args[0], "can't convert %s into a type constraint yet", typeString)
+		}
+		wantConvertible := !negate
+		filter.typePred = func(x types.Type) bool {
+			return wantConvertible == types.ConvertibleTo(x, y)
+		}
+		dst[operand.varName] = filter
 	case "Type.AssignableTo":
 		if len(args) != 1 {
-			return p.errorf(e, "Type.Implements() expects exactly 1 argument, %d given", len(args))
+			return p.errorf(e, "Type.AssignableTo() expects exactly 1 argument, %d given", len(args))
 		}
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
