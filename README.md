@@ -104,7 +104,7 @@ To learn more, check out the documentation and/or the source code.
 ## Documentation
 
 * Example rule files: [example1](analyzer/testdata/src/gocritic/gocritic.rules.go), [example2](https://github.com/quasilyte/go-ruleguard/blob/master/analyzer/testdata/src/extra/extra.rules.go)
-* [rules.go](docs/gorules.md) documentation
+* [gorules](docs/gorules.md) format documentation
 * [dsl/fluent package](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent) reference
 * [ruleguard package](https://godoc.org/github.com/quasilyte/go-ruleguard/ruleguard) reference
 
