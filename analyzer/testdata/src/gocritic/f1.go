@@ -78,9 +78,9 @@ func mapKey(x, y int) {
 	_ = map[int]int{}
 	_ = map[int]int{x + 1: 1, x + 2: 2}
 	_ = map[int]int{x: 1, x: 2} // want `suspicious duplicate key x`
-	_ = map[int]int{            // want `suspicious duplicate key x`
+	_ = map[int]int{
 		10: 1,
-		x:  2,
+		x:  2, // want `suspicious duplicate key x`
 		30: 3,
 		x:  4,
 		50: 5,

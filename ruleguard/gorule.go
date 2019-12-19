@@ -16,6 +16,7 @@ type goRule struct {
 	severity string
 	pat      *gogrep.Pattern
 	msg      string
+	location string
 	filters  map[string]submatchFilter
 }
 
