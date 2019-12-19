@@ -24,3 +24,11 @@ func testFormatBool() {
 		_ = fmt.Sprintf("%t", (i+i)&1 == 0) // want `use strconv.FormatBool\(\(i \+ i\)&1 == 0\)`
 	}
 }
+
+func testBlankAssign() {
+	x := foo()
+	_ = x // want `please remove the assignment to _`
+
+	// This is OK, could be for side-effects.
+	_ = foo()
+}

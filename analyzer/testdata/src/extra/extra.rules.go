@@ -18,4 +18,8 @@ func _(m fluent.Matcher) {
 
 	m.Match(`fmt.Sprintf("%t", $i&1 == 0)`).
 		Report(`use strconv.FormatBool($i&1 == 0)`)
+
+	m.Match(`_ = $v`).
+		Where(m["v"].Pure).
+		Report(`please remove the assignment to _`)
 }
