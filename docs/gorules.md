@@ -109,9 +109,9 @@ Now we're enabled the `-fix` support for that rule. If `ruleguard` is invoked wi
 code from the `Suggest` argument will replace the matched code chunk.
 
 You can have both `Report()` and `Suggest()`, so the user can also have a more detailed
-warning message when not using `-fix`, but if you omit `Report()`, it will be defaulted to
-a suggested code with a `"suggested: "` predix.
+warning message when not using `-fix`.
 
+When you use `Suggest()` and omit `Report()`, suggested string is used as a foundation of a report message.  
 The following 2 lines are identical:
 
 ```go
