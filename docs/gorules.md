@@ -87,3 +87,34 @@ Methods like [`ExprType.Is()`](https://godoc.org/github.com/quasilyte/go-rulegua
 * `map[$T]$T` matches a map where a key and value types are the same.
 
 You may recognize that it's the same pattern behavior as in AST patterns.
+
+## Suggestions (quickfix support)
+
+Some rules have a clear suggestion that can be used as a direct replacement of a matched code.
+
+Consider this rule:
+
+```go
+m.Match(`!!$x`).Report(`can simplify !!$x to $x`)
+```
+
+It contains a fix inside it's message. The user will have to fix it manually, by copy/pasting the
+suggestion from the report message. We can do better.
+
+```go
+m.Match(`!!$x`).Suggest(`$x`)
+```
+
+Now we're enabled the `-fix` support for that rule. If `ruleguard` is invoked with that argument,
+code from the `Suggest` argument will replace the matched code chunk.
+
+You can have both `Report()` and `Suggest()`, so the user can also have a more detailed
+warning message when not using `-fix`, but if you omit `Report()`, it will be defaulted to
+a suggested code with a `"suggested: "` predix.
+
+The following 2 lines are identical:
+
+```go
+m.Match(`!!$x`).Suggest(`$x`)
+m.Match(`!!$x`).Suggest(`$x`).Report(`suggested: $x`)
+```
