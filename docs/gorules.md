@@ -98,7 +98,7 @@ Consider this rule:
 m.Match(`!!$x`).Report(`can simplify !!$x to $x`)
 ```
 
-It contains a fix inside it's message. The user will have to fix it manually, by copy/pasting the
+It contains a fix inside its message. The user will have to fix it manually, by copy/pasting the
 suggestion from the report message. We can do better.
 
 ```go
