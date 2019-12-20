@@ -33,7 +33,9 @@ func _(m fluent.Matcher) {
 
 	m.Match(`context.TODO()`).Report(`might want to replace context.TODO()`)
 
-	m.Match(`$_, $_ := ioutil.ReadFile(path.Join($*_))`,
+	m.Match(`os.Open(path.Join($*_))`,
+		`ioutil.ReadFile(path.Join($*_))`,
+		`$p := path.Join($*_); $_, $_ := os.Open($p)`,
 		`$p := path.Join($*_); $_, $_ := ioutil.ReadFile($p)`).
 		Report(`use filepath.Join for file paths`)
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
 	"path/filepath"
 	"time"
@@ -80,6 +81,17 @@ func filtepathJoin(bad, good []bool) []byte {
 	if bad[1] {
 		p := path.Join("a", "b") // want `use filepath\.Join for file paths`
 		data, _ := ioutil.ReadFile(p)
+		return data
+	}
+	if bad[2] {
+		f, _ := os.Open(path.Join("123")) // want `use filepath\.Join for file paths`
+		data, _ := ioutil.ReadAll(f)
+		return data
+	}
+	if bad[3] {
+		p := path.Join("x") // want `use filepath\.Join for file paths`
+		f, _ := os.Open(p)
+		data, _ := ioutil.ReadAll(f)
 		return data
 	}
 
