@@ -19,6 +19,7 @@ const (
 	opSlice
 	opArray
 	opMap
+	opChan
 )
 
 type Pattern struct {
@@ -139,6 +140,28 @@ func parseExpr(e ast.Expr) *pattern {
 			subs: []*pattern{keyType, valType},
 		}
 
+	case *ast.ChanType:
+		valType := parseExpr(e.Value)
+		if valType == nil {
+			return nil
+		}
+		var dir types.ChanDir
+		switch {
+		case e.Dir&ast.SEND != 0 && e.Dir&ast.RECV != 0:
+			dir = types.SendRecv
+		case e.Dir&ast.SEND != 0:
+			dir = types.SendOnly
+		case e.Dir&ast.RECV != 0:
+			dir = types.RecvOnly
+		default:
+			return nil
+		}
+		return &pattern{
+			op:    opChan,
+			value: dir,
+			subs:  []*pattern{valType},
+		}
+
 	case *ast.ParenExpr:
 		return parseExpr(e.X)
 
@@ -230,6 +253,15 @@ func (p *Pattern) matchIdentical(sub *pattern, typ types.Type) bool {
 		}
 		return p.matchIdentical(sub.subs[0], typ.Key()) &&
 			p.matchIdentical(sub.subs[1], typ.Elem())
+
+	case opChan:
+		typ, ok := typ.(*types.Chan)
+		if !ok {
+			return false
+		}
+		dir := sub.value.(types.ChanDir)
+		return dir == typ.Dir() && p.matchIdentical(sub.subs[0], typ.Elem())
+
 	default:
 		return false
 	}

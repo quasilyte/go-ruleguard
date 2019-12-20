@@ -36,6 +36,12 @@ func TestIdentical(t *testing.T) {
 		{`[$_]$_`, types.NewArray(typeInt, 20)},
 		{`[$len][$len]int`, types.NewArray(types.NewArray(typeInt, 15), 15)},
 		{`[$_][$_]int`, types.NewArray(types.NewArray(typeInt, 15), 10)},
+
+		{`chan int`, types.NewChan(types.SendRecv, typeInt)},
+		{`chan <- int`, types.NewChan(types.SendOnly, typeInt)},
+		{`<- chan int`, types.NewChan(types.RecvOnly, typeInt)},
+		{`chan $t`, types.NewChan(types.SendRecv, typeInt)},
+		{`chan $t`, types.NewChan(types.SendRecv, typeString)},
 	}
 
 	for _, test := range tests {
@@ -71,6 +77,11 @@ func TestIdenticalNegative(t *testing.T) {
 		{`map[$t]$t`, types.NewMap(typeString, typeInt)},
 		{`map[$t]$t`, types.NewMap(typeInt, typeString)},
 		{`[$len][$len]int`, types.NewArray(types.NewArray(typeInt, 15), 10)},
+
+		{`chan int`, types.NewChan(types.SendRecv, typeString)},
+		{`chan int`, types.NewChan(types.RecvOnly, typeInt)},
+		{`chan <- int`, types.NewChan(types.SendRecv, typeInt)},
+		{`<- chan int`, types.NewChan(types.SendOnly, typeInt)},
 	}
 
 	for _, test := range tests {
