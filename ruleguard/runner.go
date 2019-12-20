@@ -86,7 +86,15 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 	if rule.location != "" {
 		node = m.Values[rule.location]
 	}
-	rr.ctx.Report(node, message)
+	var suggestion *Suggestion
+	if rule.suggestion != "" {
+		suggestion = &Suggestion{
+			Replacement: []byte(rr.renderMessage(rule.suggestion, m.Node, m.Values)),
+			From:        node.Pos(),
+			To:          node.End(),
+		}
+	}
+	rr.ctx.Report(node, message, suggestion)
 	return true
 }
 

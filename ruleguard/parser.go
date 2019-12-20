@@ -92,10 +92,11 @@ func (p *rulesParser) parseRule(matcher string, stmt ast.Stmt) error {
 	}
 
 	var (
-		matchArgs  *[]ast.Expr
-		whereArgs  *[]ast.Expr
-		reportArgs *[]ast.Expr
-		atArgs     *[]ast.Expr
+		matchArgs   *[]ast.Expr
+		whereArgs   *[]ast.Expr
+		suggestArgs *[]ast.Expr
+		reportArgs  *[]ast.Expr
+		atArgs      *[]ast.Expr
 	)
 	for {
 		chain, ok := call.Fun.(*ast.SelectorExpr)
@@ -107,6 +108,8 @@ func (p *rulesParser) parseRule(matcher string, stmt ast.Stmt) error {
 			matchArgs = &call.Args
 		case "Where":
 			whereArgs = &call.Args
+		case "Suggest":
+			suggestArgs = &call.Args
 		case "Report":
 			reportArgs = &call.Args
 		case "At":
@@ -143,14 +146,26 @@ func (p *rulesParser) parseRule(matcher string, stmt ast.Stmt) error {
 		}
 	}
 
+	if suggestArgs != nil {
+		s, ok := p.toStringValue((*suggestArgs)[0])
+		if !ok {
+			return p.errorf((*suggestArgs)[0], "expected string literal argument")
+		}
+		proto.suggestion = s
+	}
+
 	if reportArgs == nil {
-		return p.errorf(call, "missing Report() call")
+		if suggestArgs == nil {
+			return p.errorf(call, "missing Report() or Suggest() call")
+		}
+		proto.msg = "suggestion: " + proto.suggestion
+	} else {
+		message, ok := p.toStringValue((*reportArgs)[0])
+		if !ok {
+			return p.errorf((*reportArgs)[0], "expected string literal argument")
+		}
+		proto.msg = message
 	}
-	message, ok := p.toStringValue((*reportArgs)[0])
-	if !ok {
-		return p.errorf((*reportArgs)[0], "expected string literal argument")
-	}
-	proto.msg = message
 
 	if atArgs != nil {
 		index, ok := (*atArgs)[0].(*ast.IndexExpr)

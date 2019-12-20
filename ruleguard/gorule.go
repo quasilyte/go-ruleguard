@@ -13,11 +13,12 @@ type scopedGoRuleSet struct {
 }
 
 type goRule struct {
-	severity string
-	pat      *gogrep.Pattern
-	msg      string
-	location string
-	filters  map[string]submatchFilter
+	severity   string
+	pat        *gogrep.Pattern
+	msg        string
+	location   string
+	suggestion string
+	filters    map[string]submatchFilter
 }
 
 type submatchFilter struct {

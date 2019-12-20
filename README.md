@@ -37,6 +37,8 @@ Usage: ruleguard [-flag] [package]
 Flags:
   -rules string
     	path to a rules.go file
+  -fix
+    	apply all suggested fixes
   -c int
     	display offending line with this many lines of context (default -1)
   -json
@@ -58,8 +60,8 @@ func _(m fluent.Matcher) {
 		Where(m["x"].Pure).
 		Report(`suspicious identical LHS and RHS`)
 
-	m.Match(`!($x != $y)`).Report(`can simplify !($x!=$y) to $x==$y`)
-	m.Match(`!($x == $y)`).Report(`can simplify !($x==$y) to $x!=$y`)
+	m.Match(`!($x != $y)`).Suggest(`$x == $y`)
+	m.Match(`!($x == $y)`).Suggest(`$x != $y`)
 }
 ```
 
@@ -81,11 +83,13 @@ func main() {
 Run `ruleguard` on that target file:
 
 ```
-$ ruleguard -rules example.rules.go example.go
-example.go:5:10: hint: can simplify !(v1!=v2) to v1==v2
-example.go:6:10: hint: can simplify !(v1==v2) to v1!=v2
+$ ruleguard -rules example.rules.go -fix example.go
+example.go:5:10: hint: suggested: v1 == v2
+example.go:6:10: hint: suggested: v1 != v2
 example.go:7:5: error: suspicious identical LHS and RHS
 ```
+
+Since we ran `ruleguard` with `-fix` argument, both **suggested** changes are applied to `example.go`.
 
 ## How does it work?
 

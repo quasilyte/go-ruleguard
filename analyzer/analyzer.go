@@ -44,10 +44,24 @@ func runAnalyzer(pass *analysis.Pass) (interface{}, error) {
 	ctx := &ruleguard.Context{
 		Types: pass.TypesInfo,
 		Fset:  pass.Fset,
-		Report: func(n ast.Node, msg string) {
+		Report: func(n ast.Node, msg string, s *ruleguard.Suggestion) {
 			diag := analysis.Diagnostic{
 				Pos:     n.Pos(),
 				Message: msg,
+			}
+			if s != nil {
+				diag.SuggestedFixes = []analysis.SuggestedFix{
+					{
+						Message: "suggested replacement",
+						TextEdits: []analysis.TextEdit{
+							{
+								Pos:     s.From,
+								End:     s.To,
+								NewText: s.Replacement,
+							},
+						},
+					},
+				}
 			}
 			pass.Report(diag)
 		},

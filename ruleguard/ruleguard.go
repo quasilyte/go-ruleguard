@@ -10,7 +10,13 @@ import (
 type Context struct {
 	Types  *types.Info
 	Fset   *token.FileSet
-	Report func(n ast.Node, msg string)
+	Report func(n ast.Node, msg string, s *Suggestion)
+}
+
+type Suggestion struct {
+	From        token.Pos
+	To          token.Pos
+	Replacement []byte
 }
 
 func ParseRules(filename string, fset *token.FileSet, r io.Reader) (*GoRuleSet, error) {
