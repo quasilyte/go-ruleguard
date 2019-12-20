@@ -58,7 +58,7 @@ func _(m fluent.Matcher) {
 		Where(m["x"].Pure).
 		Report(`suspicious identical LHS and RHS`)
 
-	m.Match(`!($x != $y)`).Report(`can simplify !($x==$y) to $x!=$y`)
+	m.Match(`!($x != $y)`).Report(`can simplify !($x!=$y) to $x==$y`)
 	m.Match(`!($x == $y)`).Report(`can simplify !($x==$y) to $x!=$y`)
 }
 ```
