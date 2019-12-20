@@ -16,6 +16,7 @@ You write the rules, `ruleguard` checks whether they are satisfied.
 
 * Custom linting rules without re-compilation and Go plugins.
 * Diagnostics are written in a declarative way.
+* [Quickfix](docs/gorules.md#suggestions-quickfix-support) actions support.
 * Powerful match filtering features, like expression [type pattern matching](docs/gorules.md#type-pattern-matching).
 
 ## Quick start
