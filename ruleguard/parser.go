@@ -130,7 +130,7 @@ func (p *rulesParser) parseRule(matcher string, stmt ast.Stmt) error {
 	var alternatives []string
 
 	if matchArgs == nil {
-		return p.errorf(call, "missing Match() call")
+		return p.errorf(stmtExpr.X, "missing Match() call")
 	}
 	for _, arg := range *matchArgs {
 		alt, ok := p.toStringValue(arg)
@@ -156,7 +156,7 @@ func (p *rulesParser) parseRule(matcher string, stmt ast.Stmt) error {
 
 	if reportArgs == nil {
 		if suggestArgs == nil {
-			return p.errorf(call, "missing Report() or Suggest() call")
+			return p.errorf(stmtExpr.X, "missing Report() or Suggest() call")
 		}
 		proto.msg = "suggestion: " + proto.suggestion
 	} else {
@@ -248,8 +248,8 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 			return p.errorf(args[0], "parse type expr: %v", err)
 		}
 		wantIdentical := !negate
-		filter.typePred = func(x types.Type) bool {
-			return wantIdentical == pat.MatchIdentical(x)
+		filter.typePred = func(ctx typeMatchingContext) bool {
+			return wantIdentical == pat.MatchIdentical(ctx.env, ctx.typ)
 		}
 		dst[operand.varName] = filter
 	case "Type.ConvertibleTo":
@@ -268,8 +268,8 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 			return p.errorf(args[0], "can't convert %s into a type constraint yet", typeString)
 		}
 		wantConvertible := !negate
-		filter.typePred = func(x types.Type) bool {
-			return wantConvertible == types.ConvertibleTo(x, y)
+		filter.typePred = func(ctx typeMatchingContext) bool {
+			return wantConvertible == types.ConvertibleTo(ctx.typ, y)
 		}
 		dst[operand.varName] = filter
 	case "Type.AssignableTo":
@@ -288,8 +288,8 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 			return p.errorf(args[0], "can't convert %s into a type constraint yet", typeString)
 		}
 		wantAssignable := !negate
-		filter.typePred = func(x types.Type) bool {
-			return wantAssignable == types.AssignableTo(x, y)
+		filter.typePred = func(ctx typeMatchingContext) bool {
+			return wantAssignable == types.AssignableTo(ctx.typ, y)
 		}
 		dst[operand.varName] = filter
 	}

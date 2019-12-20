@@ -13,20 +13,28 @@ import (
 type patternOp int
 
 const (
-	opType patternOp = iota
+	opBuiltinType patternOp = iota
 	opPointer
 	opVar
 	opSlice
 	opArray
 	opMap
 	opChan
+	opLocalNamed
+	opNamed
 )
+
+type Env struct {
+	CurrentPkg string
+	Imports    map[string]string
+}
 
 type Pattern struct {
 	typeMatches  map[string]types.Type
 	int64Matches map[string]int64
 
 	root *pattern
+	env  *Env
 }
 
 type pattern struct {
@@ -53,38 +61,51 @@ func Parse(s string) (*Pattern, error) {
 	return p, nil
 }
 
-var basicTypeByName = map[string]types.Type{
-	"bool":       types.Typ[types.Bool],
-	"int":        types.Typ[types.Int],
-	"int8":       types.Typ[types.Int8],
-	"int16":      types.Typ[types.Int16],
-	"int32":      types.Typ[types.Int32],
-	"int64":      types.Typ[types.Int64],
-	"uint":       types.Typ[types.Uint],
-	"uint8":      types.Typ[types.Uint8],
-	"uint16":     types.Typ[types.Uint16],
-	"uint32":     types.Typ[types.Uint32],
-	"uint64":     types.Typ[types.Uint64],
-	"uintptr":    types.Typ[types.Uintptr],
-	"float32":    types.Typ[types.Float32],
-	"float64":    types.Typ[types.Float64],
-	"complex64":  types.Typ[types.Complex64],
-	"complex128": types.Typ[types.Complex128],
-	"string":     types.Typ[types.String],
-	"error":      types.Universe.Lookup("error").Type(),
-}
+var (
+	builtinTypeByName = map[string]types.Type{
+		"bool":       types.Typ[types.Bool],
+		"int":        types.Typ[types.Int],
+		"int8":       types.Typ[types.Int8],
+		"int16":      types.Typ[types.Int16],
+		"int32":      types.Typ[types.Int32],
+		"int64":      types.Typ[types.Int64],
+		"uint":       types.Typ[types.Uint],
+		"uint8":      types.Typ[types.Uint8],
+		"uint16":     types.Typ[types.Uint16],
+		"uint32":     types.Typ[types.Uint32],
+		"uint64":     types.Typ[types.Uint64],
+		"uintptr":    types.Typ[types.Uintptr],
+		"float32":    types.Typ[types.Float32],
+		"float64":    types.Typ[types.Float64],
+		"complex64":  types.Typ[types.Complex64],
+		"complex128": types.Typ[types.Complex128],
+		"string":     types.Typ[types.String],
+
+		"error": types.Universe.Lookup("error").Type(),
+	}
+
+	efaceType = types.NewInterfaceType(nil, nil)
+)
 
 func parseExpr(e ast.Expr) *pattern {
 	switch e := e.(type) {
 	case *ast.Ident:
-		basic, ok := basicTypeByName[e.Name]
+		basic, ok := builtinTypeByName[e.Name]
 		if ok {
-			return &pattern{op: opType, value: basic}
+			return &pattern{op: opBuiltinType, value: basic}
 		}
 		if strings.HasPrefix(e.Name, "__") {
 			name := strings.TrimPrefix(e.Name, "__")
 			return &pattern{op: opVar, value: name}
 		}
+		return &pattern{op: opLocalNamed, value: e.Name}
+
+	case *ast.SelectorExpr:
+		pkg, ok := e.X.(*ast.Ident)
+		if !ok {
+			return nil
+		}
+		return &pattern{op: opNamed, value: [2]string{pkg.Name, e.Sel.Name}}
 
 	case *ast.StarExpr:
 		elem := parseExpr(e.X)
@@ -167,19 +188,20 @@ func parseExpr(e ast.Expr) *pattern {
 
 	case *ast.InterfaceType:
 		if len(e.Methods.List) == 0 {
-			return &pattern{op: opType, value: types.NewInterfaceType(nil, nil)}
+			return &pattern{op: opBuiltinType, value: efaceType}
 		}
 	}
 
 	return nil
 }
 
-func (p *Pattern) MatchIdentical(typ types.Type) bool {
-	p.reset()
+func (p *Pattern) MatchIdentical(env *Env, typ types.Type) bool {
+	p.reset(env)
 	return p.matchIdentical(p.root, typ)
 }
 
-func (p *Pattern) reset() {
+func (p *Pattern) reset(env *Env) {
+	p.env = env
 	if len(p.int64Matches) != 0 {
 		p.int64Matches = map[string]int64{}
 	}
@@ -205,7 +227,7 @@ func (p *Pattern) matchIdentical(sub *pattern, typ types.Type) bool {
 		}
 		return types.Identical(typ, y)
 
-	case opType:
+	case opBuiltinType:
 		return types.Identical(typ, sub.value.(types.Type))
 
 	case opPointer:
@@ -261,6 +283,29 @@ func (p *Pattern) matchIdentical(sub *pattern, typ types.Type) bool {
 		}
 		dir := sub.value.(types.ChanDir)
 		return dir == typ.Dir() && p.matchIdentical(sub.subs[0], typ.Elem())
+
+	case opLocalNamed:
+		typ, ok := typ.(*types.Named)
+		if !ok {
+			return false
+		}
+		obj := typ.Obj()
+		typeName := sub.value.(string)
+		return obj.Pkg().Path() == p.env.CurrentPkg && typeName == obj.Name()
+
+	case opNamed:
+		typ, ok := typ.(*types.Named)
+		if !ok {
+			return false
+		}
+		pkgName := sub.value.([2]string)[0]
+		typeName := sub.value.([2]string)[1]
+		pkgPath := p.env.Imports[pkgName]
+		if pkgPath == "" {
+			return false
+		}
+		obj := typ.Obj()
+		return obj.Pkg().Path() == pkgPath && typeName == obj.Name()
 
 	default:
 		return false

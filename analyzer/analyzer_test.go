@@ -14,6 +14,7 @@ func TestAnalyzer(t *testing.T) {
 		"filtertest",
 		"extra",
 		"suggest",
+		"namedtypes",
 	}
 
 	for _, test := range tests {

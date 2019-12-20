@@ -11,6 +11,7 @@ type Context struct {
 	Types  *types.Info
 	Fset   *token.FileSet
 	Report func(n ast.Node, msg string, s *Suggestion)
+	Pkg    *types.Package
 }
 
 type Suggestion struct {
@@ -25,8 +26,7 @@ func ParseRules(filename string, fset *token.FileSet, r io.Reader) (*GoRuleSet, 
 }
 
 func RunRules(ctx *Context, f *ast.File, rules *GoRuleSet) {
-	rr := rulesRunner{ctx: ctx, rules: rules}
-	rr.run(f)
+	newRulesRunner(ctx, rules).run(f)
 }
 
 type GoRuleSet struct {

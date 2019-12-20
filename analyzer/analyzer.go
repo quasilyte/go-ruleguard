@@ -42,6 +42,7 @@ func runAnalyzer(pass *analysis.Pass) (interface{}, error) {
 	}
 
 	ctx := &ruleguard.Context{
+		Pkg:   pass.Pkg,
 		Types: pass.TypesInfo,
 		Fset:  pass.Fset,
 		Report: func(n ast.Node, msg string, s *ruleguard.Suggestion) {

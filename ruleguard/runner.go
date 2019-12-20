@@ -3,18 +3,51 @@ package ruleguard
 import (
 	"go/ast"
 	"go/printer"
+	"path"
 	"strings"
 
 	"github.com/quasilyte/go-ruleguard/internal/mvdan.cc/gogrep"
+	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
 )
 
 type rulesRunner struct {
 	ctx   *Context
 	rules *GoRuleSet
+	env   *typematch.Env
+}
+
+func newRulesRunner(ctx *Context, rules *GoRuleSet) *rulesRunner {
+	env := &typematch.Env{
+		CurrentPkg: ctx.Pkg.Path(),
+		Imports:    map[string]string{},
+	}
+	return &rulesRunner{
+		ctx:   ctx,
+		rules: rules,
+		env:   env,
+	}
 }
 
 func (rr *rulesRunner) run(f *ast.File) {
 	// TODO(quasilyte): run local rules as well.
+
+	imports := rr.env.Imports
+	for key := range imports {
+		delete(imports, key)
+	}
+	for _, imp := range f.Imports {
+		pkgPath := unquoteNode(imp.Path)
+		var pkgName string
+		switch {
+		case imp.Name == nil:
+			pkgName = path.Base(pkgPath)
+		case imp.Name.Name == ".":
+			continue // TODO: handle dot imports?
+		default:
+			pkgName = imp.Name.Name
+		}
+		imports[pkgName] = pkgPath
+	}
 
 	for _, rule := range rr.rules.universal.uncategorized {
 		rule.pat.Match(f, func(m gogrep.MatchData) {
@@ -50,8 +83,11 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 			continue
 		}
 		if filter.typePred != nil {
-			typ := rr.ctx.Types.TypeOf(expr)
-			if !filter.typePred(typ) {
+			ctx := typeMatchingContext{
+				typ: rr.ctx.Types.TypeOf(expr),
+				env: rr.env,
+			}
+			if !filter.typePred(ctx) {
 				return false
 			}
 		}

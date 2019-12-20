@@ -2,13 +2,33 @@ package typematch
 
 import (
 	"go/types"
+	"path"
 	"testing"
 )
 
 var (
 	typeInt    = types.Typ[types.Int]
 	typeString = types.Typ[types.String]
+
+	testEnv = &Env{
+		CurrentPkg: "test/pkg",
+		Imports: map[string]string{
+			"io":     "io",
+			"syntax": "regexp/syntax",
+		},
+	}
 )
+
+func namedType2(pkgPath, typeName string) *types.Named {
+	return namedType(pkgPath, path.Base(pkgPath), typeName)
+}
+
+func namedType(pkgPath, pkgName, typeName string) *types.Named {
+	dummy := types.NewStruct(nil, nil)
+	pkg := types.NewPackage(pkgPath, pkgName)
+	typename := types.NewTypeName(0, pkg, typeName, dummy)
+	return types.NewNamed(typename, dummy, nil)
+}
 
 func TestIdentical(t *testing.T) {
 	tests := []struct {
@@ -42,6 +62,11 @@ func TestIdentical(t *testing.T) {
 		{`<- chan int`, types.NewChan(types.RecvOnly, typeInt)},
 		{`chan $t`, types.NewChan(types.SendRecv, typeInt)},
 		{`chan $t`, types.NewChan(types.SendRecv, typeString)},
+
+		{`Foo`, namedType2("test/pkg", "Foo")},
+		{`io.Reader`, namedType2("io", "Reader")},
+		{`syntax.Regexp`, namedType2("regexp/syntax", "Regexp")},
+		{`*syntax.Regexp`, types.NewPointer(namedType2("regexp/syntax", "Regexp"))},
 	}
 
 	for _, test := range tests {
@@ -50,7 +75,7 @@ func TestIdentical(t *testing.T) {
 			t.Errorf("parse('%s'): %v", test.expr, err)
 			continue
 		}
-		if !pat.MatchIdentical(test.typ) {
+		if !pat.MatchIdentical(testEnv, test.typ) {
 			t.Errorf("identical('%s', %s): expected a match",
 				test.expr, test.typ.String())
 		}
@@ -82,6 +107,13 @@ func TestIdenticalNegative(t *testing.T) {
 		{`chan int`, types.NewChan(types.RecvOnly, typeInt)},
 		{`chan <- int`, types.NewChan(types.SendRecv, typeInt)},
 		{`<- chan int`, types.NewChan(types.SendOnly, typeInt)},
+
+		{`Foo`, namedType2("", "Foo")},
+		{`Foo`, namedType2("otherpkg", "Foo")},
+		{`io.Reader`, namedType2("foo/io", "Reader")},
+		{`Regexp`, namedType2("regexp/syntax", "Regexp")},
+		{`syntax.Regexp`, namedType2("regexp2/syntax", "Regexp")},
+		{`syntax.Regexp`, namedType2("regexp2/syntax", "Blah")},
 	}
 
 	for _, test := range tests {
@@ -90,7 +122,7 @@ func TestIdenticalNegative(t *testing.T) {
 			t.Errorf("parse('%s'): %v", test.expr, err)
 			continue
 		}
-		if pat.MatchIdentical(test.typ) {
+		if pat.MatchIdentical(testEnv, test.typ) {
 			t.Errorf("identical('%s', %s): unexpected match",
 				test.expr, test.typ.String())
 		}

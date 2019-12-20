@@ -4,6 +4,7 @@ import (
 	"go/types"
 
 	"github.com/quasilyte/go-ruleguard/internal/mvdan.cc/gogrep"
+	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
 )
 
 type scopedGoRuleSet struct {
@@ -22,7 +23,12 @@ type goRule struct {
 }
 
 type submatchFilter struct {
-	typePred func(types.Type) bool
+	typePred func(typeMatchingContext) bool
 	pure     bool3
 	constant bool3
+}
+
+type typeMatchingContext struct {
+	typ types.Type
+	env *typematch.Env
 }
