@@ -5,6 +5,17 @@ package fluent
 // It also represents a map of all rule-local variables.
 type Matcher map[string]Var
 
+// Import loads given package path into a rule group imports table.
+//
+// That table is used during the rules compilation.
+//
+// The table has the following effect on the rules:
+//	* For type expressions, it's used to resolve the
+//	  full package paths of qualified types, like `foo.Bar`.
+//	  If Import(`a/b/foo`) is called, `foo.Bar` will match
+//	  `a/b/foo.Bar` type during the pattern execution.
+func (m Matcher) Import(pkgPath string) {}
+
 // Match specifies a set of patterns that match a rule being defined.
 // Pattern matching succeeds if at least 1 pattern matches.
 //

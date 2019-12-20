@@ -10,13 +10,7 @@ var (
 	typeInt    = types.Typ[types.Int]
 	typeString = types.Typ[types.String]
 
-	testEnv = &Env{
-		CurrentPkg: "test/pkg",
-		Imports: map[string]string{
-			"io":     "io",
-			"syntax": "regexp/syntax",
-		},
-	}
+	testContext = &Context{}
 )
 
 func namedType2(pkgPath, typeName string) *types.Named {
@@ -63,19 +57,18 @@ func TestIdentical(t *testing.T) {
 		{`chan $t`, types.NewChan(types.SendRecv, typeInt)},
 		{`chan $t`, types.NewChan(types.SendRecv, typeString)},
 
-		{`Foo`, namedType2("test/pkg", "Foo")},
 		{`io.Reader`, namedType2("io", "Reader")},
 		{`syntax.Regexp`, namedType2("regexp/syntax", "Regexp")},
 		{`*syntax.Regexp`, types.NewPointer(namedType2("regexp/syntax", "Regexp"))},
 	}
 
 	for _, test := range tests {
-		pat, err := Parse(test.expr)
+		pat, err := Parse(testContext, test.expr)
 		if err != nil {
 			t.Errorf("parse('%s'): %v", test.expr, err)
 			continue
 		}
-		if !pat.MatchIdentical(testEnv, test.typ) {
+		if !pat.MatchIdentical(test.typ) {
 			t.Errorf("identical('%s', %s): expected a match",
 				test.expr, test.typ.String())
 		}
@@ -108,21 +101,18 @@ func TestIdenticalNegative(t *testing.T) {
 		{`chan <- int`, types.NewChan(types.SendRecv, typeInt)},
 		{`<- chan int`, types.NewChan(types.SendOnly, typeInt)},
 
-		{`Foo`, namedType2("", "Foo")},
-		{`Foo`, namedType2("otherpkg", "Foo")},
 		{`io.Reader`, namedType2("foo/io", "Reader")},
-		{`Regexp`, namedType2("regexp/syntax", "Regexp")},
 		{`syntax.Regexp`, namedType2("regexp2/syntax", "Regexp")},
 		{`syntax.Regexp`, namedType2("regexp2/syntax", "Blah")},
 	}
 
 	for _, test := range tests {
-		pat, err := Parse(test.expr)
+		pat, err := Parse(testContext, test.expr)
 		if err != nil {
 			t.Errorf("parse('%s'): %v", test.expr, err)
 			continue
 		}
-		if pat.MatchIdentical(testEnv, test.typ) {
+		if pat.MatchIdentical(test.typ) {
 			t.Errorf("identical('%s', %s): unexpected match",
 				test.expr, test.typ.String())
 		}

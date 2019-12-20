@@ -8,6 +8,7 @@ import (
 	"go/token"
 	"go/types"
 	"io"
+	"path"
 
 	"github.com/quasilyte/go-ruleguard/internal/mvdan.cc/gogrep"
 	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
@@ -16,6 +17,8 @@ import (
 type rulesParser struct {
 	fset *token.FileSet
 	res  *GoRuleSet
+
+	groupImports map[string]string
 }
 
 func newRulesParser() *rulesParser {
@@ -71,26 +74,53 @@ func (p *rulesParser) parseRuleGroup(f *ast.FuncDecl) error {
 	}
 	// TODO(quasilyte): do an actual matcher param type check?
 	matcher := params[0].Names[0].Name
+	p.groupImports = map[string]string{}
 
 	for _, stmt := range f.Body.List {
-		if err := p.parseRule(matcher, stmt); err != nil {
+		stmtExpr, ok := stmt.(*ast.ExprStmt)
+		if !ok {
+			return p.errorf(stmt, "expected a %s method call, found %s", matcher, sprintNode(p.fset, stmt))
+		}
+		call, ok := stmtExpr.X.(*ast.CallExpr)
+		if !ok {
+			return p.errorf(stmt, "expected a %s method call, found %s", matcher, sprintNode(p.fset, stmt))
+		}
+		if err := p.parseCall(matcher, call); err != nil {
 			return err
 		}
+
 	}
 
 	return nil
 }
 
-func (p *rulesParser) parseRule(matcher string, stmt ast.Stmt) error {
-	stmtExpr, ok := stmt.(*ast.ExprStmt)
-	if !ok {
-		return p.errorf(stmt, "expected a %s.Match method call, found %s", matcher, sprintNode(p.fset, stmt))
-	}
-	call, ok := stmtExpr.X.(*ast.CallExpr)
-	if !ok {
-		return p.errorf(stmt, "expected a %s.Match method call, found %s", matcher, sprintNode(p.fset, stmt))
+func (p *rulesParser) parseCall(matcher string, call *ast.CallExpr) error {
+	f := call.Fun.(*ast.SelectorExpr)
+	x, ok := f.X.(*ast.Ident)
+	if ok && x.Name == matcher {
+		return p.parseStmt(f.Sel, call.Args)
 	}
 
+	return p.parseRule(matcher, call)
+}
+
+func (p *rulesParser) parseStmt(fn *ast.Ident, args []ast.Expr) error {
+	switch fn.Name {
+	case "Import":
+		pkgPath, ok := p.toStringValue(args[0])
+		if !ok {
+			return p.errorf(args[0], "expected a string literal argument")
+		}
+		pkgName := path.Base(pkgPath)
+		p.groupImports[pkgName] = pkgPath
+		return nil
+	default:
+		return p.errorf(fn, "unexpected %s method", fn.Name)
+	}
+}
+
+func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
+	origCall := call
 	var (
 		matchArgs   *[]ast.Expr
 		whereArgs   *[]ast.Expr
@@ -114,7 +144,8 @@ func (p *rulesParser) parseRule(matcher string, stmt ast.Stmt) error {
 			reportArgs = &call.Args
 		case "At":
 			atArgs = &call.Args
-
+		default:
+			return p.errorf(chain.Sel, "unexpected %s method", chain.Sel.Name)
 		}
 		call, ok = chain.X.(*ast.CallExpr)
 		if !ok {
@@ -130,7 +161,7 @@ func (p *rulesParser) parseRule(matcher string, stmt ast.Stmt) error {
 	var alternatives []string
 
 	if matchArgs == nil {
-		return p.errorf(stmtExpr.X, "missing Match() call")
+		return p.errorf(origCall, "missing Match() call")
 	}
 	for _, arg := range *matchArgs {
 		alt, ok := p.toStringValue(arg)
@@ -156,7 +187,7 @@ func (p *rulesParser) parseRule(matcher string, stmt ast.Stmt) error {
 
 	if reportArgs == nil {
 		if suggestArgs == nil {
-			return p.errorf(stmtExpr.X, "missing Report() or Suggest() call")
+			return p.errorf(origCall, "missing Report() or Suggest() call")
 		}
 		proto.msg = "suggestion: " + proto.suggestion
 	} else {
@@ -243,13 +274,14 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 		if !ok {
 			return p.errorf(args[0], "expected a string literal argument")
 		}
-		pat, err := typematch.Parse(typeString)
+		ctx := typematch.Context{Imports: p.groupImports}
+		pat, err := typematch.Parse(&ctx, typeString)
 		if err != nil {
 			return p.errorf(args[0], "parse type expr: %v", err)
 		}
 		wantIdentical := !negate
-		filter.typePred = func(ctx typeMatchingContext) bool {
-			return wantIdentical == pat.MatchIdentical(ctx.env, ctx.typ)
+		filter.typePred = func(x types.Type) bool {
+			return wantIdentical == pat.MatchIdentical(x)
 		}
 		dst[operand.varName] = filter
 	case "Type.ConvertibleTo":
@@ -268,8 +300,8 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 			return p.errorf(args[0], "can't convert %s into a type constraint yet", typeString)
 		}
 		wantConvertible := !negate
-		filter.typePred = func(ctx typeMatchingContext) bool {
-			return wantConvertible == types.ConvertibleTo(ctx.typ, y)
+		filter.typePred = func(x types.Type) bool {
+			return wantConvertible == types.ConvertibleTo(x, y)
 		}
 		dst[operand.varName] = filter
 	case "Type.AssignableTo":
@@ -288,8 +320,8 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 			return p.errorf(args[0], "can't convert %s into a type constraint yet", typeString)
 		}
 		wantAssignable := !negate
-		filter.typePred = func(ctx typeMatchingContext) bool {
-			return wantAssignable == types.AssignableTo(ctx.typ, y)
+		filter.typePred = func(x types.Type) bool {
+			return wantAssignable == types.AssignableTo(x, y)
 		}
 		dst[operand.varName] = filter
 	}
