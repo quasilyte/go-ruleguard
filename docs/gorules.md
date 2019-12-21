@@ -84,6 +84,7 @@ A match variable describes a named submatch of a pattern.
 Here are some examples of supported filters:
 * Submatch expression type is identical to `T`
 * Submatch expression type is assignable to `T`
+* Submatch expression type implements interface `I`
 * Submatch expression is side-effect free
 * Submatch expression is a const expression
 
