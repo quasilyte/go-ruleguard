@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"io"
 	"os"
+	"strings"
 
 	"github.com/quasilyte/go-ruleguard/ruleguard"
 	"golang.org/x/tools/go/analysis"
@@ -17,28 +19,23 @@ var Analyzer = &analysis.Analyzer{
 	Run:  runAnalyzer,
 }
 
-var flagRules string
+var (
+	flagRules string
+	flagE     string
+)
 
 func init() {
 	Analyzer.Flags.StringVar(&flagRules, "rules", "", "path to a gorules file")
+	Analyzer.Flags.StringVar(&flagE, "e", "", "execute a single rule from a given string")
 }
 
 func runAnalyzer(pass *analysis.Pass) (interface{}, error) {
 	// TODO(quasilyte): parse config under sync.Once and
 	// create rule sets from it.
 
-	fset := token.NewFileSet()
-	if flagRules == "" {
-		return nil, fmt.Errorf("-rules values is empty")
-	}
-	f, err := os.Open(flagRules)
+	rset, err := readRules()
 	if err != nil {
-		return nil, fmt.Errorf("open rules file: %v", err)
-	}
-	defer f.Close()
-	rset, err := ruleguard.ParseRules(flagRules, fset, f)
-	if err != nil {
-		return nil, fmt.Errorf("parse rules file: %v", err)
+		return nil, fmt.Errorf("load rules: %v", err)
 	}
 
 	ctx := &ruleguard.Context{
@@ -67,9 +64,41 @@ func runAnalyzer(pass *analysis.Pass) (interface{}, error) {
 			pass.Report(diag)
 		},
 	}
+
 	for _, f := range pass.Files {
 		ruleguard.RunRules(ctx, f, rset)
 	}
 
 	return nil, nil
+}
+
+func readRules() (*ruleguard.GoRuleSet, error) {
+	var r io.Reader
+
+	switch {
+	case flagRules != "":
+		if flagRules == "" {
+			return nil, fmt.Errorf("-rules values is empty")
+		}
+		f, err := os.Open(flagRules)
+		if err != nil {
+			return nil, fmt.Errorf("open rules file: %v", err)
+		}
+		defer f.Close()
+		r = f
+	case flagE != "":
+		ruleText := fmt.Sprintf(`
+			package gorules
+			import "github.com/quasilyte/go-ruleguard/dsl/fluent"
+			func _(m fluent.Matcher) {
+				%s.Report("$$")
+			}`,
+			flagE)
+		r = strings.NewReader(ruleText)
+	default:
+		return nil, fmt.Errorf("both -e and -rules flags are empty")
+	}
+
+	fset := token.NewFileSet()
+	return ruleguard.ParseRules(flagRules, fset, r)
 }
