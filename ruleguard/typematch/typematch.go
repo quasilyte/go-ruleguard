@@ -36,8 +36,38 @@ type pattern struct {
 	subs  []*pattern
 }
 
+type ImportsTab struct {
+	imports []map[string]string
+}
+
+func NewImportsTab(initial map[string]string) *ImportsTab {
+	return &ImportsTab{imports: []map[string]string{initial}}
+}
+
+func (itab *ImportsTab) Lookup(pkgName string) (string, bool) {
+	for i := len(itab.imports) - 1; i >= 0; i-- {
+		pkgPath, ok := itab.imports[i][pkgName]
+		if ok {
+			return pkgPath, true
+		}
+	}
+	return "", false
+}
+
+func (itab *ImportsTab) Load(pkgName, pkgPath string) {
+	itab.imports[len(itab.imports)-1][pkgName] = pkgPath
+}
+
+func (itab *ImportsTab) EnterScope() {
+	itab.imports = append(itab.imports, map[string]string{})
+}
+
+func (itab *ImportsTab) LeaveScope() {
+	itab.imports = itab.imports[:len(itab.imports)-1]
+}
+
 type Context struct {
-	Imports map[string]string
+	Itab *ImportsTab
 }
 
 func Parse(ctx *Context, s string) (*Pattern, error) {
@@ -101,12 +131,9 @@ func parseExpr(ctx *Context, e ast.Expr) *pattern {
 		if !ok {
 			return nil
 		}
-		pkgPath, ok := ctx.Imports[pkg.Name]
+		pkgPath, ok := ctx.Itab.Lookup(pkg.Name)
 		if !ok {
-			pkgPath = stdlib[pkg.Name]
-			if pkgPath == "" {
-				return nil
-			}
+			return nil
 		}
 		return &pattern{op: opNamed, value: [2]string{pkgPath, e.Sel.Name}}
 
@@ -299,147 +326,4 @@ func (p *Pattern) matchIdentical(sub *pattern, typ types.Type) bool {
 	default:
 		return false
 	}
-}
-
-var stdlib = map[string]string{
-	"adler32":         "hash/adler32",
-	"aes":             "crypto/aes",
-	"ascii85":         "encoding/ascii85",
-	"asn1":            "encoding/asn1",
-	"ast":             "go/ast",
-	"atomic":          "sync/atomic",
-	"base32":          "encoding/base32",
-	"base64":          "encoding/base64",
-	"big":             "math/big",
-	"binary":          "encoding/binary",
-	"bits":            "math/bits",
-	"bufio":           "bufio",
-	"build":           "go/build",
-	"bytes":           "bytes",
-	"bzip2":           "compress/bzip2",
-	"cgi":             "net/http/cgi",
-	"cgo":             "runtime/cgo",
-	"cipher":          "crypto/cipher",
-	"cmplx":           "math/cmplx",
-	"color":           "image/color",
-	"constant":        "go/constant",
-	"context":         "context",
-	"cookiejar":       "net/http/cookiejar",
-	"crc32":           "hash/crc32",
-	"crc64":           "hash/crc64",
-	"crypto":          "crypto",
-	"csv":             "encoding/csv",
-	"debug":           "runtime/debug",
-	"des":             "crypto/des",
-	"doc":             "go/doc",
-	"draw":            "image/draw",
-	"driver":          "database/sql/driver",
-	"dsa":             "crypto/dsa",
-	"dwarf":           "debug/dwarf",
-	"ecdsa":           "crypto/ecdsa",
-	"ed25519":         "crypto/ed25519",
-	"elf":             "debug/elf",
-	"elliptic":        "crypto/elliptic",
-	"encoding":        "encoding",
-	"errors":          "errors",
-	"exec":            "os/exec",
-	"expvar":          "expvar",
-	"fcgi":            "net/http/fcgi",
-	"filepath":        "path/filepath",
-	"flag":            "flag",
-	"flate":           "compress/flate",
-	"fmt":             "fmt",
-	"fnv":             "hash/fnv",
-	"format":          "go/format",
-	"gif":             "image/gif",
-	"gob":             "encoding/gob",
-	"gosym":           "debug/gosym",
-	"gzip":            "compress/gzip",
-	"hash":            "hash",
-	"heap":            "container/heap",
-	"hex":             "encoding/hex",
-	"hmac":            "crypto/hmac",
-	"html":            "html",
-	"http":            "net/http",
-	"httptest":        "net/http/httptest",
-	"httptrace":       "net/http/httptrace",
-	"httputil":        "net/http/httputil",
-	"image":           "image",
-	"importer":        "go/importer",
-	"io":              "io",
-	"iotest":          "testing/iotest",
-	"ioutil":          "io/ioutil",
-	"jpeg":            "image/jpeg",
-	"json":            "encoding/json",
-	"jsonrpc":         "net/rpc/jsonrpc",
-	"list":            "container/list",
-	"log":             "log",
-	"lzw":             "compress/lzw",
-	"macho":           "debug/macho",
-	"mail":            "net/mail",
-	"math":            "math",
-	"md5":             "crypto/md5",
-	"mime":            "mime",
-	"multipart":       "mime/multipart",
-	"net":             "net",
-	"os":              "os",
-	"palette":         "image/color/palette",
-	"parse":           "text/template/parse",
-	"parser":          "go/parser",
-	"path":            "path",
-	"pe":              "debug/pe",
-	"pem":             "encoding/pem",
-	"pkix":            "crypto/x509/pkix",
-	"plan9obj":        "debug/plan9obj",
-	"plugin":          "plugin",
-	"png":             "image/png",
-	"pprof":           "runtime/pprof",
-	"printer":         "go/printer",
-	"quick":           "testing/quick",
-	"quotedprintable": "mime/quotedprintable",
-	"race":            "runtime/race",
-	"rand":            "math/rand",
-	"rc4":             "crypto/rc4",
-	"reflect":         "reflect",
-	"regexp":          "regexp",
-	"ring":            "container/ring",
-	"rpc":             "net/rpc",
-	"rsa":             "crypto/rsa",
-	"runtime":         "runtime",
-	"scanner":         "text/scanner",
-	"sha1":            "crypto/sha1",
-	"sha256":          "crypto/sha256",
-	"sha512":          "crypto/sha512",
-	"signal":          "os/signal",
-	"smtp":            "net/smtp",
-	"sort":            "sort",
-	"sql":             "database/sql",
-	"strconv":         "strconv",
-	"strings":         "strings",
-	"subtle":          "crypto/subtle",
-	"suffixarray":     "index/suffixarray",
-	"sync":            "sync",
-	"syntax":          "regexp/syntax",
-	"syscall":         "syscall",
-	"syslog":          "log/syslog",
-	"tabwriter":       "text/tabwriter",
-	"tar":             "archive/tar",
-	"template":        "text/template",
-	"testing":         "testing",
-	"textproto":       "net/textproto",
-	"time":            "time",
-	"tls":             "crypto/tls",
-	"token":           "go/token",
-	"trace":           "runtime/trace",
-	"types":           "go/types",
-	"unicode":         "unicode",
-	"unsafe":          "unsafe",
-	"url":             "net/url",
-	"user":            "os/user",
-	"utf16":           "unicode/utf16",
-	"utf8":            "unicode/utf8",
-	"x509":            "crypto/x509",
-	"xml":             "encoding/xml",
-	"zip":             "archive/zip",
-	"zlib":            "compress/zlib",
 }

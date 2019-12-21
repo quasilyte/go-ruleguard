@@ -5,6 +5,8 @@ package gorules
 import "github.com/quasilyte/go-ruleguard/dsl/fluent"
 
 func _(m fluent.Matcher) {
+	m.Import(`github.com/quasilyte/go-ruleguard/analyzer/testdata/src/filtertest/foolib`)
+
 	m.Match(`typeTest($x + $y)`).
 		Where(m["x"].Type.Is(`string`) && m["y"].Type.Is("string")).
 		Report(`concat`)
@@ -32,6 +34,11 @@ func _(m fluent.Matcher) {
 	m.Match(`typeTest("2 type filters", $x)`).
 		Where(!m["x"].Type.Is(`string`) && !m["x"].Type.Is(`int`)).
 		Report(`$x !is(string) && !is(int)`)
+
+	m.Match(`typeTest($x, "implements io.Reader")`).
+		Where(m["x"].Type.Implements(`io.Reader`)).Report(`YES`)
+	m.Match(`typeTest($x, "implements foolib.Stringer")`).
+		Where(m["x"].Type.Implements(`foolib.Stringer`)).Report(`YES`)
 
 	m.Match(`pureTest($x)`).
 		Where(m["x"].Pure).

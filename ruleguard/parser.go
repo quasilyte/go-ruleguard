@@ -18,11 +18,162 @@ type rulesParser struct {
 	fset *token.FileSet
 	res  *GoRuleSet
 
-	groupImports map[string]string
+	itab        *typematch.ImportsTab
+	stdImporter types.Importer // TODO(quasilyte): share importer with gogrep?
+	srcImporter types.Importer
 }
 
 func newRulesParser() *rulesParser {
-	return &rulesParser{}
+	var stdlib = map[string]string{
+		"adler32":         "hash/adler32",
+		"aes":             "crypto/aes",
+		"ascii85":         "encoding/ascii85",
+		"asn1":            "encoding/asn1",
+		"ast":             "go/ast",
+		"atomic":          "sync/atomic",
+		"base32":          "encoding/base32",
+		"base64":          "encoding/base64",
+		"big":             "math/big",
+		"binary":          "encoding/binary",
+		"bits":            "math/bits",
+		"bufio":           "bufio",
+		"build":           "go/build",
+		"bytes":           "bytes",
+		"bzip2":           "compress/bzip2",
+		"cgi":             "net/http/cgi",
+		"cgo":             "runtime/cgo",
+		"cipher":          "crypto/cipher",
+		"cmplx":           "math/cmplx",
+		"color":           "image/color",
+		"constant":        "go/constant",
+		"context":         "context",
+		"cookiejar":       "net/http/cookiejar",
+		"crc32":           "hash/crc32",
+		"crc64":           "hash/crc64",
+		"crypto":          "crypto",
+		"csv":             "encoding/csv",
+		"debug":           "runtime/debug",
+		"des":             "crypto/des",
+		"doc":             "go/doc",
+		"draw":            "image/draw",
+		"driver":          "database/sql/driver",
+		"dsa":             "crypto/dsa",
+		"dwarf":           "debug/dwarf",
+		"ecdsa":           "crypto/ecdsa",
+		"ed25519":         "crypto/ed25519",
+		"elf":             "debug/elf",
+		"elliptic":        "crypto/elliptic",
+		"encoding":        "encoding",
+		"errors":          "errors",
+		"exec":            "os/exec",
+		"expvar":          "expvar",
+		"fcgi":            "net/http/fcgi",
+		"filepath":        "path/filepath",
+		"flag":            "flag",
+		"flate":           "compress/flate",
+		"fmt":             "fmt",
+		"fnv":             "hash/fnv",
+		"format":          "go/format",
+		"gif":             "image/gif",
+		"gob":             "encoding/gob",
+		"gosym":           "debug/gosym",
+		"gzip":            "compress/gzip",
+		"hash":            "hash",
+		"heap":            "container/heap",
+		"hex":             "encoding/hex",
+		"hmac":            "crypto/hmac",
+		"html":            "html",
+		"http":            "net/http",
+		"httptest":        "net/http/httptest",
+		"httptrace":       "net/http/httptrace",
+		"httputil":        "net/http/httputil",
+		"image":           "image",
+		"importer":        "go/importer",
+		"io":              "io",
+		"iotest":          "testing/iotest",
+		"ioutil":          "io/ioutil",
+		"jpeg":            "image/jpeg",
+		"json":            "encoding/json",
+		"jsonrpc":         "net/rpc/jsonrpc",
+		"list":            "container/list",
+		"log":             "log",
+		"lzw":             "compress/lzw",
+		"macho":           "debug/macho",
+		"mail":            "net/mail",
+		"math":            "math",
+		"md5":             "crypto/md5",
+		"mime":            "mime",
+		"multipart":       "mime/multipart",
+		"net":             "net",
+		"os":              "os",
+		"palette":         "image/color/palette",
+		"parse":           "text/template/parse",
+		"parser":          "go/parser",
+		"path":            "path",
+		"pe":              "debug/pe",
+		"pem":             "encoding/pem",
+		"pkix":            "crypto/x509/pkix",
+		"plan9obj":        "debug/plan9obj",
+		"plugin":          "plugin",
+		"png":             "image/png",
+		"pprof":           "runtime/pprof",
+		"printer":         "go/printer",
+		"quick":           "testing/quick",
+		"quotedprintable": "mime/quotedprintable",
+		"race":            "runtime/race",
+		"rand":            "math/rand",
+		"rc4":             "crypto/rc4",
+		"reflect":         "reflect",
+		"regexp":          "regexp",
+		"ring":            "container/ring",
+		"rpc":             "net/rpc",
+		"rsa":             "crypto/rsa",
+		"runtime":         "runtime",
+		"scanner":         "text/scanner",
+		"sha1":            "crypto/sha1",
+		"sha256":          "crypto/sha256",
+		"sha512":          "crypto/sha512",
+		"signal":          "os/signal",
+		"smtp":            "net/smtp",
+		"sort":            "sort",
+		"sql":             "database/sql",
+		"strconv":         "strconv",
+		"strings":         "strings",
+		"subtle":          "crypto/subtle",
+		"suffixarray":     "index/suffixarray",
+		"sync":            "sync",
+		"syntax":          "regexp/syntax",
+		"syscall":         "syscall",
+		"syslog":          "log/syslog",
+		"tabwriter":       "text/tabwriter",
+		"tar":             "archive/tar",
+		"template":        "text/template",
+		"testing":         "testing",
+		"textproto":       "net/textproto",
+		"time":            "time",
+		"tls":             "crypto/tls",
+		"token":           "go/token",
+		"trace":           "runtime/trace",
+		"types":           "go/types",
+		"unicode":         "unicode",
+		"unsafe":          "unsafe",
+		"url":             "net/url",
+		"user":            "os/user",
+		"utf16":           "unicode/utf16",
+		"utf8":            "unicode/utf8",
+		"x509":            "crypto/x509",
+		"xml":             "encoding/xml",
+		"zip":             "archive/zip",
+		"zlib":            "compress/zlib",
+	}
+
+	// TODO(quasilyte): do we need to pass the fileset here?
+	fset := token.NewFileSet()
+	return &rulesParser{
+		itab:        typematch.NewImportsTab(stdlib),
+		stdImporter: importer.Default(),
+		srcImporter: importer.ForCompiler(fset, "source", nil),
+	}
 }
 
 func (p *rulesParser) ParseFile(filename string, fset *token.FileSet, r io.Reader) (*GoRuleSet, error) {
@@ -74,7 +225,9 @@ func (p *rulesParser) parseRuleGroup(f *ast.FuncDecl) error {
 	}
 	// TODO(quasilyte): do an actual matcher param type check?
 	matcher := params[0].Names[0].Name
-	p.groupImports = map[string]string{}
+
+	p.itab.EnterScope()
+	defer p.itab.LeaveScope()
 
 	for _, stmt := range f.Body.List {
 		stmtExpr, ok := stmt.(*ast.ExprStmt)
@@ -112,7 +265,7 @@ func (p *rulesParser) parseStmt(fn *ast.Ident, args []ast.Expr) error {
 			return p.errorf(args[0], "expected a string literal argument")
 		}
 		pkgName := path.Base(pkgPath)
-		p.groupImports[pkgName] = pkgPath
+		p.itab.Load(pkgName, pkgPath)
 		return nil
 	default:
 		return p.errorf(fn, "unexpected %s method", fn.Name)
@@ -280,7 +433,7 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 		if !ok {
 			return p.errorf(args[0], "expected a string literal argument")
 		}
-		ctx := typematch.Context{Imports: p.groupImports}
+		ctx := typematch.Context{Itab: p.itab}
 		pat, err := typematch.Parse(&ctx, typeString)
 		if err != nil {
 			return p.errorf(args[0], "parse type expr: %v", err)
@@ -322,6 +475,47 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 		wantAssignable := !negate
 		filter.typePred = AND(filter.typePred, func(q typeQuery) bool {
 			return wantAssignable == types.AssignableTo(q.x, y)
+		})
+		dst[operand.varName] = filter
+	case "Type.Implements":
+		typeString, ok := p.toStringValue(args[0])
+		if !ok {
+			return p.errorf(args[0], "expected a string literal argument")
+		}
+		n, err := parser.ParseExpr(typeString)
+		if err != nil {
+			return p.errorf(args[0], "parse type expr: %v", err)
+		}
+		e, ok := n.(*ast.SelectorExpr)
+		if !ok {
+			return p.errorf(args[0], "only qualified names are supported")
+		}
+		pkgName, ok := e.X.(*ast.Ident)
+		if !ok {
+			return p.errorf(e.X, "invalid package name")
+		}
+		pkgPath, ok := p.itab.Lookup(pkgName.Name)
+		if !ok {
+			return p.errorf(e.X, "package %s is not imported", pkgName.Name)
+		}
+		pkg, err := p.stdImporter.Import(pkgPath)
+		if err != nil {
+			pkg, err = p.srcImporter.Import(pkgPath)
+			if err != nil {
+				return p.errorf(e, "can't load %s: %v", pkgPath, err)
+			}
+		}
+		obj := pkg.Scope().Lookup(e.Sel.Name)
+		if obj == nil {
+			return p.errorf(e, "%s is not found in %s", e.Sel.Name, pkgPath)
+		}
+		iface, ok := obj.Type().Underlying().(*types.Interface)
+		if !ok {
+			return p.errorf(e, "%s is not an interface type", e.Sel.Name)
+		}
+		wantImplemented := !negate
+		filter.typePred = AND(filter.typePred, func(q typeQuery) bool {
+			return wantImplemented == types.Implements(q.x, iface)
 		})
 		dst[operand.varName] = filter
 	}

@@ -10,7 +10,12 @@ var (
 	typeInt    = types.Typ[types.Int]
 	typeString = types.Typ[types.String]
 
-	testContext = &Context{}
+	testContext = &Context{
+		Itab: NewImportsTab(map[string]string{
+			"io":     "io",
+			"syntax": "regexp/syntax",
+		}),
+	}
 )
 
 func namedType2(pkgPath, typeName string) *types.Named {

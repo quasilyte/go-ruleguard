@@ -1,5 +1,10 @@
 package filtertest
 
+type implementsAll struct{}
+
+func (implementsAll) Read([]byte) (int, error) { return 0, nil }
+func (implementsAll) String() string           { return "" }
+
 func detectType() {
 	var i1, i2 int
 	var ii []int
@@ -15,6 +20,13 @@ func detectType() {
 	typeTest("2 type filters", i1)
 	typeTest("2 type filters", s1)
 	typeTest("2 type filters", ii) // want `ii !is\(string\) && !is\(int\)`
+
+	typeTest(implementsAll{}, "implements io.Reader") // want `YES`
+	typeTest(i1, "implements io.Reader")
+	typeTest(ss, "implements io.Reader")
+	typeTest(implementsAll{}, "implements foolib.Stringer") // want `YES`
+	typeTest(i1, "implements foolib.Stringer")
+	typeTest(ss, "implements foolib.Stringer")
 }
 
 func detectPure(x int) {

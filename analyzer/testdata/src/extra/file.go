@@ -10,6 +10,19 @@ import (
 	"time"
 )
 
+type canStringer struct{}
+
+func (canStringer) String() string { return "" }
+
+func testRedundantSprint(s canStringer) {
+	{
+		_ = fmt.Sprint(s) // want `suggestion: s\.String\(\)`
+	}
+	{
+		_ = s.String()
+	}
+}
+
 func testFormatInt() {
 	{
 		x16 := int16(342)

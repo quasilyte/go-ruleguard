@@ -75,5 +75,9 @@ func (ExprType) AssignableTo(typ string) bool { return boolResult }
 // See https://golang.org/pkg/go/types/#ConvertibleTo.
 func (ExprType) ConvertibleTo(typ string) bool { return boolResult }
 
+// Implements reports whether a type implements a given interface.
+// See https://golang.org/pkg/go/types/#Implements.
+func (ExprType) Implements(typ string) bool { return boolResult }
+
 // Is reports whether a type is identical to a given type.
 func (ExprType) Is(typ string) bool { return boolResult }
