@@ -58,7 +58,8 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 		}
 		if filter.typePred != nil {
 			typ := rr.ctx.Types.TypeOf(expr)
-			if !filter.typePred(typ) {
+			q := typeQuery{x: typ}
+			if !filter.typePred(q) {
 				return false
 			}
 		}

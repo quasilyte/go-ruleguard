@@ -29,6 +29,10 @@ func _(m fluent.Matcher) {
 		Where(m["s"].Type.Is(`[]string`)).
 		Report(`$s is([]string)`)
 
+	m.Match(`typeTest("2 type filters", $x)`).
+		Where(!m["x"].Type.Is(`string`) && !m["x"].Type.Is(`int`)).
+		Report(`$x !is(string) && !is(int)`)
+
 	m.Match(`pureTest($x)`).
 		Where(m["x"].Pure).
 		Report("pure")

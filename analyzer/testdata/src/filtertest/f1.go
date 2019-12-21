@@ -12,6 +12,9 @@ func detectType() {
 	typeTest(random() > i2)
 	typeTest(ss, ss) // want `ss is\(\[\]string\)`
 	typeTest(ii, ii)
+	typeTest("2 type filters", i1)
+	typeTest("2 type filters", s1)
+	typeTest("2 type filters", ii) // want `ii !is\(string\) && !is\(int\)`
 }
 
 func detectPure(x int) {

@@ -230,6 +230,15 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 }
 
 func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, negate bool) error {
+	AND := func(x, y func(typeQuery) bool) func(typeQuery) bool {
+		if x == nil {
+			return y
+		}
+		return func(q typeQuery) bool {
+			return x(q) && y(q)
+		}
+	}
+
 	switch e := e.(type) {
 	case *ast.UnaryExpr:
 		if e.Op == token.NOT {
@@ -267,9 +276,6 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 		}
 		dst[operand.varName] = filter
 	case "Type.Is":
-		if len(args) != 1 {
-			return p.errorf(e, "Type.Is() expects exactly 1 argument, %d given", len(args))
-		}
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
 			return p.errorf(args[0], "expected a string literal argument")
@@ -280,14 +286,11 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 			return p.errorf(args[0], "parse type expr: %v", err)
 		}
 		wantIdentical := !negate
-		filter.typePred = func(x types.Type) bool {
-			return wantIdentical == pat.MatchIdentical(x)
-		}
+		filter.typePred = AND(filter.typePred, func(q typeQuery) bool {
+			return wantIdentical == pat.MatchIdentical(q.x)
+		})
 		dst[operand.varName] = filter
 	case "Type.ConvertibleTo":
-		if len(args) != 1 {
-			return p.errorf(e, "Type.ConvertibleTo() expects exactly 1 argument, %d given", len(args))
-		}
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
 			return p.errorf(args[0], "expected a string literal argument")
@@ -300,14 +303,11 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 			return p.errorf(args[0], "can't convert %s into a type constraint yet", typeString)
 		}
 		wantConvertible := !negate
-		filter.typePred = func(x types.Type) bool {
-			return wantConvertible == types.ConvertibleTo(x, y)
-		}
+		filter.typePred = AND(filter.typePred, func(q typeQuery) bool {
+			return wantConvertible == types.ConvertibleTo(q.x, y)
+		})
 		dst[operand.varName] = filter
 	case "Type.AssignableTo":
-		if len(args) != 1 {
-			return p.errorf(e, "Type.AssignableTo() expects exactly 1 argument, %d given", len(args))
-		}
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
 			return p.errorf(args[0], "expected a string literal argument")
@@ -320,9 +320,9 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 			return p.errorf(args[0], "can't convert %s into a type constraint yet", typeString)
 		}
 		wantAssignable := !negate
-		filter.typePred = func(x types.Type) bool {
-			return wantAssignable == types.AssignableTo(x, y)
-		}
+		filter.typePred = AND(filter.typePred, func(q typeQuery) bool {
+			return wantAssignable == types.AssignableTo(q.x, y)
+		})
 		dst[operand.varName] = filter
 	}
 
