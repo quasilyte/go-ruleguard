@@ -19,6 +19,8 @@ You write the rules, `ruleguard` checks whether they are satisfied.
 * [Quickfix](docs/gorules.md#suggestions-quickfix-support) actions support.
 * Powerful match filtering features, like expression [type pattern matching](docs/gorules.md#type-pattern-matching).
 
+`ruleguard` comes with [rules.go](rules.go) file that can be used as a foundation to write your own rules file.
+
 ## Quick start
 
 To install `ruleguard` binary under your `$(go env GOPATH)/bin`:
@@ -119,7 +121,7 @@ To learn more, check out the documentation and/or the source code.
 
 ## Documentation
 
-* Example rule files: [example1](analyzer/testdata/src/gocritic/rules.go), [example2](https://github.com/quasilyte/go-ruleguard/blob/master/analyzer/testdata/src/extra/rules.go)
+* Example rule files: [rules.go](rules.go)
 * [gorules](docs/gorules.md) format documentation
 * [dsl/fluent package](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent) reference
 * [ruleguard package](https://godoc.org/github.com/quasilyte/go-ruleguard/ruleguard) reference
