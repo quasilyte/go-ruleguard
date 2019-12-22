@@ -32,6 +32,9 @@ func _(m fluent.Matcher) {
 		Where(!m["err"].Pure && m["err"].Type.Is(`error`)).
 		Report(`assign $err to err and then do a nil check`)
 
+	// FIXME: this is not 100% correct.
+	// If ($a) contains something that has a higher precedence
+	// that ||, the result would not be functionally identical.
 	m.Match(`($a) || ($b)`).Report(`rewrite as '$a || $b'`)
 	m.Match(`($a) && ($b)`).Report(`rewrite as '$a && $b'`)
 
