@@ -38,6 +38,8 @@ Usage: ruleguard [-flag] [package]
 Flags:
   -rules string
     	path to a rules.go file
+  -e string
+    	execute a single rule from a given string
   -fix
     	apply all suggested fixes
   -c int
@@ -83,7 +85,7 @@ func main() {
 
 Run `ruleguard` on that target file:
 
-```
+```bash
 $ ruleguard -rules example.rules.go -fix example.go
 example.go:5:10: hint: suggested: v1 == v2
 example.go:6:10: hint: suggested: v1 != v2
@@ -91,6 +93,15 @@ example.go:7:5: error: suspicious identical LHS and RHS
 ```
 
 Since we ran `ruleguard` with `-fix` argument, both **suggested** changes are applied to `example.go`.
+
+There is also a `-e` mode that is useful during pattern debugging:
+
+```bash
+$ ruleguard -e 'm.Match(`!($x != $y)`)' example.go
+example.go:5:10: !(v1 != v2)
+```
+
+It automatically inserts `Report("$$")` into the specified pattern.
 
 ## How does it work?
 
