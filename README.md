@@ -26,7 +26,7 @@ You write the rules, `ruleguard` checks whether they are satisfied.
 To install `ruleguard` binary under your `$(go env GOPATH)/bin`:
 
 ```bash
-$ go get -v github.com/quasilyte/go-ruleguard/cmd/ruleguard
+$ go get -v github.com/quasilyte/go-ruleguard/...
 ```
 
 If `$GOPATH/bin` is under your system `$PATH`, `ruleguard` command should be available after that.<br>
