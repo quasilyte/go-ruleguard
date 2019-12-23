@@ -4,7 +4,7 @@
 [![GoDoc](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl?status.svg)](https://godoc.org/github.com/quasilyte/go-ruleguard)
 [![Go Report Card](https://goreportcard.com/badge/github.com/quasilyte/go-ruleguard)](https://goreportcard.com/report/github.com/quasilyte/go-ruleguard)
 
-![Logo](docs/logo_small.png)
+![Logo](docs/logo2.png)
 
 ## Overview
 
