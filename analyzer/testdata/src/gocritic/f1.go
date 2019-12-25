@@ -1,6 +1,7 @@
 package gocritic
 
 import (
+	"flag"
 	"io"
 	"regexp"
 	"strings"
@@ -273,4 +274,15 @@ func wrapperFunc(s string) {
 
 	_ = strings.Split(s, ".")
 	_ = strings.ReplaceAll(s, "a", "b")
+}
+
+func flagDeref() {
+	_ = *flag.Bool("b", false, "")  // want `immediate deref in \*flag\.Bool\("b", false, ""\) is most likely an error`
+	_ = *flag.Duration("d", 0, "")  // want `immediate deref in \*flag\.Duration\("d", 0, ""\) is most likely an error`
+	_ = *flag.Float64("f64", 0, "") // want `immediate deref in \*flag\.Float64\("f64", 0, ""\) is most likely an error`
+	_ = *flag.Int("i", 0, "")       // want `immediate deref in \*flag\.Int\("i", 0, ""\) is most likely an error`
+	_ = *flag.Int64("i64", 0, "")   // want `immediate deref in \*flag\.Int64\("i64", 0, ""\) is most likely an error`
+	_ = *flag.String("s", "", "")   // want `immediate deref in \*flag\.String\("s", "", ""\) is most likely an error`
+	_ = *flag.Uint("u", 0, "")      // want `immediate deref in \*flag\.Uint\("u", 0, ""\) is most likely an error`
+	_ = *flag.Uint64("u64", 0, "")  // want `immediate deref in \*flag\.Uint64\("u64", 0, ""\) is most likely an error`
 }

@@ -224,3 +224,15 @@ func gocriticNewDeref(m fluent.Matcher) {
 	m.Match(`*new(float64)`).Suggest(`0.0`)
 	m.Match(`*new(float32)`).Suggest(`float32(0)`)
 }
+
+func gocriticFlagDeref(m fluent.Matcher) {
+	m.Match(`*flag.Bool($*_)`,
+		`*flag.Float64($*_)`,
+		`*flag.Duration($*_)`,
+		`*flag.Int($*_)`,
+		`*flag.Int64($*_)`,
+		`*flag.String($*_)`,
+		`*flag.Uint($*_)`,
+		`*flag.Uint64($*_)`).
+		Report(`immediate deref in $$ is most likely an error`)
+}

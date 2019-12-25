@@ -114,4 +114,14 @@ func _(m fluent.Matcher) {
 	m.Match(`$s[len($s)]`).
 		Where(m["s"].Type.Is(`[]$elem`) && m["s"].Pure).
 		Report(`index expr always panics; maybe you wanted $s[len($s)-1]?`)
+
+	m.Match(`*flag.Bool($*_)`,
+		`*flag.Float64($*_)`,
+		`*flag.Duration($*_)`,
+		`*flag.Int($*_)`,
+		`*flag.Int64($*_)`,
+		`*flag.String($*_)`,
+		`*flag.Uint($*_)`,
+		`*flag.Uint64($*_)`).
+		Report(`immediate deref in $$ is most likely an error`)
 }
