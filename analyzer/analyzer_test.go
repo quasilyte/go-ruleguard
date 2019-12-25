@@ -15,6 +15,8 @@ func TestAnalyzer(t *testing.T) {
 		"extra",
 		"suggest",
 		"namedtype/nested",
+		"revive",
+		"golint",
 	}
 
 	for _, test := range tests {
