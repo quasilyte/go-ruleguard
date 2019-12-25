@@ -236,3 +236,11 @@ func gocriticFlagDeref(m fluent.Matcher) {
 		`*flag.Uint64($*_)`).
 		Report(`immediate deref in $$ is most likely an error`)
 }
+
+func reviveBoolLiteralInExpr(m fluent.Matcher) {
+	m.Match(`$x == true`,
+		`$x != true`,
+		`$x == false`,
+		`$x != false`).
+		Report(`omit bool literal in expression`)
+}

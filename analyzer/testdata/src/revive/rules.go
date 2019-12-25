@@ -22,7 +22,4 @@ func _(m fluent.Matcher) {
 		`$x == false`,
 		`$x != false`).
 		Report(`omit bool literal in expression`)
-
-	m.Match(`{}`).
-		Report(`empty block`)
 }
