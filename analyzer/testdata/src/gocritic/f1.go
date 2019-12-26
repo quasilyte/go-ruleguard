@@ -286,34 +286,3 @@ func flagDeref() {
 	_ = *flag.Uint("u", 0, "")      // want `immediate deref in \*flag\.Uint\("u", 0, ""\) is most likely an error`
 	_ = *flag.Uint64("u64", 0, "")  // want `immediate deref in \*flag\.Uint64\("u64", 0, ""\) is most likely an error`
 }
-
-func truncateCmp1(x int8, y int16) {
-	_ = int8(y) < x  // want `suggestion: y < int16\(x\)`
-	_ = x < int8(y)  // want `suggestion: int16\(x\) < y`
-	_ = int8(y) <= x // want `suggestion: y <= int16\(x\)`
-	_ = x <= int8(y) // want `suggestion: int16\(x\) <= y`
-	_ = int8(y) > x  // want `suggestion: y > int16\(x\)`
-	_ = x > int8(y)  // want `suggestion: int16\(x\) > y`
-	_ = int8(y) >= x // want `suggestion: y >= int16\(x\)`
-	_ = x >= int8(y) // want `suggestion: int16\(x\) >= y`
-	_ = int8(y) == x // want `suggestion: y == int16\(x\)`
-	_ = x == int8(y) // want `suggestion: int16\(x\) == y`
-	_ = int8(y) != x // want `suggestion: y != int16\(x\)`
-	_ = x != int8(y) // want `suggestion: int16\(x\) != y`
-}
-
-func truncateCmp2(x1 int8, x2 int16, y int32) {
-	_ = int8(y) == x1  // want `suggestion: y == int32\(x1\)`
-	_ = x1 == int8(y)  // want `suggestion: int32\(x1\) == y`
-	_ = int16(y) == x2 // want `suggestion: y == int32\(x2\)`
-	_ = x2 == int16(y) // want `suggestion: int32\(x2\) == y`
-}
-
-func truncateCmp3(x1 int8, x2 int16, x3 int32, y int64) {
-	_ = int8(y) == x1  // want `suggestion: y == int64\(x1\)`
-	_ = x1 == int8(y)  // want `suggestion: int64\(x1\) == y`
-	_ = int16(y) == x2 // want `suggestion: y == int64\(x2\)`
-	_ = x2 == int16(y) // want `suggestion: int64\(x2\) == y`
-	_ = int32(y) == x3 // want `suggestion: y == int64\(x3\)`
-	_ = x3 == int32(y) // want `suggestion: int64\(x3\) == y`
-}

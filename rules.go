@@ -237,47 +237,6 @@ func gocriticFlagDeref(m fluent.Matcher) {
 		Report(`immediate deref in $$ is most likely an error`)
 }
 
-func gocriticTruncateCmp(m fluent.Matcher) {
-	m.Match(`int8($y) < $x`).Where(m["y"].Type.Is(`int16`)).Suggest(`$y < int16($x)`)
-	m.Match(`int8($y) <= $x`).Where(m["y"].Type.Is(`int16`)).Suggest(`$y <= int16($x)`)
-	m.Match(`int8($y) > $x`).Where(m["y"].Type.Is(`int16`)).Suggest(`$y > int16($x)`)
-	m.Match(`int8($y) >= $x`).Where(m["y"].Type.Is(`int16`)).Suggest(`$y >= int16($x)`)
-	m.Match(`int8($y) == $x`).Where(m["y"].Type.Is(`int16`)).Suggest(`$y == int16($x)`)
-	m.Match(`int8($y) != $x`).Where(m["y"].Type.Is(`int16`)).Suggest(`$y != int16($x)`)
-	m.Match(`$x < int8($y)`).Where(m["y"].Type.Is(`int16`)).Suggest(`int16($x) < $y`)
-	m.Match(`$x <= int8($y)`).Where(m["y"].Type.Is(`int16`)).Suggest(`int16($x) <= $y`)
-	m.Match(`$x > int8($y)`).Where(m["y"].Type.Is(`int16`)).Suggest(`int16($x) > $y`)
-	m.Match(`$x >= int8($y)`).Where(m["y"].Type.Is(`int16`)).Suggest(`int16($x) >= $y`)
-	m.Match(`$x == int8($y)`).Where(m["y"].Type.Is(`int16`)).Suggest(`int16($x) == $y`)
-	m.Match(`$x != int8($y)`).Where(m["y"].Type.Is(`int16`)).Suggest(`int16($x) != $y`)
-
-	m.Match(`int8($y) < $x`, `int16($y) < $x`).Where(m["y"].Type.Is(`int32`)).Suggest(`$y < int32($x)`)
-	m.Match(`int8($y) <= $x`, `int16($y) <= $x`).Where(m["y"].Type.Is(`int32`)).Suggest(`$y <= int32($x)`)
-	m.Match(`int8($y) > $x`, `int16($y) > $x`).Where(m["y"].Type.Is(`int32`)).Suggest(`$y > int32($x)`)
-	m.Match(`int8($y) >= $x`, `int16($y) >= $x`).Where(m["y"].Type.Is(`int32`)).Suggest(`$y >= int32($x)`)
-	m.Match(`int8($y) == $x`, `int16($y) == $x`).Where(m["y"].Type.Is(`int32`)).Suggest(`$y == int32($x)`)
-	m.Match(`int8($y) != $x`, `int16($y) != $x`).Where(m["y"].Type.Is(`int32`)).Suggest(`$y != int32($x)`)
-	m.Match(`$x < int8($y)`, `$x < int16($y)`).Where(m["y"].Type.Is(`int32`)).Suggest(`int32($x) < $y`)
-	m.Match(`$x <= int8($y)`, `$x <= int16($y)`).Where(m["y"].Type.Is(`int32`)).Suggest(`int32($x) <= $y`)
-	m.Match(`$x > int8($y)`, `$x > int16($y)`).Where(m["y"].Type.Is(`int32`)).Suggest(`int32($x) > $y`)
-	m.Match(`$x >= int8($y)`, `$x >= int16($y)`).Where(m["y"].Type.Is(`int32`)).Suggest(`int32($x) >= $y`)
-	m.Match(`$x == int8($y)`, `$x == int16($y)`).Where(m["y"].Type.Is(`int32`)).Suggest(`int32($x) == $y`)
-	m.Match(`$x != int8($y)`, `$x != int16($y)`).Where(m["y"].Type.Is(`int32`)).Suggest(`int32($x) != $y`)
-
-	m.Match(`int8($y) < $x`, `int16($y) < $x`, `int32($y) < $x`).Where(m["y"].Type.Is(`int64`)).Suggest(`$y < int64($x)`)
-	m.Match(`int8($y) <= $x`, `int16($y) <= $x`, `int32($y) <= $x`).Where(m["y"].Type.Is(`int64`)).Suggest(`$y <= int64($x)`)
-	m.Match(`int8($y) > $x`, `int16($y) > $x`, `int32($y) > $x`).Where(m["y"].Type.Is(`int64`)).Suggest(`$y > int64($x)`)
-	m.Match(`int8($y) >= $x`, `int16($y) >= $x`, `int32($y) >= $x`).Where(m["y"].Type.Is(`int64`)).Suggest(`$y >= int64($x)`)
-	m.Match(`int8($y) == $x`, `int16($y) == $x`, `int32($y) == $x`).Where(m["y"].Type.Is(`int64`)).Suggest(`$y == int64($x)`)
-	m.Match(`int8($y) != $x`, `int16($y) != $x`, `int32($y) != $x`).Where(m["y"].Type.Is(`int64`)).Suggest(`$y != int64($x)`)
-	m.Match(`$x < int8($y)`, `$x < int16($y)`, `$x < int32($y)`).Where(m["y"].Type.Is(`int64`)).Suggest(`int64($x) < $y`)
-	m.Match(`$x <= int8($y)`, `$x <= int16($y)`, `$x <= int32($y)`).Where(m["y"].Type.Is(`int64`)).Suggest(`int64($x) <= $y`)
-	m.Match(`$x > int8($y)`, `$x > int16($y)`, `$x > int32($y)`).Where(m["y"].Type.Is(`int64`)).Suggest(`int64($x) > $y`)
-	m.Match(`$x >= int8($y)`, `$x >= int16($y)`, `$x >= int32($y)`).Where(m["y"].Type.Is(`int64`)).Suggest(`int64($x) >= $y`)
-	m.Match(`$x == int8($y)`, `$x == int16($y)`, `$x == int32($y)`).Where(m["y"].Type.Is(`int64`)).Suggest(`int64($x) == $y`)
-	m.Match(`$x != int8($y)`, `$x != int16($y)`, `$x != int32($y)`).Where(m["y"].Type.Is(`int64`)).Suggest(`int64($x) != $y`)
-}
-
 func reviveBoolLiteralInExpr(m fluent.Matcher) {
 	m.Match(`$x == true`,
 		`$x != true`,
