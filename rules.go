@@ -63,6 +63,12 @@ func gocriticBoolExprSimplify(m fluent.Matcher) {
 	m.Match(`!($x == $y)`).Suggest(`$x != $y`)
 }
 
+func gocriticOffBy1(m fluent.Matcher) {
+	m.Match(`$s[len($s)]`).
+		Where(m["s"].Type.Is(`[]$elem`) && m["s"].Pure).
+		Report(`index expr always panics; maybe you wanted $s[len($s)-1]?`)
+}
+
 func gocriticStringXBytes(m fluent.Matcher) {
 	m.Match(`copy($b, []byte($s))`).
 		Where(m["s"].Type.Is(`string`)).
