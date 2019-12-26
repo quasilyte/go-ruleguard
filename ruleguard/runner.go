@@ -58,8 +58,18 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 		}
 		if filter.typePred != nil {
 			typ := rr.ctx.Types.TypeOf(expr)
-			q := typeQuery{x: typ}
+			q := typeQuery{x: typ, ctx: rr.ctx}
 			if !filter.typePred(q) {
+				return false
+			}
+		}
+		switch filter.addressable {
+		case bool3true:
+			if !isAddressable(rr.ctx.Types, expr) {
+				return false
+			}
+		case bool3false:
+			if isAddressable(rr.ctx.Types, expr) {
 				return false
 			}
 		}

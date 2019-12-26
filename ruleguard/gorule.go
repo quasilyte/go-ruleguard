@@ -22,11 +22,13 @@ type goRule struct {
 }
 
 type submatchFilter struct {
-	typePred func(typeQuery) bool
-	pure     bool3
-	constant bool3
+	typePred    func(typeQuery) bool
+	pure        bool3
+	constant    bool3
+	addressable bool3
 }
 
 type typeQuery struct {
-	x types.Type
+	x   types.Type
+	ctx *Context
 }

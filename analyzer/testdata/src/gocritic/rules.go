@@ -127,4 +127,11 @@ func _(m fluent.Matcher) {
 
 	m.Match(`if $*_; $v == nil { return $v }`).
 		Report(`returned expr is always nil; replace $v with nil`)
+
+	m.Match(`for _, $_ := range $x { $*_ }`,
+		`for _, $_ = range $x { $*_ }`).
+		Where(m["x"].Addressable && m["x"].Type.Size >= 512).
+		Report(`$x copy can be avoided with &$x`).
+		At(m["x"]).
+		Suggest(`&$x`)
 }

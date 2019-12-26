@@ -3,20 +3,23 @@ package ruleguard
 import (
 	"fmt"
 	"go/ast"
+	"go/constant"
 	"go/importer"
 	"go/parser"
 	"go/token"
 	"go/types"
 	"io"
 	"path"
+	"strconv"
 
 	"github.com/quasilyte/go-ruleguard/internal/mvdan.cc/gogrep"
 	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
 )
 
 type rulesParser struct {
-	fset *token.FileSet
-	res  *GoRuleSet
+	fset  *token.FileSet
+	res   *GoRuleSet
+	types *types.Info
 
 	itab        *typematch.ImportsTab
 	stdImporter types.Importer // TODO(quasilyte): share importer with gogrep?
@@ -194,7 +197,8 @@ func (p *rulesParser) ParseFile(filename string, fset *token.FileSet, r io.Reade
 	}
 
 	typechecker := types.Config{Importer: importer.Default()}
-	_, err = typechecker.Check("gorules", fset, []*ast.File{f}, nil)
+	p.types = &types.Info{Types: map[ast.Expr]types.TypeAndValue{}}
+	_, err = typechecker.Check("gorules", fset, []*ast.File{f}, p.types)
 	if err != nil {
 		return nil, fmt.Errorf("typechecker error: %v", err)
 	}
@@ -398,12 +402,26 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 			return p.walkFilter(dst, e.X, !negate)
 		}
 	case *ast.BinaryExpr:
-		if e.Op == token.LAND {
+		switch e.Op {
+		case token.LAND:
 			err := p.walkFilter(dst, e.X, negate)
 			if err != nil {
 				return err
 			}
 			return p.walkFilter(dst, e.Y, negate)
+		case token.GEQ, token.LEQ, token.LSS, token.GTR, token.EQL, token.NEQ:
+			operand := p.toFilterOperand(e.X)
+			size := p.types.Types[e.Y].Value
+			if operand.path == "Type.Size" && size != nil {
+				filter := dst[operand.varName]
+				filter.typePred = AND(filter.typePred, func(q typeQuery) bool {
+					x := constant.MakeInt64(q.ctx.Sizes.Sizeof(q.x))
+					return constant.Compare(x, e.Op, size)
+				})
+				dst[operand.varName] = filter
+
+				return nil
+			}
 		}
 	}
 
@@ -426,6 +444,13 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 			filter.constant = bool3false
 		} else {
 			filter.constant = bool3true
+		}
+		dst[operand.varName] = filter
+	case "Addressable":
+		if negate {
+			filter.addressable = bool3false
+		} else {
+			filter.addressable = bool3true
 		}
 		dst[operand.varName] = filter
 	case "Type.Is":
@@ -521,6 +546,15 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 	}
 
 	return nil
+}
+
+func (p *rulesParser) toIntValue(x ast.Node) (int64, bool) {
+	lit, ok := x.(*ast.BasicLit)
+	if !ok || lit.Kind != token.INT {
+		return 0, false
+	}
+	v, err := strconv.ParseInt(lit.Value, 10, 64)
+	return v, err == nil
 }
 
 func (p *rulesParser) toStringValue(x ast.Node) (string, bool) {

@@ -164,6 +164,11 @@ func isPureList(info *types.Info, list []ast.Expr) bool {
 	return true
 }
 
+func isAddressable(info *types.Info, expr ast.Expr) bool {
+	tv, ok := info.Types[expr]
+	return ok && tv.Addressable()
+}
+
 func isConstant(info *types.Info, expr ast.Expr) bool {
 	tv, ok := info.Types[expr]
 	return ok && tv.Value != nil

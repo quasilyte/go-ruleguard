@@ -27,6 +27,25 @@ func detectType() {
 	typeTest(implementsAll{}, "implements foolib.Stringer") // want `YES`
 	typeTest(i1, "implements foolib.Stringer")
 	typeTest(ss, "implements foolib.Stringer")
+
+	typeTest([100]byte{}, "size>=100") // want `YES`
+	typeTest([105]byte{}, "size>=100") // want `YES`
+	typeTest([10]byte{}, "size>=100")
+	typeTest([100]byte{}, "size<=100") // want `YES`
+	typeTest([105]byte{}, "size<=100")
+	typeTest([10]byte{}, "size<=100") // want `YES`
+	typeTest([100]byte{}, "size>100")
+	typeTest([105]byte{}, "size>100") // want `YES`
+	typeTest([10]byte{}, "size>100")
+	typeTest([100]byte{}, "size<100")
+	typeTest([105]byte{}, "size<100")
+	typeTest([10]byte{}, "size<100")   // want `YES`
+	typeTest([100]byte{}, "size==100") // want `YES`
+	typeTest([105]byte{}, "size==100")
+	typeTest([10]byte{}, "size==100")
+	typeTest([100]byte{}, "size!=100")
+	typeTest([105]byte{}, "size!=100") // want `YES`
+	typeTest([10]byte{}, "size!=100")  // want `YES`
 }
 
 func detectPure(x int) {

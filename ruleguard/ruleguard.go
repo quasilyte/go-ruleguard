@@ -9,6 +9,7 @@ import (
 
 type Context struct {
 	Types  *types.Info
+	Sizes  types.Sizes
 	Fset   *token.FileSet
 	Report func(n ast.Node, msg string, s *Suggestion)
 	Pkg    *types.Package

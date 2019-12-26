@@ -60,12 +60,19 @@ type Var struct {
 	// Const reports whether expr matched by var is a constant value.
 	Const bool
 
+	// Addressable reports whether the corresponding expression is addressable.
+	// See https://golang.org/ref/spec#Address_operators.
+	Addressable bool
+
 	// Type is a type of a matched expr.
 	Type ExprType
 }
 
 // ExprType describes a type of a matcher expr.
-type ExprType struct{}
+type ExprType struct {
+	// Size represents expression type size in bytes.
+	Size int
+}
 
 // AssignableTo reports whether a type is assign-compatible with a given type.
 // See https://golang.org/pkg/go/types/#AssignableTo.

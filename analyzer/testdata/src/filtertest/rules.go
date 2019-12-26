@@ -40,6 +40,13 @@ func _(m fluent.Matcher) {
 	m.Match(`typeTest($x, "implements foolib.Stringer")`).
 		Where(m["x"].Type.Implements(`foolib.Stringer`)).Report(`YES`)
 
+	m.Match(`typeTest($x, "size>=100")`).Where(m["x"].Type.Size >= 100).Report(`YES`)
+	m.Match(`typeTest($x, "size<=100")`).Where(m["x"].Type.Size <= 100).Report(`YES`)
+	m.Match(`typeTest($x, "size>100")`).Where(m["x"].Type.Size > 100).Report(`YES`)
+	m.Match(`typeTest($x, "size<100")`).Where(m["x"].Type.Size < 100).Report(`YES`)
+	m.Match(`typeTest($x, "size==100")`).Where(m["x"].Type.Size == 100).Report(`YES`)
+	m.Match(`typeTest($x, "size!=100")`).Where(m["x"].Type.Size != 100).Report(`YES`)
+
 	m.Match(`pureTest($x)`).
 		Where(m["x"].Pure).
 		Report("pure")
