@@ -286,3 +286,106 @@ func flagDeref() {
 	_ = *flag.Uint("u", 0, "")      // want `immediate deref in \*flag\.Uint\("u", 0, ""\) is most likely an error`
 	_ = *flag.Uint64("u64", 0, "")  // want `immediate deref in \*flag\.Uint64\("u64", 0, ""\) is most likely an error`
 }
+
+type object struct {
+	data *byte
+}
+
+func suspiciousReturns() {
+	_ = func(err error) error {
+		if err == nil { // want `returned expr is always nil; replace err with nil`
+			return err
+		}
+		return nil
+	}
+
+	_ = func(o *object) *object {
+		if o == nil { // want `returned expr is always nil; replace o with nil`
+			return o
+		}
+		return &object{}
+	}
+
+	_ = func(o *object) *byte {
+		if o.data == nil { // want `returned expr is always nil; replace o.data with nil`
+			return o.data
+		}
+		return nil
+	}
+
+	_ = func(pointers [][][]map[string]*int) *int {
+		if pointers[0][1][2]["ptr"] == nil { // want `returned expr is always nil; replace pointers\[0\]\[1\]\[2\]\["ptr"\] with nil`
+			return pointers[0][1][2]["ptr"]
+		}
+		if ptr := pointers[0][1][2]["ptr"]; ptr == nil { // want `returned expr is always nil; replace ptr with nil`
+			return ptr
+		}
+		return nil
+	}
+}
+
+func explicitNil() {
+	_ = func(err error) error {
+		if err == nil {
+			return nil
+		}
+		return nil
+	}
+
+	_ = func(o *object) *object {
+		if o == nil {
+			return nil
+		}
+		return &object{}
+	}
+
+	_ = func(o *object) *byte {
+		if o.data == nil {
+			return nil
+		}
+		return nil
+	}
+
+	_ = func(pointers [][][]map[string]*int) *int {
+		if pointers[0][1][2]["ptr"] == nil {
+			return nil
+		}
+		if ptr := pointers[0][1][2]["ptr"]; ptr == nil {
+			return nil
+		}
+		return nil
+	}
+}
+
+func explicitNotEqual() {
+	_ = func(err error) error {
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	_ = func(o *object) *object {
+		if o != nil {
+			return o
+		}
+		return &object{}
+	}
+
+	_ = func(o *object) *byte {
+		if o.data != nil {
+			return o.data
+		}
+		return nil
+	}
+
+	_ = func(pointers [][][]map[string]*int) *int {
+		if pointers[0][1][2]["ptr"] != nil {
+			return pointers[0][1][2]["ptr"]
+		}
+		if ptr := pointers[0][1][2]["ptr"]; ptr != nil {
+			return ptr
+		}
+		return nil
+	}
+}

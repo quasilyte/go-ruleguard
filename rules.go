@@ -57,6 +57,11 @@ func gocriticWrapperFunc(m fluent.Matcher) {
 	m.Match(`bytes.Map(unicode.ToTitle, $s)`).Suggest(`bytes.ToTitle($s)`)
 }
 
+func gocriticNilValReturn(m fluent.Matcher) {
+	m.Match(`if $*_; $v == nil { return $v }`).
+		Report(`returned expr is always nil; replace $v with nil`)
+}
+
 func gocriticBoolExprSimplify(m fluent.Matcher) {
 	m.Match(`!!$x`).Suggest(`$x`)
 	m.Match(`!($x != $y)`).Suggest(`$x == $y`)

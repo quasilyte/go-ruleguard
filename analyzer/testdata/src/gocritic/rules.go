@@ -124,4 +124,7 @@ func _(m fluent.Matcher) {
 		`*flag.Uint($*_)`,
 		`*flag.Uint64($*_)`).
 		Report(`immediate deref in $$ is most likely an error`)
+
+	m.Match(`if $*_; $v == nil { return $v }`).
+		Report(`returned expr is always nil; replace $v with nil`)
 }
