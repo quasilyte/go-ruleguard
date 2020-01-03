@@ -234,6 +234,9 @@ func (p *rulesParser) parseRuleGroup(f *ast.FuncDecl) error {
 	defer p.itab.LeaveScope()
 
 	for _, stmt := range f.Body.List {
+		if _, ok := stmt.(*ast.DeclStmt); ok {
+			continue
+		}
 		stmtExpr, ok := stmt.(*ast.ExprStmt)
 		if !ok {
 			return p.errorf(stmt, "expected a %s method call, found %s", matcher, sprintNode(p.fset, stmt))
@@ -558,11 +561,22 @@ func (p *rulesParser) toIntValue(x ast.Node) (int64, bool) {
 }
 
 func (p *rulesParser) toStringValue(x ast.Node) (string, bool) {
-	lit, ok := x.(*ast.BasicLit)
-	if !ok || lit.Kind != token.STRING {
-		return "", false
+	switch x := x.(type) {
+	case *ast.BasicLit:
+		if x.Kind != token.STRING {
+			return "", false
+		}
+		return unquoteNode(x), true
+	case ast.Expr:
+		typ, ok := p.types.Types[x]
+		if !ok || typ.Type.String() != "string" {
+			return "", false
+		}
+		str := typ.Value.ExactString()
+		str = str[1 : len(str)-1] // remove quotes
+		return str, true
 	}
-	return unquoteNode(lit), true
+	return "", false
 }
 
 func (p *rulesParser) toFilterOperand(e ast.Expr) filterOperand {
