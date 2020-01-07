@@ -12,6 +12,8 @@
 
 You write the rules, `ruleguard` checks whether they are satisfied.
 
+`ruleguard` has some similarities with [GitHub CodeQL](https://securitylab.github.com/tools/codeql), but only focuses on Go code queries.
+
 **Features:**
 
 * Custom linting rules without re-compilation and Go plugins.
