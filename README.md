@@ -127,7 +127,7 @@ To learn more, check out the documentation and/or the source code.
 * [gorules](docs/gorules.md) format documentation
 * [dsl/fluent package](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent) reference
 * [ruleguard package](https://godoc.org/github.com/quasilyte/go-ruleguard/ruleguard) reference
-* [Introduction article](https://quasilyte.dev/blog/post/ruleguard/)
+* Introduction article: [EN](https://quasilyte.dev/blog/post/ruleguard/), [RU](https://habr.com/ru/post/481696/)
 
 ## Extra references
 
