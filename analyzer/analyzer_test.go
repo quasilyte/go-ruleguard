@@ -15,6 +15,7 @@ func TestAnalyzer(t *testing.T) {
 		"extra",
 		"suggest",
 		"namedtype/nested",
+		"namedtype",
 		"revive",
 		"golint",
 	}
