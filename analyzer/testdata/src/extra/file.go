@@ -165,3 +165,5 @@ func testCtx(ctx context.Context) error {
 
 	return nil
 }
+
+type errDontLog error // want `error as underlying type is probably a mistake`
