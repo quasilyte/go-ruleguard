@@ -57,4 +57,8 @@ func _(m fluent.Matcher) {
 	m.Match(`time.Duration($x) * time.Second`).
 		Where(m["x"].Const).
 		Report(`rewrite as '$x * time.Second'`)
+
+	m.Match(`select {case <-$ctx.Done(): return ctx.Err(); default:}`).
+		Where(m["ctx"].Type.Is(`context.Context`)).
+		Suggest(`if err := ctx.Err(); err != nil { return err }`)
 }
