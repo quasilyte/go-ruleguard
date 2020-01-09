@@ -5,7 +5,7 @@ package gorules
 import "github.com/quasilyte/go-ruleguard/dsl/fluent"
 
 func _(m fluent.Matcher) {
-	m.Import(`namedtype/nested`)
+	m.Import(`namedtype/x/nested`)
 	m.Import(`extra`)
 
 	m.Match(`sink = $t`).
@@ -14,7 +14,7 @@ func _(m fluent.Matcher) {
 
 	m.Match(`sink = &$t`).
 		Where(m["t"].Type.Is(`nested.Element`)).
-		Report(`Element`)
+		Report(`x/nested Element`)
 
 	m.Match(`sink = &$t`).
 		Where(m["t"].Type.Is(`list.Element`)).

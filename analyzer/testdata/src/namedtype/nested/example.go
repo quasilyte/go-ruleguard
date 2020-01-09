@@ -7,6 +7,9 @@ import (
 	texttemplate "text/template"
 
 	"extra"
+
+	xnested "namedtype/x/nested"
+	ynested "namedtype/y/nested"
 )
 
 var sink interface{}
@@ -20,7 +23,8 @@ func example() {
 	sink = &htmltemplate.Template{} // want `html Template`
 	sink = &texttemplate.Template{} // want `text Template`
 
-	sink = &Element{} // want `Element`
+	sink = &xnested.Element{} // want `x/nested Element`
+	sink = &ynested.Element{}
 
 	sink = extra.NewValue() // want `extra Value`
 }
