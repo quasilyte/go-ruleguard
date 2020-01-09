@@ -17,7 +17,7 @@ jobs:
       uses: actions/checkout@v1
 
     - name: Fetch deps manually
-      run: go mod download
+      run: go get -t ./...
 
     - name: Test analyzer
       run: go test -v -race ./analyzer/...
