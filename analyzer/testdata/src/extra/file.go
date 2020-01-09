@@ -141,3 +141,17 @@ func unconvertTime() {
 	sink = time.Duration(4) * time.Second // want `rewrite as '4 \* time\.Second'`
 	sink = 4 * time.Second
 }
+
+func testCtxBad(ctx context.Context) error {
+	select { // want `suggestion: if err := ctx.Err\(\); err != nil { return err }`
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+	}
+
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+
+	return nil
+}
