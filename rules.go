@@ -40,9 +40,9 @@ func _(m fluent.Matcher) {
 		`$p := path.Join($*_); $_, $_ := ioutil.ReadFile($p)`).
 		Report(`use filepath.Join for file paths`)
 
-	m.Match(`select {case <-$ctx.Done(): return ctx.Err(); default:}`).
+	m.Match(`select {case <-$ctx.Done(): return $ctx.Err(); default:}`).
 		Where(m["ctx"].Type.Is(`context.Context`)).
-		Suggest(`if err := ctx.Err(); err != nil { return err }`)
+		Suggest(`if err := $ctx.Err(); err != nil { return err }`)
 }
 
 func gocriticWrapperFunc(m fluent.Matcher) {
