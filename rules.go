@@ -205,10 +205,10 @@ func gocriticUnderef(m fluent.Matcher) {
 func gocriticEmptyStringTest(m fluent.Matcher) {
 	m.Match(`len($s) == 0`).
 		Where(m["s"].Type.Is(`string`)).
-		Suggest(`len($s) == ""`)
+		Suggest(`$s == ""`)
 	m.Match(`len($s) != 0`).
 		Where(m["s"].Type.Is(`string`)).
-		Suggest(`len($s) != ""`)
+		Suggest(`$s != ""`)
 }
 
 func gocriticUnslice(m fluent.Matcher) {
