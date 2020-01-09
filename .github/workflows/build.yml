@@ -16,6 +16,9 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v1
 
+    - name: Fetch deps manually
+      run: go get -t -v ./...
+
     - name: Test analyzer
       run: go test -v -race ./analyzer/...
 
