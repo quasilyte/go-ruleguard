@@ -142,7 +142,17 @@ func unconvertTime() {
 	sink = 4 * time.Second
 }
 
-func testCtxBad(ctx context.Context) error {
+func testCtx(ctx context.Context) error {
+	var withCtx struct {
+		theContext context.Context
+	}
+
+	select { // want `suggestion: if err := withCtx.theContext.Err\(\); err != nil { return err }`
+	case <-withCtx.theContext.Done():
+		return withCtx.theContext.Err()
+	default:
+	}
+
 	select { // want `suggestion: if err := ctx.Err\(\); err != nil { return err }`
 	case <-ctx.Done():
 		return ctx.Err()
