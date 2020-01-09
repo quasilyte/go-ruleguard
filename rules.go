@@ -31,6 +31,11 @@ func _(m fluent.Matcher) {
 		Report(`error as underlying type is probably a mistake`).
 		Suggest(`type $x struct { error }`)
 
+	// From https://github.com/dominikh/go-tools/issues/582
+	m.Match(`var()`).Report(`empty var() block`)
+	m.Match(`const()`).Report(`empty const() block`)
+	m.Match(`type()`).Report(`empty type() block`)
+
 	m.Match(`time.Duration($x) * time.Second`).
 		Where(m["x"].Const).
 		Suggest(`$x * time.Second`)

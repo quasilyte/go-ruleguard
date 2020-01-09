@@ -167,3 +167,17 @@ func testCtx(ctx context.Context) error {
 }
 
 type errDontLog error // want `error as underlying type is probably a mistake`
+
+var ( // want `empty var\(\) block`
+// Empty decl...
+)
+
+type () // want `empty type\(\) block`
+
+const () // want `empty const\(\) block`
+
+func testEmptyVarBlock() {
+	var ()   // want `empty var\(\) block`
+	type ()  // want `empty type\(\) block`
+	const () // want `empty const\(\) block`
+}

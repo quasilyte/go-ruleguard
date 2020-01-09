@@ -66,4 +66,8 @@ func _(m fluent.Matcher) {
 	m.Match(`type $x error`).
 		Report(`error as underlying type is probably a mistake`).
 		Suggest(`type $x struct { error }`)
+
+	m.Match(`var()`).Report(`empty var() block`)
+	m.Match(`const()`).Report(`empty const() block`)
+	m.Match(`type()`).Report(`empty type() block`)
 }
