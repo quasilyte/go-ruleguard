@@ -26,6 +26,11 @@ func _(m fluent.Matcher) {
 	m.Match(`json.NewDecoder($_).Decode($_)`).
 		Report(`this json.Decoder usage is erroneous`)
 
+	// See https://twitter.com/dvyukov/status/1174698980208513024
+	m.Match(`type $x error`).
+		Report(`error as underlying type is probably a mistake`).
+		Suggest(`type $x struct { error }`)
+
 	m.Match(`time.Duration($x) * time.Second`).
 		Where(m["x"].Const).
 		Suggest(`$x * time.Second`)
