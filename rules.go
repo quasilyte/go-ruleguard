@@ -40,6 +40,11 @@ func _(m fluent.Matcher) {
 		Where(m["x"].Const).
 		Suggest(`$x * time.Second`)
 
+	m.Match(`int64(time.Since($t) / time.Microsecond)`).
+		Suggest(`time.Since($t).Microseconds()`)
+	m.Match(`int64(time.Since($t) / time.Millisecond)`).
+		Suggest(`time.Since($t).Milliseconds()`)
+
 	m.Match(`fmt.Sprint($x)`).
 		Where(m["x"].Type.Implements(`fmt.Stringer`)).
 		Suggest(`$x.String()`)

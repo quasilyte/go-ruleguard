@@ -142,6 +142,15 @@ func unconvertTime() {
 	sink = 4 * time.Second
 }
 
+func timeCast() {
+	var t time.Time
+	sink = int64(time.Since(t) / time.Microsecond) // want `suggestion: time\.Since\(t\)\.Microseconds\(\)`
+	sink = time.Since(t).Microseconds()
+
+	sink = int64(time.Since(t) / time.Millisecond) // want `suggestion: time\.Since\(t\)\.Milliseconds\(\)`
+	sink = time.Since(t).Milliseconds()
+}
+
 func testCtx(ctx context.Context) error {
 	var withCtx struct {
 		theContext context.Context

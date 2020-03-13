@@ -70,4 +70,9 @@ func _(m fluent.Matcher) {
 	m.Match(`var()`).Report(`empty var() block`)
 	m.Match(`const()`).Report(`empty const() block`)
 	m.Match(`type()`).Report(`empty type() block`)
+
+	m.Match(`int64(time.Since($t) / time.Microsecond)`).
+		Suggest(`time.Since($t).Microseconds()`)
+	m.Match(`int64(time.Since($t) / time.Millisecond)`).
+		Suggest(`time.Since($t).Milliseconds()`)
 }
