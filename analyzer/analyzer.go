@@ -67,7 +67,9 @@ func runAnalyzer(pass *analysis.Pass) (interface{}, error) {
 	}
 
 	for _, f := range pass.Files {
-		ruleguard.RunRules(ctx, f, rset)
+		if err := ruleguard.RunRules(ctx, f, rset); err != nil {
+			return nil, err
+		}
 	}
 
 	return nil, nil

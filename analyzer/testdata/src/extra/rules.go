@@ -75,4 +75,50 @@ func _(m fluent.Matcher) {
 		Suggest(`time.Since($t).Microseconds()`)
 	m.Match(`int64(time.Since($t) / time.Millisecond)`).
 		Suggest(`time.Since($t).Milliseconds()`)
+
+	m.Match(`os.Stderr.WriteString(fmt.Sprintf($*args))`).
+		Suggest(`fmt.Fprintf(os.Stderr, $args)`)
+
+	m.Match(`fmt.Fprint(os.Stdout, $*args)`).Suggest(`fmt.Print($args)`)
+	m.Match(`fmt.Fprintln(os.Stdout, $*args)`).Suggest(`fmt.Println($args)`)
+	m.Match(`fmt.Fprintf(os.Stdout, $*args)`).Suggest(`fmt.Printf($args)`)
+
+	m.Match(`sort.Slice($s, func($i, $j int) bool { return $s[$i] < $s[$j] })`).
+		Where(m["s"].Type.Is(`[]string`)).
+		Suggest(`sort.Strings($s)`)
+
+	m.Match(`sort.Slice($s, func($i, $j int) bool { return $s[$i] < $s[$j] })`).
+		Where(m["s"].Type.Is(`[]int`)).
+		Suggest(`sort.Ints($s)`)
+
+	m.Match(`strings.Compare($s1, $s2) == 0`).
+		Suggest(`$s1 == $s2`)
+	m.Match(`strings.Compare($s1, $s2) < 0`,
+		`strings.Compare($s1, $s2) == -1`).
+		Suggest(`$s1 < $s2`)
+	m.Match(`strings.Compare($s1, $s2) > 0`,
+		`strings.Compare($s1, $s2) == 1`).
+		Suggest(`$s1 > $s2`)
+
+	m.Match(`strings.Count($s1, $s2) > 0`,
+		`strings.Count($s1, $s2) >= 1`).
+		Suggest(`strings.Contains($s1, $s2)`)
+	m.Match(`strings.Count($s1, $s2) == 0`).Suggest(`!strings.Contains($s1, $s2)`)
+
+	m.Match(`len($s) >= len($x) && $s[:len($x)] == $x`).
+		Suggest(`strings.HasPrefix($s, $x)`)
+	m.Match(`len($s) >= len($x) && $s[len($s)-len($x):] == $x`).
+		Suggest(`strings.HasSuffix($s, $x)`)
+
+	m.Match(`strings.HasPrefix($s1, $s2)`).
+		Where(m["s1"].Const && !m["s2"].Const).
+		Suggest(`strings.HasPrefix($s2, $s1)`)
+
+	m.Match(`strings.HasSuffix($s1, $s2)`).
+		Where(m["s1"].Const && !m["s2"].Const).
+		Suggest(`strings.HasPrefix($s2, $s1)`)
+
+	m.Match(`strings.Contains($s1, $s2)`).
+		Where(m["s1"].Const && !m["s2"].Const).
+		Suggest(`strings.Contains($s2, $s1)`)
 }

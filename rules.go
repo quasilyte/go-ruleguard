@@ -36,6 +36,24 @@ func _(m fluent.Matcher) {
 	m.Match(`const()`).Report(`empty const() block`)
 	m.Match(`type()`).Report(`empty type() block`)
 
+	m.Match(`fmt.Fprint(os.Stdout, $*args)`).Suggest(`fmt.Print($args)`)
+	m.Match(`fmt.Fprintln(os.Stdout, $*args)`).Suggest(`fmt.Println($args)`)
+	m.Match(`fmt.Fprintf(os.Stdout, $*args)`).Suggest(`fmt.Printf($args)`)
+
+	m.Match(`strings.Count($s1, $s2) > 0`,
+		`strings.Count($s1, $s2) >= 1`).
+		Suggest(`strings.Contains($s1, $s2)`)
+	m.Match(`strings.Count($s1, $s2) == 0`).
+		Suggest(`!strings.Contains($s1, $s2)`)
+
+	m.Match(`sort.Slice($s, func($i, $j int) bool { return $s[$i] < $s[$j] })`).
+		Where(m["s"].Type.Is(`[]string`)).
+		Suggest(`sort.Strings($s)`)
+
+	m.Match(`sort.Slice($s, func($i, $j int) bool { return $s[$i] < $s[$j] })`).
+		Where(m["s"].Type.Is(`[]int`)).
+		Suggest(`sort.Ints($s)`)
+
 	m.Match(`time.Duration($x) * time.Second`).
 		Where(m["x"].Const).
 		Suggest(`$x * time.Second`)
@@ -58,6 +76,11 @@ func _(m fluent.Matcher) {
 	m.Match(`select {case <-$ctx.Done(): return $ctx.Err(); default:}`).
 		Where(m["ctx"].Type.Is(`context.Context`)).
 		Suggest(`if err := $ctx.Err(); err != nil { return err }`)
+
+	m.Match(`len($s) >= len($x) && $s[:len($x)] == $x`).
+		Suggest(`strings.HasPrefix($s, $x)`)
+	m.Match(`len($s) >= len($x) && $s[len($s)-len($x):] == $x`).
+		Suggest(`strings.HasSuffix($s, $x)`)
 }
 
 func gocriticWrapperFunc(m fluent.Matcher) {
@@ -97,6 +120,20 @@ func gocriticStringXBytes(m fluent.Matcher) {
 	m.Match(`copy($b, []byte($s))`).
 		Where(m["s"].Type.Is(`string`)).
 		Suggest(`copy($b, $s)`)
+}
+
+func gocriticArgOrder() {
+	m.Match(`strings.HasPrefix($s1, $s2)`).
+		Where(m["s1"].Const && !m["s2"].Const).
+		Suggest(`strings.HasPrefix($s2, $s1)`)
+
+	m.Match(`strings.HasSuffix($s1, $s2)`).
+		Where(m["s1"].Const && !m["s2"].Const).
+		Suggest(`strings.HasPrefix($s2, $s1)`)
+
+	m.Match(`strings.Contains($s1, $s2)`).
+		Where(m["s1"].Const && !m["s2"].Const).
+		Suggest(`strings.Contains($s2, $s1)`)
 }
 
 func gocriticBadCall(m fluent.Matcher) {
@@ -273,4 +310,9 @@ func reviveBoolLiteralInExpr(m fluent.Matcher) {
 		`$x == false`,
 		`$x != false`).
 		Report(`omit bool literal in expression`)
+}
+
+func gosimpleS1003(m fluent.Matcher) {
+	m.Match(`strings.Index($s1, $s2) != -1`).Suggest(`strings.Contains($s1, $s2)`)
+	m.Match(`strings.Index($s1, $s2) == -1`).Suggest(`!strings.Contains($s1, $s2)`)
 }

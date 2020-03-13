@@ -26,8 +26,8 @@ func ParseRules(filename string, fset *token.FileSet, r io.Reader) (*GoRuleSet, 
 	return p.ParseFile(filename, fset, r)
 }
 
-func RunRules(ctx *Context, f *ast.File, rules *GoRuleSet) {
-	newRulesRunner(ctx, rules).run(f)
+func RunRules(ctx *Context, f *ast.File, rules *GoRuleSet) error {
+	return newRulesRunner(ctx, rules).run(f)
 }
 
 type GoRuleSet struct {

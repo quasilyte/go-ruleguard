@@ -3,6 +3,7 @@ package ruleguard
 import (
 	"go/ast"
 	"go/printer"
+	"io/ioutil"
 	"strings"
 
 	"github.com/quasilyte/go-ruleguard/internal/mvdan.cc/gogrep"
@@ -11,6 +12,8 @@ import (
 type rulesRunner struct {
 	ctx   *Context
 	rules *GoRuleSet
+
+	src []byte
 }
 
 func newRulesRunner(ctx *Context, rules *GoRuleSet) *rulesRunner {
@@ -20,8 +23,16 @@ func newRulesRunner(ctx *Context, rules *GoRuleSet) *rulesRunner {
 	}
 }
 
-func (rr *rulesRunner) run(f *ast.File) {
+func (rr *rulesRunner) run(f *ast.File) error {
 	// TODO(quasilyte): run local rules as well.
+
+	// TODO(quasilyte): re-use src slice?
+	filename := rr.ctx.Fset.Position(f.Pos()).Filename
+	src, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+	rr.src = src
 
 	for _, rule := range rr.rules.universal.uncategorized {
 		rule.pat.Match(f, func(m gogrep.MatchData) {
@@ -44,6 +55,8 @@ func (rr *rulesRunner) run(f *ast.File) {
 			return true
 		})
 	}
+
+	return nil
 }
 
 func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
@@ -119,9 +132,7 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 func (rr *rulesRunner) renderMessage(msg string, n ast.Node, nodes map[string]ast.Node) string {
 	var buf strings.Builder
 	if strings.Contains(msg, "$$") {
-		if err := printer.Fprint(&buf, rr.ctx.Fset, n); err != nil {
-			panic(err)
-		}
+		rr.writeNode(&buf, n)
 		msg = strings.ReplaceAll(msg, "$$", buf.String())
 	}
 	if len(nodes) == 0 {
@@ -133,9 +144,7 @@ func (rr *rulesRunner) renderMessage(msg string, n ast.Node, nodes map[string]as
 			continue
 		}
 		buf.Reset()
-		if err := printer.Fprint(&buf, rr.ctx.Fset, n); err != nil {
-			panic(err)
-		}
+		rr.writeNode(&buf, n)
 		// Don't interpolate strings that are too long.
 		var replacement string
 		if buf.Len() > 40 {
@@ -146,4 +155,16 @@ func (rr *rulesRunner) renderMessage(msg string, n ast.Node, nodes map[string]as
 		msg = strings.ReplaceAll(msg, key, replacement)
 	}
 	return msg
+}
+
+func (rr *rulesRunner) writeNode(buf *strings.Builder, n ast.Node) {
+	from := rr.ctx.Fset.Position(n.Pos()).Offset
+	to := rr.ctx.Fset.Position(n.End()).Offset
+	if (from >= 0 && int(from) < len(rr.src)) && (to >= 0 && int(to) < len(rr.src)) {
+		buf.Write(rr.src[from:to])
+		return
+	}
+	if err := printer.Fprint(buf, rr.ctx.Fset, n); err != nil {
+		panic(err)
+	}
 }

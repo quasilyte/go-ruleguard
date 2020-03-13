@@ -7,6 +7,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"sort"
+	"strings"
 	"time"
 )
 
@@ -42,7 +44,7 @@ func testFormatInt() {
 func testFormatBool() {
 	{
 		i := int64(4)
-		_ = fmt.Sprintf("%t", (i+i)&1 == 0) // want `use strconv.FormatBool\(\(i \+ i\)&1 == 0\)`
+		_ = fmt.Sprintf("%t", (i+i)&1 == 0) // want `use strconv.FormatBool\(\(i\+i\)&1 == 0\)`
 	}
 }
 
@@ -149,6 +151,86 @@ func timeCast() {
 
 	sink = int64(time.Since(t) / time.Millisecond) // want `suggestion: time\.Since\(t\)\.Milliseconds\(\)`
 	sink = time.Since(t).Milliseconds()
+}
+
+func argOrder() {
+	var s1, s2 string
+
+	_ = strings.HasPrefix("prefix", s2) // want `suggestion: strings\.HasPrefix\(s2, "prefix"\)`
+	_ = strings.HasSuffix("suffix", s1) // want `suggestion: strings\.HasPrefix\(s1, "suffix"\)`
+	_ = strings.Contains("s", s1)       // want `suggestion: strings.Contains\(s1, "s"\)`
+
+	_ = strings.HasPrefix("prefix", "")
+	_ = strings.HasSuffix("suffix", "")
+	_ = strings.Contains("", "")
+}
+
+func stringsCompare() {
+	var s1, s2 string
+
+	_ = strings.Compare(s1, s2) == 0  // want `suggestion: s1 == s2`
+	_ = strings.Compare(s1, s2) < 0   // want `suggestion: s1 < s2`
+	_ = strings.Compare(s1, s2) == -1 // want `suggestion: s1 < s2`
+	_ = strings.Compare(s1, s2) > 0   // want `suggestion: s1 > s2`
+	_ = strings.Compare(s1, s2) == 1  // want `suggestion: s1 > s2`
+
+	if s1 == s2 {
+	}
+	if s1 < s2 {
+	}
+	if s1 > s2 {
+	}
+}
+
+func hasPrefixSuffix() {
+	var s1, s2 string
+	if len(s1) >= len(s2) && s1[:len(s2)] == s2 { // want `strings\.HasPrefix\(s1, s2\)`
+	}
+	if len(s1) >= len(s2) && s1[len(s1)-len(s2):] == s2 { // want `strings\.HasSuffix\(s1, s2\)`
+	}
+}
+
+func stringsContains() {
+	var s1, s2 string
+
+	_ = strings.Count(s1, s2) > 0  // want `suggestion: strings\.Contains\(s1, s2\)`
+	_ = strings.Count(s1, s2) >= 1 // want `suggestion: strings\.Contains\(s1, s2\)`
+	_ = strings.Count(s1, s2) == 0 // want `suggestion: !strings\.Contains\(s1, s2\)`
+}
+
+func fmtFprintf(x int) {
+	os.Stderr.WriteString(fmt.Sprintf("foo: %d", x))  // want `suggestion: fmt\.Fprintf\(os\.Stderr, "foo: %d", x\)`
+	os.Stderr.WriteString(fmt.Sprintf("message"))     // want `suggestion: fmt\.Fprintf\(os\.Stderr, "message"\)`
+	os.Stderr.WriteString(fmt.Sprintf("%d%d", x, 10)) // want `suggestion: fmt\.Fprintf\(os\.Stderr, "%d%d", x, 10\)`
+	fmt.Fprintf(os.Stderr, "foo: %d", x)
+	fmt.Fprintf(os.Stderr, "message")
+	fmt.Fprintf(os.Stderr, "%d%d", x, 10)
+
+	fmt.Fprintf(os.Stdout, "foo: %d", x)  // want `suggestion: fmt\.Printf\("foo: %d", x\)`
+	fmt.Fprintf(os.Stdout, "message")     // want `suggestion: fmt\.Printf\("message"\)`
+	fmt.Fprintf(os.Stdout, "%d%d", x, 10) // want `suggestion: fmt\.Printf\("%d%d", x, 10\)`
+	fmt.Printf("foo: %d", x)
+	fmt.Printf("message")
+	fmt.Printf("%d%d", x, 10)
+}
+
+func sortSlice() {
+	var s1, s2 []string
+	var ints []int
+
+	sort.Slice(s1, func(i, j int) bool { return s1[i] < s1[j] })       // want `suggestion: sort\.Strings\(s1\)`
+	sort.Slice(ints, func(a, b int) bool { return ints[a] < ints[b] }) // want `suggestion: sort\.Ints\(ints\)`
+
+	// No warning: invalid index order.
+	sort.Slice(s2, func(a, b int) bool { return s2[b] < s2[a] })
+
+	// No warning: operator differs.
+	sort.Slice(s2, func(a, b int) bool { return s2[b] > s2[a] })
+	sort.Slice(s2, func(a, b int) bool { return s2[b] >= s2[a] })
+
+	// No warning: not a proper slice type.
+	var i32s []int32
+	sort.Slice(i32s, func(i, j int) bool { return i32s[i] < i32s[j] })
 }
 
 func testCtx(ctx context.Context) error {
