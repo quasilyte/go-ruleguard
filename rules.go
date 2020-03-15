@@ -194,7 +194,7 @@ func gocriticDupSubExpr(m fluent.Matcher) {
 		`$x < $x`,
 		`$x > $x`,
 		`$x &^ $x`,
-		`$x % $s`,
+		`$x % $x`,
 		`$x == $x`,
 		`$x != $x`,
 		`$x <= $x`,
