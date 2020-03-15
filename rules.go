@@ -81,6 +81,10 @@ func _(m fluent.Matcher) {
 		Suggest(`strings.HasPrefix($s, $x)`)
 	m.Match(`len($s) >= len($x) && $s[len($s)-len($x):] == $x`).
 		Suggest(`strings.HasSuffix($s, $x)`)
+
+	m.Match(`fmt.Sprinf("%s%s", $a, $b)`).
+		Where(m["a"].Type.Is(`string`) && m["b"].Type.Is(`string`)).
+		Suggest(`$a+$b`)
 }
 
 func gocriticWrapperFunc(m fluent.Matcher) {

@@ -128,4 +128,8 @@ func _(m fluent.Matcher) {
 
 	m.Match(`strings.Replace($_, $x, $x, $_)`).
 		Report(`replace 'old' and 'new' parameters are identical`)
+
+	m.Match(`fmt.Sprintf("%s%s", $a, $b)`).
+		Where(m["a"].Type.Is(`string`) && m["b"].Type.Is(`string`)).
+		Suggest(`$a+$b`)
 }

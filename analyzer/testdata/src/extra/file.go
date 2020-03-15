@@ -25,6 +25,16 @@ func testRedundantSprint(s canStringer) {
 	}
 }
 
+func simplifySprintf() {
+	var s1 string
+	var s2 string
+	var err error
+	var s fmt.Stringer
+	_ = fmt.Sprintf("%s%s", s1, s2) // want `suggestion: s1\+s2`
+	_ = fmt.Sprintf("%s%s", s1, err)
+	_ = fmt.Sprintf("%s%s", s1, s)
+}
+
 func testFormatInt() {
 	{
 		x16 := int16(342)
