@@ -165,6 +165,30 @@ func argOrder() {
 	_ = strings.Contains("", "")
 }
 
+func stringsReplace() {
+	var s string
+	_ = strings.Replace(s, " ", " ", -1) // want `replace 'old' and 'new' parameters are identical`
+}
+
+func stringsRepeat() {
+	var l int
+	var part string
+	{
+		s := make([]string, l) // want `suggestion: strings\.Repeat\("foo", i\)`
+		for i := range s {
+			s[i] = "foo"
+		}
+		println(s)
+	}
+	{
+		s := make([]string, 10) // want `suggestion: strings\.Repeat\(part, i\)`
+		for i := 0; i < len(s); i++ {
+			s[i] = part
+		}
+		println(s)
+	}
+}
+
 func stringsCompare() {
 	var s1, s2 string
 

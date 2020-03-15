@@ -315,4 +315,6 @@ func reviveBoolLiteralInExpr(m fluent.Matcher) {
 func gosimpleS1003(m fluent.Matcher) {
 	m.Match(`strings.Index($s1, $s2) != -1`).Suggest(`strings.Contains($s1, $s2)`)
 	m.Match(`strings.Index($s1, $s2) == -1`).Suggest(`!strings.Contains($s1, $s2)`)
+	m.Match(`strings.IndexAny($s1, $s2) != -1`).Suggest(`strings.ContainsAny($s1, $s2)`)
+	m.Match(`strings.IndexAny($s1, $s2) == -1`).Suggest(`!strings.ContainsAny($s1, $s2)`)
 }
