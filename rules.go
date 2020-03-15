@@ -122,7 +122,7 @@ func gocriticStringXBytes(m fluent.Matcher) {
 		Suggest(`copy($b, $s)`)
 }
 
-func gocriticArgOrder() {
+func gocriticArgOrder(m fluent.Matcher) {
 	m.Match(`strings.HasPrefix($s1, $s2)`).
 		Where(m["s1"].Const && !m["s2"].Const).
 		Suggest(`strings.HasPrefix($s2, $s1)`)
