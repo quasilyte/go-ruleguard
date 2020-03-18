@@ -13,7 +13,8 @@ type rulesRunner struct {
 	ctx   *Context
 	rules *GoRuleSet
 
-	src []byte
+	filename string
+	src      []byte
 }
 
 func newRulesRunner(ctx *Context, rules *GoRuleSet) *rulesRunner {
@@ -23,16 +24,27 @@ func newRulesRunner(ctx *Context, rules *GoRuleSet) *rulesRunner {
 	}
 }
 
+func (rr *rulesRunner) fileBytes() []byte {
+	if rr.src != nil {
+		return rr.src
+	}
+
+	// TODO(quasilyte): re-use src slice?
+	src, err := ioutil.ReadFile(rr.filename)
+	if err != nil || src == nil {
+		// Assign a zero-length slice so rr.src
+		// is never nil during the second fileBytes call.
+		rr.src = make([]byte, 0)
+	} else {
+		rr.src = src
+	}
+	return rr.src
+}
+
 func (rr *rulesRunner) run(f *ast.File) error {
 	// TODO(quasilyte): run local rules as well.
 
-	// TODO(quasilyte): re-use src slice?
-	filename := rr.ctx.Fset.Position(f.Pos()).Filename
-	src, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return err
-	}
-	rr.src = src
+	rr.filename = rr.ctx.Fset.Position(f.Pos()).Filename
 
 	for _, rule := range rr.rules.universal.uncategorized {
 		rule.pat.Match(f, func(m gogrep.MatchData) {
@@ -160,8 +172,9 @@ func (rr *rulesRunner) renderMessage(msg string, n ast.Node, nodes map[string]as
 func (rr *rulesRunner) writeNode(buf *strings.Builder, n ast.Node) {
 	from := rr.ctx.Fset.Position(n.Pos()).Offset
 	to := rr.ctx.Fset.Position(n.End()).Offset
-	if (from >= 0 && int(from) < len(rr.src)) && (to >= 0 && int(to) < len(rr.src)) {
-		buf.Write(rr.src[from:to])
+	src := rr.fileBytes()
+	if (from >= 0 && int(from) < len(src)) && (to >= 0 && int(to) < len(src)) {
+		buf.Write(src[from:to])
 		return
 	}
 	if err := printer.Fprint(buf, rr.ctx.Fset, n); err != nil {
