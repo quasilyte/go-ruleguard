@@ -23,6 +23,8 @@ You write the rules, `ruleguard` checks whether they are satisfied.
 
 `ruleguard` comes with [rules.go](rules.go) file that can be used as a foundation to write your own rules file.
 
+It can also be easily embedded into other static analyzers. [go-critic](https://github.com/go-critic/go-critic) can be used as an example.
+
 ## Quick start
 
 To install `ruleguard` binary under your `$(go env GOPATH)/bin`:
