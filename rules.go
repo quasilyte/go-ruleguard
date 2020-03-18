@@ -82,7 +82,7 @@ func _(m fluent.Matcher) {
 	m.Match(`len($s) >= len($x) && $s[len($s)-len($x):] == $x`).
 		Suggest(`strings.HasSuffix($s, $x)`)
 
-	m.Match(`fmt.Sprinf("%s%s", $a, $b)`).
+	m.Match(`fmt.Sprintf("%s%s", $a, $b)`).
 		Where(m["a"].Type.Is(`string`) && m["b"].Type.Is(`string`)).
 		Suggest(`$a+$b`)
 }
