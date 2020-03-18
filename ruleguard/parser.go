@@ -22,6 +22,7 @@ type rulesParser struct {
 	types *types.Info
 
 	itab        *typematch.ImportsTab
+	dslImporter types.Importer
 	stdImporter types.Importer // TODO(quasilyte): share importer with gogrep?
 	srcImporter types.Importer
 }
@@ -176,6 +177,7 @@ func newRulesParser() *rulesParser {
 		itab:        typematch.NewImportsTab(stdlib),
 		stdImporter: importer.Default(),
 		srcImporter: importer.ForCompiler(fset, "source", nil),
+		dslImporter: newDSLImporter(),
 	}
 }
 
@@ -196,7 +198,7 @@ func (p *rulesParser) ParseFile(filename string, fset *token.FileSet, r io.Reade
 		return nil, fmt.Errorf("expected a gorules package name, found %s", f.Name.Name)
 	}
 
-	typechecker := types.Config{Importer: importer.Default()}
+	typechecker := types.Config{Importer: p.dslImporter}
 	p.types = &types.Info{Types: map[ast.Expr]types.TypeAndValue{}}
 	_, err = typechecker.Check("gorules", fset, []*ast.File{f}, p.types)
 	if err != nil {
