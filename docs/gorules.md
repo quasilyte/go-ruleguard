@@ -26,7 +26,7 @@ We can describe a file structure like this:
 
 Functions play a special role: they serve as a **rule groups**.
 
-Every function accepts exactly 1 arguement, a [`fluent.Matcher`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher), and defines some **rules**.
+Every function accepts exactly 1 argument, a [`fluent.Matcher`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher), and defines some **rules**.
 
 Every **rule** definition starts with a [`Match`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher.Match) method call that specifies one or more [AST patterns](https://github.com/mvdan/gogrep) that should represent what kind of Go code rule supposed to match. Another mandatory method is [`Report`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher.Report) that describes a message template that is going to be printed when the rule match is accepted.
 
