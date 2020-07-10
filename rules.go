@@ -21,6 +21,9 @@ import "github.com/quasilyte/go-ruleguard/dsl/fluent"
 //
 // If you want to report any issue, please do so: https://github.com/quasilyte/go-ruleguard/issues/new
 
+// "_" is a special "unnamed" rules group.
+// It's not a good style to use these, but it can be a convenient place for
+// various rules for which you can't find a good name.
 func _(m fluent.Matcher) {
 	// See http://golang.org/issue/36225
 	m.Match(`json.NewDecoder($_).Decode($_)`).
@@ -85,6 +88,28 @@ func _(m fluent.Matcher) {
 	m.Match(`fmt.Sprintf("%s%s", $a, $b)`).
 		Where(m["a"].Type.Is(`string`) && m["b"].Type.Is(`string`)).
 		Suggest(`$a+$b`)
+}
+
+// See https://twitter.com/dgryski/status/1281348103505768449
+func useMathBits(m fluent.Matcher) {
+	// TODO: rewrite with Suggest templates so the quickfix is possible?
+	m.Match(`$x >> $n | $x << (8 - $n)`,
+		`$x << $n | $x >> (8 - $n)`,
+		`$x >> (8 - $n) | $x << $n`,
+		`$x << (8 - $n) | $x >> $n`,
+		`$x >> $n | $x << (16 - $n)`,
+		`$x << $n | $x >> (16 - $n)`,
+		`$x >> (16 - $n) | $x << $n`,
+		`$x << (16 - $n) | $x >> $n`,
+		`$x >> $n | $x << (32 - $n)`,
+		`$x << $n | $x >> (32 - $n)`,
+		`$x >> (32 - $n) | $x << $n`,
+		`$x << (32 - $n) | $x >> $n`,
+		`$x >> $n | $x << (64 - $n)`,
+		`$x << $n | $x >> (64 - $n)`,
+		`$x >> (64 - $n) | $x << $n`,
+		`$x << (64 - $n) | $x >> $n`).
+		Report(`try using math/bits instead`)
 }
 
 func gocriticWrapperFunc(m fluent.Matcher) {
