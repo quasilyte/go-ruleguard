@@ -93,39 +93,32 @@ func _(m fluent.Matcher) {
 // See https://twitter.com/dgryski/status/1281348103505768449
 func useMathBits(m fluent.Matcher) {
 	// RotateLeft
-	m.Match(
-		`$x << $n | $x >> (8 - $n)`,
+	m.Match(`$x << $n | $x >> (8 - $n)`,
 		`$x >> (8 - $n) | $x << $n`).
 		Suggest(`bits.RotateLeft8($x, $n)`)
 
-	m.Match(
-		`$x << $n | $x >> (16 - $n)`,
+	m.Match(`$x << $n | $x >> (16 - $n)`,
 		`$x >> (16 - $n) | $x << $n`).
 		Suggest(`bits.RotateLeft16($x, $n)`)
-	m.Match(
-		`$x << $n | $x >> (32 - $n)`,
+	m.Match(`$x << $n | $x >> (32 - $n)`,
 		`$x >> (32 - $n) | $x << $n`).
 		Suggest(`bits.RotateLeft32($x, $n)`)
-	m.Match(
-		`$x << $n | $x >> (64 - $n)`,
+	m.Match(`$x << $n | $x >> (64 - $n)`,
 		`$x >> (64 - $n) | $x << $n`).
 		Suggest(`bits.RotateLeft64($x, $n)`)
 
 	// RotateRight (from docs: To rotate x right by k bits, call RotateLeftX(x, -k))
-	m.Match(
-		`$x >> $n | $x << (8 - $n)`,
+	m.Match(`$x >> $n | $x << (8 - $n)`,
 		`$x << (8 - $n) | $x >> $n`).
 		Suggest(`bits.RotateLeft8($x, -$n)`)
 	m.Match(
 		`$x >> $n | $x << (16 - $n)`,
 		`$x << (16 - $n) | $x >> $n`).
 		Suggest(`bits.RotateLeft16($x, -$n)`)
-	m.Match(
-		`$x >> $n | $x << (32 - $n)`,
+	m.Match(`$x >> $n | $x << (32 - $n)`,
 		`$x << (32 - $n) | $x >> $n`).
 		Suggest(`bits.RotateLeft32($x, -$n)`)
-	m.Match(
-		`$x >> $n | $x << (64 - $n)`,
+	m.Match(`$x >> $n | $x << (64 - $n)`,
 		`$x << (64 - $n) | $x >> $n`).
 		Suggest(`bits.RotateLeft64($x, -$n)`)
 }
