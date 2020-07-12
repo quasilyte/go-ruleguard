@@ -10,6 +10,7 @@ import (
 	"go/types"
 	"io"
 	"path"
+	"regexp"
 	"strconv"
 
 	"github.com/quasilyte/go-ruleguard/internal/mvdan.cc/gogrep"
@@ -392,12 +393,20 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 }
 
 func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, negate bool) error {
-	AND := func(x, y func(typeQuery) bool) func(typeQuery) bool {
+	typeAnd := func(x, y func(typeQuery) bool) func(typeQuery) bool {
 		if x == nil {
 			return y
 		}
 		return func(q typeQuery) bool {
 			return x(q) && y(q)
+		}
+	}
+	textAnd := func(x, y func(string) bool) func(string) bool {
+		if x == nil {
+			return y
+		}
+		return func(s string) bool {
+			return x(s) && y(s)
 		}
 	}
 
@@ -416,15 +425,24 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 			return p.walkFilter(dst, e.Y, negate)
 		case token.GEQ, token.LEQ, token.LSS, token.GTR, token.EQL, token.NEQ:
 			operand := p.toFilterOperand(e.X)
-			size := p.types.Types[e.Y].Value
-			if operand.path == "Type.Size" && size != nil {
+			y := p.types.Types[e.Y].Value
+			expectedResult := !negate
+			if operand.path == "Type.Size" && y != nil {
 				filter := dst[operand.varName]
-				filter.typePred = AND(filter.typePred, func(q typeQuery) bool {
+				filter.typePred = typeAnd(filter.typePred, func(q typeQuery) bool {
 					x := constant.MakeInt64(q.ctx.Sizes.Sizeof(q.x))
-					return constant.Compare(x, e.Op, size)
+					return expectedResult == constant.Compare(x, e.Op, y)
 				})
 				dst[operand.varName] = filter
-
+				return nil
+			}
+			if operand.path == "Text" && y != nil {
+				filter := dst[operand.varName]
+				filter.textPred = textAnd(filter.textPred, func(s string) bool {
+					x := constant.MakeString(s)
+					return expectedResult == constant.Compare(x, e.Op, y)
+				})
+				dst[operand.varName] = filter
 				return nil
 			}
 		}
@@ -458,6 +476,20 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 			filter.addressable = bool3true
 		}
 		dst[operand.varName] = filter
+	case "Text.Matches":
+		patternString, ok := p.toStringValue(args[0])
+		if !ok {
+			return p.errorf(args[0], "expected a string literal argument")
+		}
+		re, err := regexp.Compile(patternString)
+		if err != nil {
+			return p.errorf(args[0], "parse regexp: %v", err)
+		}
+		wantMatched := !negate
+		filter.textPred = textAnd(filter.textPred, func(s string) bool {
+			return wantMatched == re.MatchString(s)
+		})
+		dst[operand.varName] = filter
 	case "Type.Is":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
@@ -469,7 +501,7 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 			return p.errorf(args[0], "parse type expr: %v", err)
 		}
 		wantIdentical := !negate
-		filter.typePred = AND(filter.typePred, func(q typeQuery) bool {
+		filter.typePred = typeAnd(filter.typePred, func(q typeQuery) bool {
 			return wantIdentical == pat.MatchIdentical(q.x)
 		})
 		dst[operand.varName] = filter
@@ -486,7 +518,7 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 			return p.errorf(args[0], "can't convert %s into a type constraint yet", typeString)
 		}
 		wantConvertible := !negate
-		filter.typePred = AND(filter.typePred, func(q typeQuery) bool {
+		filter.typePred = typeAnd(filter.typePred, func(q typeQuery) bool {
 			return wantConvertible == types.ConvertibleTo(q.x, y)
 		})
 		dst[operand.varName] = filter
@@ -503,7 +535,7 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 			return p.errorf(args[0], "can't convert %s into a type constraint yet", typeString)
 		}
 		wantAssignable := !negate
-		filter.typePred = AND(filter.typePred, func(q typeQuery) bool {
+		filter.typePred = typeAnd(filter.typePred, func(q typeQuery) bool {
 			return wantAssignable == types.AssignableTo(q.x, y)
 		})
 		dst[operand.varName] = filter
@@ -544,7 +576,7 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 			return p.errorf(e, "%s is not an interface type", e.Sel.Name)
 		}
 		wantImplemented := !negate
-		filter.typePred = AND(filter.typePred, func(q typeQuery) bool {
+		filter.typePred = typeAnd(filter.typePred, func(q typeQuery) bool {
 			return wantImplemented == types.Implements(q.x, iface)
 		})
 		dst[operand.varName] = filter

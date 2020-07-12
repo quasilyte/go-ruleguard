@@ -87,6 +87,7 @@ Here are some examples of supported filters:
 * Submatch expression type implements interface `I`
 * Submatch expression is side-effect free
 * Submatch expression is a const expression
+* Submatch text matches provided regexp
 
 A match variable can be accessed with `fluent.Matcher` function argument indexing:
 
