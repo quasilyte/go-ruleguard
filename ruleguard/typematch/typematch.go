@@ -109,6 +109,10 @@ var (
 		"string":     types.Typ[types.String],
 
 		"error": types.Universe.Lookup("error").Type(),
+
+		// Aliases.
+		"byte": types.Typ[types.Uint8],
+		"rune": types.Typ[types.Int32],
 	}
 
 	efaceType = types.NewInterfaceType(nil, nil)

@@ -16,6 +16,11 @@ type canStringer struct{}
 
 func (canStringer) String() string { return "" }
 
+func testRedundantCast(b byte, ch rune) {
+	sink = byte(b)  // want `\Qsuggestion: b`
+	sink = rune(ch) // want `\Qsuggestion: ch`
+}
+
 func testRedundantSprint(s canStringer) {
 	{
 		_ = fmt.Sprint(s) // want `\Qsuggestion: s.String()`
