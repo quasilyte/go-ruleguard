@@ -9,6 +9,8 @@ import (
 var (
 	typeInt    = types.Typ[types.Int]
 	typeString = types.Typ[types.String]
+	typeInt32  = types.Typ[types.Int32]
+	typeUint8  = types.Typ[types.Uint8]
 
 	testContext = &Context{
 		Itab: NewImportsTab(map[string]string{
@@ -65,6 +67,11 @@ func TestIdentical(t *testing.T) {
 		{`io.Reader`, namedType2("io", "Reader")},
 		{`syntax.Regexp`, namedType2("regexp/syntax", "Regexp")},
 		{`*syntax.Regexp`, types.NewPointer(namedType2("regexp/syntax", "Regexp"))},
+
+		{`byte`, typeUint8},
+		{`rune`, typeInt32},
+		{`[]rune`, types.NewSlice(typeInt32)},
+		{`[8]byte`, types.NewArray(typeUint8, 8)},
 	}
 
 	for _, test := range tests {

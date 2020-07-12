@@ -132,4 +132,7 @@ func _(m fluent.Matcher) {
 	m.Match(`fmt.Sprintf("%s%s", $a, $b)`).
 		Where(m["a"].Type.Is(`string`) && m["b"].Type.Is(`string`)).
 		Suggest(`$a+$b`)
+
+	m.Match(`byte($x)`).Where(m["x"].Type.Is("byte")).Suggest(`$x`)
+	m.Match(`rune($x)`).Where(m["x"].Type.Is("rune")).Suggest(`$x`)
 }
