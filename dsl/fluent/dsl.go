@@ -66,6 +66,9 @@ type Var struct {
 
 	// Type is a type of a matched expr.
 	Type ExprType
+
+	// Text is a captured node text as in the source code.
+	Text MatchedText
 }
 
 // ExprType describes a type of a matcher expr.
@@ -88,3 +91,9 @@ func (ExprType) Implements(typ string) bool { return boolResult }
 
 // Is reports whether a type is identical to a given type.
 func (ExprType) Is(typ string) bool { return boolResult }
+
+// MatchedText represents a source text associated with a matched node.
+type MatchedText string
+
+// Matches reports whether the text matches the given regexp pattern.
+func (MatchedText) Matches(pattern string) bool { return boolResult }

@@ -52,3 +52,21 @@ func detectPure(x int) {
 	pureTest(random()) // want `!pure`
 	pureTest(x * x)    // want `pure`
 }
+
+func detectText(foo, bar int) {
+	textTest(foo, "text=foo") // want `YES`
+	textTest(bar, "text=foo")
+
+	textTest("foo", "text='foo'") // want `YES`
+	textTest("bar", "text='foo'")
+
+	textTest("bar", "text!='foo'") // want `YES`
+	textTest("foo", "text!='foo'")
+
+	textTest(32, "matches d+") // want `YES`
+	textTest(0x32, "matches d+")
+	textTest("foo", "matches d+")
+
+	textTest(1, "doesn't match [A-Z]") // want `YES`
+	textTest("ABC", "doesn't match [A-Z]")
+}
