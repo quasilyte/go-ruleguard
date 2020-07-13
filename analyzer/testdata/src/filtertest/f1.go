@@ -1,5 +1,7 @@
 package filtertest
 
+import "time"
+
 type implementsAll struct{}
 
 func (implementsAll) Read([]byte) (int, error) { return 0, nil }
@@ -46,6 +48,15 @@ func detectType() {
 	typeTest([100]byte{}, "size!=100")
 	typeTest([105]byte{}, "size!=100") // want `YES`
 	typeTest([10]byte{}, "size!=100")  // want `YES`
+
+	var time1, time2 time.Time
+	var err error
+	typeTest(time1 == time2, "time==time") // want `YES`
+	typeTest(err == nil, "time==time")
+	typeTest(nil == err, "time==time")
+	typeTest(time1 != time2, "time!=time") // want `YES`
+	typeTest(err != nil, "time!=time")
+	typeTest(nil != err, "time!=time")
 }
 
 func detectPure(x int) {
