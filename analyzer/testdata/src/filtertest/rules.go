@@ -47,6 +47,9 @@ func _(m fluent.Matcher) {
 	m.Match(`typeTest($x, "size==100")`).Where(m["x"].Type.Size == 100).Report(`YES`)
 	m.Match(`typeTest($x, "size!=100")`).Where(m["x"].Type.Size != 100).Report(`YES`)
 
+	m.Match(`typeTest($t0 == $t1, "time==time")`).Where(m["t0"].Type.Is("time.Time")).Report(`YES`)
+	m.Match(`typeTest($t0 != $t1, "time!=time")`).Where(m["t1"].Type.Is("time.Time")).Report(`YES`)
+
 	m.Match(`pureTest($x)`).
 		Where(m["x"].Pure).
 		Report("pure")
