@@ -135,4 +135,6 @@ func _(m fluent.Matcher) {
 
 	m.Match(`byte($x)`).Where(m["x"].Type.Is("byte")).Suggest(`$x`)
 	m.Match(`rune($x)`).Where(m["x"].Type.Is("rune")).Suggest(`$x`)
+
+	m.Match(`nil != $s`).Where(!m["s"].Const).Suggest(`$s != nil`)
 }

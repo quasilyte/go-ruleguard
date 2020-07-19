@@ -145,7 +145,7 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 	if rule.severity != "" {
 		prefix = rule.severity + ": "
 	}
-	message := prefix + rr.renderMessage(rule.msg, m.Node, m.Values)
+	message := prefix + rr.renderMessage(rule.msg, m.Node, m.Values, true)
 	node := m.Node
 	if rule.location != "" {
 		node = m.Values[rule.location]
@@ -153,7 +153,7 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 	var suggestion *Suggestion
 	if rule.suggestion != "" {
 		suggestion = &Suggestion{
-			Replacement: []byte(rr.renderMessage(rule.suggestion, m.Node, m.Values)),
+			Replacement: []byte(rr.renderMessage(rule.suggestion, m.Node, m.Values, false)),
 			From:        node.Pos(),
 			To:          node.End(),
 		}
@@ -162,7 +162,7 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 	return true
 }
 
-func (rr *rulesRunner) renderMessage(msg string, n ast.Node, nodes map[string]ast.Node) string {
+func (rr *rulesRunner) renderMessage(msg string, n ast.Node, nodes map[string]ast.Node, truncate bool) string {
 	var buf strings.Builder
 	if strings.Contains(msg, "$$") {
 		buf.Write(rr.nodeText(n))
@@ -180,7 +180,7 @@ func (rr *rulesRunner) renderMessage(msg string, n ast.Node, nodes map[string]as
 		buf.Write(rr.nodeText(n))
 		// Don't interpolate strings that are too long.
 		var replacement string
-		if buf.Len() > 40 {
+		if truncate && buf.Len() > 60 {
 			replacement = key
 		} else {
 			replacement = buf.String()

@@ -311,3 +311,21 @@ func testEmptyVarBlock() {
 	type ()  // want `\Qempty type() block`
 	const () // want `\Qempty const() block`
 }
+
+func testYodaExpr() {
+	var clusterContext struct {
+		PostInstallData struct {
+			CoreDNSUpdateFunction func()
+			AnotherNestedStruct   struct {
+				DeeplyNestedField *int
+			}
+		}
+	}
+
+	// This is on the boundary of being too long to be displayed in the CLI output.
+	if nil != clusterContext.PostInstallData.CoreDNSUpdateFunction { // want `\Qsuggestion: clusterContext.PostInstallData.CoreDNSUpdateFunction != nil`
+	}
+	// This is far too long, so it's shortened in the output.
+	if nil != clusterContext.PostInstallData.AnotherNestedStruct.DeeplyNestedField { // want `\Qsuggestion: $s != nil`
+	}
+}
