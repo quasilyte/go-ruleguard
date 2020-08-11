@@ -13,6 +13,7 @@ type scopedGoRuleSet struct {
 }
 
 type goRule struct {
+	filename   string
 	severity   string
 	pat        *gogrep.Pattern
 	msg        string
