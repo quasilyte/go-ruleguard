@@ -94,32 +94,60 @@ func _(m fluent.Matcher) {
 func useMathBits(m fluent.Matcher) {
 	// RotateLeft
 	m.Match(`$x << $n | $x >> (8 - $n)`,
-		`$x >> (8 - $n) | $x << $n`).
+		`$x >> (8 - $n) | $x << $n`,
+		`($x << $n) | ($x >> (8 - $n))`,
+		`($x >> (8 - $n)) | ($x << $n)`).
+		Where(m["x"].Type.Is("uint8")).
 		Suggest(`bits.RotateLeft8($x, $n)`)
 
 	m.Match(`$x << $n | $x >> (16 - $n)`,
-		`$x >> (16 - $n) | $x << $n`).
+		`$x >> (16 - $n) | $x << $n`,
+		`($x << $n) | ($x >> (16 - $n))`,
+		`($x >> (16 - $n)) | ($x << $n)`).
+		Where(m["x"].Type.Is("uint16")).
 		Suggest(`bits.RotateLeft16($x, $n)`)
+
 	m.Match(`$x << $n | $x >> (32 - $n)`,
-		`$x >> (32 - $n) | $x << $n`).
+		`$x >> (32 - $n) | $x << $n`,
+		`($x << $n) | ($x >> (32 - $n))`,
+		`($x >> (32 - $n)) | ($x << $n)`).
+		Where(m["x"].Type.Is("uint32")).
 		Suggest(`bits.RotateLeft32($x, $n)`)
+
 	m.Match(`$x << $n | $x >> (64 - $n)`,
-		`$x >> (64 - $n) | $x << $n`).
+		`$x >> (64 - $n) | $x << $n`,
+		`($x << $n) | ($x >> (64 - $n))`,
+		`($x >> (64 - $n)) | ($x << $n)`).
+		Where(m["x"].Type.Is("uint64")).
 		Suggest(`bits.RotateLeft64($x, $n)`)
 
 	// RotateRight (from docs: To rotate x right by k bits, call RotateLeftX(x, -k))
 	m.Match(`$x >> $n | $x << (8 - $n)`,
-		`$x << (8 - $n) | $x >> $n`).
+		`$x << (8 - $n) | $x >> $n`,
+		`($x >> $n) | ($x << (8 - $n))`,
+		`($x << (8 - $n)) | ($x >> $n)`).
+		Where(m["x"].Type.Is("uint8")).
 		Suggest(`bits.RotateLeft8($x, -$n)`)
-	m.Match(
-		`$x >> $n | $x << (16 - $n)`,
-		`$x << (16 - $n) | $x >> $n`).
+
+	m.Match(`$x >> $n | $x << (16 - $n)`,
+		`$x << (16 - $n) | $x >> $n`,
+		`($x >> $n) | ($x << (16 - $n))`,
+		`($x << (16 - $n)) | ($x >> $n)`).
+		Where(m["x"].Type.Is("uint16")).
 		Suggest(`bits.RotateLeft16($x, -$n)`)
+
 	m.Match(`$x >> $n | $x << (32 - $n)`,
-		`$x << (32 - $n) | $x >> $n`).
+		`$x << (32 - $n) | $x >> $n`,
+		`($x >> $n) | ($x << (32 - $n))`,
+		`($x << (32 - $n)) | ($x >> $n)`).
+		Where(m["x"].Type.Is("uint32")).
 		Suggest(`bits.RotateLeft32($x, -$n)`)
+
 	m.Match(`$x >> $n | $x << (64 - $n)`,
-		`$x << (64 - $n) | $x >> $n`).
+		`$x << (64 - $n) | $x >> $n`,
+		`($x >> $n) | ($x << (64 - $n))`,
+		`($x << (64 - $n)) | ($x >> $n)`).
+		Where(m["x"].Type.Is("uint64")).
 		Suggest(`bits.RotateLeft64($x, -$n)`)
 }
 
