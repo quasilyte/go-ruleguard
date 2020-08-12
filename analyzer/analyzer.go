@@ -1,11 +1,12 @@
 package analyzer
 
 import (
+	"bytes"
 	"fmt"
 	"go/ast"
 	"go/token"
-	"io"
-	"os"
+	"io/ioutil"
+	"path/filepath"
 	"strings"
 
 	"github.com/quasilyte/go-ruleguard/ruleguard"
@@ -25,25 +26,35 @@ var (
 )
 
 func init() {
-	Analyzer.Flags.StringVar(&flagRules, "rules", "", "path to a gorules file")
+	Analyzer.Flags.StringVar(&flagRules, "rules", "", "comma-separated list of gorule file paths")
 	Analyzer.Flags.StringVar(&flagE, "e", "", "execute a single rule from a given string")
+}
+
+type parseRulesResult struct {
+	rset      *ruleguard.GoRuleSet
+	multiFile bool
 }
 
 func runAnalyzer(pass *analysis.Pass) (interface{}, error) {
 	// TODO(quasilyte): parse config under sync.Once and
 	// create rule sets from it.
 
-	rset, err := readRules()
+	parseResult, err := readRules()
 	if err != nil {
 		return nil, fmt.Errorf("load rules: %v", err)
 	}
+	rset := parseResult.rset
+	multiFile := parseResult.multiFile
 
 	ctx := &ruleguard.Context{
 		Pkg:   pass.Pkg,
 		Types: pass.TypesInfo,
 		Sizes: pass.TypesSizes,
 		Fset:  pass.Fset,
-		Report: func(n ast.Node, msg string, s *ruleguard.Suggestion) {
+		Report: func(info ruleguard.GoRuleInfo, n ast.Node, msg string, s *ruleguard.Suggestion) {
+			if multiFile {
+				msg += fmt.Sprintf(" (%s)", filepath.Base(info.Filename))
+			}
 			diag := analysis.Diagnostic{
 				Pos:     n.Pos(),
 				Message: msg,
@@ -75,20 +86,31 @@ func runAnalyzer(pass *analysis.Pass) (interface{}, error) {
 	return nil, nil
 }
 
-func readRules() (*ruleguard.GoRuleSet, error) {
-	var r io.Reader
+func readRules() (*parseRulesResult, error) {
+	fset := token.NewFileSet()
 
 	switch {
 	case flagRules != "":
 		if flagRules == "" {
 			return nil, fmt.Errorf("-rules values is empty")
 		}
-		f, err := os.Open(flagRules)
-		if err != nil {
-			return nil, fmt.Errorf("open rules file: %v", err)
+		filenames := strings.Split(flagRules, ",")
+		var ruleSets []*ruleguard.GoRuleSet
+		for _, filename := range filenames {
+			filename = strings.TrimSpace(filename)
+			data, err := ioutil.ReadFile(filename)
+			if err != nil {
+				return nil, fmt.Errorf("read rules file: %v", err)
+			}
+			rset, err := ruleguard.ParseRules(filename, fset, bytes.NewReader(data))
+			if err != nil {
+				return nil, fmt.Errorf("parse rules file: %v", err)
+			}
+			ruleSets = append(ruleSets, rset)
 		}
-		defer f.Close()
-		r = f
+		rset := ruleguard.MergeRuleSets(ruleSets)
+		return &parseRulesResult{rset: rset, multiFile: len(filenames) > 1}, nil
+
 	case flagE != "":
 		ruleText := fmt.Sprintf(`
 			package gorules
@@ -97,11 +119,11 @@ func readRules() (*ruleguard.GoRuleSet, error) {
 				%s.Report("$$")
 			}`,
 			flagE)
-		r = strings.NewReader(ruleText)
+		r := strings.NewReader(ruleText)
+		rset, err := ruleguard.ParseRules(flagRules, fset, r)
+		return &parseRulesResult{rset: rset}, err
+
 	default:
 		return nil, fmt.Errorf("both -e and -rules flags are empty")
 	}
-
-	fset := token.NewFileSet()
-	return ruleguard.ParseRules(flagRules, fset, r)
 }

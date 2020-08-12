@@ -158,7 +158,10 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 			To:          node.End(),
 		}
 	}
-	rr.ctx.Report(node, message, suggestion)
+	info := GoRuleInfo{
+		Filename: rule.filename,
+	}
+	rr.ctx.Report(info, node, message, suggestion)
 	return true
 }
 

@@ -18,9 +18,10 @@ import (
 )
 
 type rulesParser struct {
-	fset  *token.FileSet
-	res   *GoRuleSet
-	types *types.Info
+	filename string
+	fset     *token.FileSet
+	res      *GoRuleSet
+	types    *types.Info
 
 	itab        *typematch.ImportsTab
 	dslImporter types.Importer
@@ -183,6 +184,7 @@ func newRulesParser() *rulesParser {
 }
 
 func (p *rulesParser) ParseFile(filename string, fset *token.FileSet, r io.Reader) (*GoRuleSet, error) {
+	p.filename = filename
 	p.fset = fset
 	p.res = &GoRuleSet{
 		local:     &scopedGoRuleSet{},
@@ -319,7 +321,8 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 	dst := p.res.universal
 	filters := map[string]submatchFilter{}
 	proto := goRule{
-		filters: filters,
+		filename: p.filename,
+		filters:  filters,
 	}
 	var alternatives []string
 
