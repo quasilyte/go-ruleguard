@@ -89,8 +89,13 @@ func (rr *rulesRunner) run(f *ast.File) error {
 
 func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 	for name, node := range m.Values {
-		expr, ok := node.(ast.Expr)
-		if !ok {
+		var expr ast.Expr
+		switch node := node.(type) {
+		case ast.Expr:
+			expr = node
+		case *ast.ExprStmt:
+			expr = node.X
+		default:
 			continue
 		}
 		filter, ok := rule.filters[name]

@@ -18,6 +18,7 @@ func TestAnalyzer(t *testing.T) {
 		"namedtype",
 		"revive",
 		"golint",
+		"regression",
 	}
 
 	for _, test := range tests {
