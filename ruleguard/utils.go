@@ -10,10 +10,6 @@ import (
 	"strings"
 )
 
-func unquoteNode(lit *ast.BasicLit) string {
-	return lit.Value[1 : len(lit.Value)-1]
-}
-
 func sprintNode(fset *token.FileSet, n ast.Node) string {
 	if fset == nil {
 		fset = token.NewFileSet()
