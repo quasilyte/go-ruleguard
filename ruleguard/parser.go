@@ -603,7 +603,11 @@ func (p *rulesParser) toStringValue(x ast.Node) (string, bool) {
 		if x.Kind != token.STRING {
 			return "", false
 		}
-		return unquoteNode(x), true
+		s, err := strconv.Unquote(x.Value)
+		if err != nil {
+			return "", false
+		}
+		return s, true
 	case ast.Expr:
 		typ, ok := p.types.Types[x]
 		if !ok || typ.Type.String() != "string" {
