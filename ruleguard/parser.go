@@ -412,7 +412,6 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 			return x(s) && y(s)
 		}
 	}
-
 	switch e := e.(type) {
 	case *ast.UnaryExpr:
 		if e.Op == token.NOT {
@@ -449,6 +448,8 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 				return nil
 			}
 		}
+	case *ast.ParenExpr:
+		return p.walkFilter(dst, e.X, negate)
 	}
 
 	// TODO(quasilyte): refactor and extend.
