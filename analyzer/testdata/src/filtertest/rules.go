@@ -64,4 +64,6 @@ func _(m fluent.Matcher) {
 
 	m.Match(`textTest($x, "matches d+")`).Where(m["x"].Text.Matches(`^\d+$`)).Report(`YES`)
 	m.Match(`textTest($x, "doesn't match [A-Z]")`).Where(!m["x"].Text.Matches(`[A-Z]`)).Report(`YES`)
+
+	m.Match(`parensFilterTest($x, "type is error")`).Where((m["x"].Type.Is(`error`))).Report(`YES`)
 }
