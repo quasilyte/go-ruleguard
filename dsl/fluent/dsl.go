@@ -65,6 +65,13 @@ type Var struct {
 	Addressable bool
 
 	// Type is a type of a matched expr.
+	//
+	// For function call expressions, a type is a function result type,
+	// but for a function expression itself it's a *types.Signature.
+	//
+	// Suppose we have a `a.b()` expression:
+	//	`$x()` m["x"].Type is `a.b` function type
+	//	`$x` m["x"].Type is `a.b()` function call result type
 	Type ExprType
 
 	// Text is a captured node text as in the source code.
