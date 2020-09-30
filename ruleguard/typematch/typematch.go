@@ -20,6 +20,7 @@ const (
 	opArray
 	opMap
 	opChan
+	opFunc
 	opNamed
 )
 
@@ -78,7 +79,7 @@ func Parse(ctx *Context, s string) (*Pattern, error) {
 	}
 	root := parseExpr(ctx, n)
 	if root == nil {
-		return nil, fmt.Errorf("can't convert %s type expression", s)
+		return nil, fmt.Errorf("can't convert %s type expression (%T)", s, n)
 	}
 	p := &Pattern{
 		typeMatches:  map[string]types.Type{},
@@ -220,6 +221,39 @@ func parseExpr(ctx *Context, e ast.Expr) *pattern {
 	case *ast.ParenExpr:
 		return parseExpr(ctx, e.X)
 
+	case *ast.FuncType:
+		var params []*pattern
+		var results []*pattern
+		if e.Params != nil {
+			for _, field := range e.Params.List {
+				p := parseExpr(ctx, field.Type)
+				if p == nil {
+					return nil
+				}
+				if len(field.Names) != 0 {
+					return nil
+				}
+				params = append(params, p)
+			}
+		}
+		if e.Results != nil {
+			for _, field := range e.Results.List {
+				p := parseExpr(ctx, field.Type)
+				if p == nil {
+					return nil
+				}
+				if len(field.Names) != 0 {
+					return nil
+				}
+				results = append(results, p)
+			}
+		}
+		return &pattern{
+			op:    opFunc,
+			value: len(params),
+			subs:  append(params, results...),
+		}
+
 	case *ast.InterfaceType:
 		if len(e.Methods.List) == 0 {
 			return &pattern{op: opBuiltinType, value: efaceType}
@@ -333,6 +367,32 @@ func (p *Pattern) matchIdentical(sub *pattern, typ types.Type) bool {
 		pkgPath := sub.value.([2]string)[0]
 		typeName := sub.value.([2]string)[1]
 		return obj.Pkg().Path() == pkgPath && typeName == obj.Name()
+
+	case opFunc:
+		typ, ok := typ.(*types.Signature)
+		if !ok {
+			return false
+		}
+		numParams := sub.value.(int)
+		params := sub.subs[:numParams]
+		results := sub.subs[numParams:]
+		if typ.Params().Len() != len(params) {
+			return false
+		}
+		if typ.Results().Len() != len(results) {
+			return false
+		}
+		for i := 0; i < typ.Params().Len(); i++ {
+			if !p.matchIdentical(params[i], typ.Params().At(i).Type()) {
+				return false
+			}
+		}
+		for i := 0; i < typ.Results().Len(); i++ {
+			if !p.matchIdentical(results[i], typ.Results().At(i).Type()) {
+				return false
+			}
+		}
+		return true
 
 	default:
 		return false
