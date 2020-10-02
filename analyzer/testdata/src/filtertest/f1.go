@@ -57,6 +57,23 @@ func detectType() {
 	typeTest(time1 != time2, "time!=time") // want `YES`
 	typeTest(err != nil, "time!=time")
 	typeTest(nil != err, "time!=time")
+
+	intFunc := func() int { return 10 }
+	intToIntFunc := func(x int) int { return x }
+	typeTest(intFunc(), "func() int")                 // want `YES`
+	typeTest(func() int { return 0 }(), "func() int") // want `YES`
+	typeTest(func() string { return "" }(), "func() int")
+	typeTest(intToIntFunc(1), "func() int")
+
+	typeTest(intToIntFunc(2), "func(int) int") // want `YES`
+	typeTest(intToIntFunc, "func(int) int")
+	typeTest(intFunc, "func(int) int")
+
+	var v implementsAll
+	typeTest(v.String(), "func() string") // want `YES`
+	typeTest(implementsAll.String(v), "func() string")
+	typeTest(implementsAll.String, "func() string")
+
 }
 
 func detectPure(x int) {

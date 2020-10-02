@@ -1,6 +1,7 @@
 package typematch
 
 import (
+	"go/token"
 	"go/types"
 	"path"
 	"testing"
@@ -11,6 +12,9 @@ var (
 	typeString = types.Typ[types.String]
 	typeInt32  = types.Typ[types.Int32]
 	typeUint8  = types.Typ[types.Uint8]
+
+	intVar    = types.NewVar(token.NoPos, nil, "", typeInt)
+	stringVar = types.NewVar(token.NoPos, nil, "", typeString)
 
 	testContext = &Context{
 		Itab: NewImportsTab(map[string]string{
@@ -72,6 +76,22 @@ func TestIdentical(t *testing.T) {
 		{`rune`, typeInt32},
 		{`[]rune`, types.NewSlice(typeInt32)},
 		{`[8]byte`, types.NewArray(typeUint8, 8)},
+
+		{`func()`, types.NewSignature(nil, nil, nil, false)},
+		{`func(int)`, types.NewSignature(nil, types.NewTuple(intVar), nil, false)},
+		{`func(int, string)`, types.NewSignature(nil, types.NewTuple(intVar, stringVar), nil, false)},
+		{`func() int`, types.NewSignature(nil, nil, types.NewTuple(intVar), false)},
+		{`func(string) int`, types.NewSignature(nil, types.NewTuple(stringVar), types.NewTuple(intVar), false)},
+		{`func(int) int`, types.NewSignature(nil, types.NewTuple(intVar), types.NewTuple(intVar), false)},
+		{`func() (string, int)`, types.NewSignature(nil, nil, types.NewTuple(stringVar, intVar), false)},
+
+		{`func($_)`, types.NewSignature(nil, types.NewTuple(intVar), nil, false)},
+		{`func($_)`, types.NewSignature(nil, types.NewTuple(stringVar), nil, false)},
+		{`func($_) int`, types.NewSignature(nil, types.NewTuple(intVar), types.NewTuple(intVar), false)},
+		{`func($_) int`, types.NewSignature(nil, types.NewTuple(stringVar), types.NewTuple(intVar), false)},
+
+		{`func($t, $t)`, types.NewSignature(nil, types.NewTuple(stringVar, stringVar), nil, false)},
+		{`func($t, $t)`, types.NewSignature(nil, types.NewTuple(intVar, intVar), nil, false)},
 	}
 
 	for _, test := range tests {
@@ -116,6 +136,18 @@ func TestIdenticalNegative(t *testing.T) {
 		{`io.Reader`, namedType2("foo/io", "Reader")},
 		{`syntax.Regexp`, namedType2("regexp2/syntax", "Regexp")},
 		{`syntax.Regexp`, namedType2("regexp2/syntax", "Blah")},
+
+		{`func(int)`, types.NewSignature(nil, nil, nil, false)},
+		{`func() int`, types.NewSignature(nil, types.NewTuple(intVar), nil, false)},
+		{`func(int, int)`, types.NewSignature(nil, types.NewTuple(intVar, stringVar), nil, false)},
+		{`func() string`, types.NewSignature(nil, nil, types.NewTuple(intVar), false)},
+		{`func(string, string) int`, types.NewSignature(nil, types.NewTuple(stringVar), types.NewTuple(intVar), false)},
+		{`func(string) string`, types.NewSignature(nil, nil, types.NewTuple(stringVar, intVar), false)},
+
+		{`func($_) int`, types.NewSignature(nil, types.NewTuple(intVar), types.NewTuple(stringVar), false)},
+
+		{`func($t, $t)`, types.NewSignature(nil, types.NewTuple(intVar, stringVar), nil, false)},
+		{`func($t, $t)`, types.NewSignature(nil, types.NewTuple(stringVar, intVar), nil, false)},
 	}
 
 	for _, test := range tests {

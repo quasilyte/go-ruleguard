@@ -47,6 +47,18 @@ func _(m fluent.Matcher) {
 	m.Match(`typeTest($x, "size==100")`).Where(m["x"].Type.Size == 100).Report(`YES`)
 	m.Match(`typeTest($x, "size!=100")`).Where(m["x"].Type.Size != 100).Report(`YES`)
 
+	m.Match(`typeTest($x(), "func() int")`).
+		Where(m["x"].Type.Is("func() int")).
+		Report(`YES`)
+
+	m.Match(`typeTest($x($*_), "func(int) int")`).
+		Where(m["x"].Type.Is("func(int) int")).
+		Report(`YES`)
+
+	m.Match(`typeTest($x(), "func() string")`).
+		Where(m["x"].Type.Is("func() string")).
+		Report(`YES`)
+
 	m.Match(`typeTest($t0 == $t1, "time==time")`).Where(m["t0"].Type.Is("time.Time")).Report(`YES`)
 	m.Match(`typeTest($t0 != $t1, "time!=time")`).Where(m["t1"].Type.Is("time.Time")).Report(`YES`)
 
