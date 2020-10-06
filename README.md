@@ -126,6 +126,7 @@ To learn more, check out the documentation and/or the source code.
 ## Documentation
 
 * Example rule files: [rules.go](rules.go)
+* Another great example: [github.com/dgryski/semgrep-go/ruleguard.rules.go](https://github.com/dgryski/semgrep-go/blob/master/ruleguard.rules.go)
 * [gorules](docs/gorules.md) format documentation
 * [dsl/fluent package](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent) reference
 * [ruleguard package](https://godoc.org/github.com/quasilyte/go-ruleguard/ruleguard) reference
