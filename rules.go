@@ -91,6 +91,11 @@ func _(m fluent.Matcher) {
 }
 
 func osFilepath(m fluent.Matcher) {
+	// path/filepath package forwards path separators so if
+	// the file already uses filepath-related API it might be
+	// a good idea to reduce the direct os package dependency.
+	// In some cases it helps to remove the "os" package import completely.
+
 	m.Match(`os.PathSeparator`).
 		Where(m.File().Imports("path/filepath")).
 		Suggest(`filepath.Separator`)
