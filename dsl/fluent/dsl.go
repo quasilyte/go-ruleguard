@@ -52,6 +52,9 @@ func (m Matcher) At(v Var) Matcher {
 	return m
 }
 
+// File returns the current file context.
+func (m Matcher) File() File { return File{} }
+
 // Var is a pattern variable that describes a named submatch.
 type Var struct {
 	// Pure reports whether expr matched by var is side-effect-free.
@@ -104,3 +107,9 @@ type MatchedText string
 
 // Matches reports whether the text matches the given regexp pattern.
 func (MatchedText) Matches(pattern string) bool { return boolResult }
+
+// File represents the current Go source file.
+type File struct{}
+
+// Imports reports whether the current file imports the given path.
+func (File) Imports(path string) bool { return boolResult }

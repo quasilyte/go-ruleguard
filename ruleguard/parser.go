@@ -319,10 +319,11 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 	}
 
 	dst := p.res.universal
-	filters := map[string]submatchFilter{}
 	proto := goRule{
 		filename: p.filename,
-		filters:  filters,
+		filter: matchFilter{
+			sub: map[string]submatchFilter{},
+		},
 	}
 	var alternatives []string
 
@@ -338,7 +339,7 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 	}
 
 	if whereArgs != nil {
-		if err := p.walkFilter(filters, (*whereArgs)[0], false); err != nil {
+		if err := p.walkFilter(&proto.filter, (*whereArgs)[0], false); err != nil {
 			return err
 		}
 	}
@@ -395,7 +396,7 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 	return nil
 }
 
-func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, negate bool) error {
+func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) error {
 	typeAnd := func(x, y func(typeQuery) bool) func(typeQuery) bool {
 		if x == nil {
 			return y
@@ -430,21 +431,21 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 			y := p.types.Types[e.Y].Value
 			expectedResult := !negate
 			if operand.path == "Type.Size" && y != nil {
-				filter := dst[operand.varName]
+				filter := dst.sub[operand.varName]
 				filter.typePred = typeAnd(filter.typePred, func(q typeQuery) bool {
 					x := constant.MakeInt64(q.ctx.Sizes.Sizeof(q.x))
 					return expectedResult == constant.Compare(x, e.Op, y)
 				})
-				dst[operand.varName] = filter
+				dst.sub[operand.varName] = filter
 				return nil
 			}
 			if operand.path == "Text" && y != nil {
-				filter := dst[operand.varName]
+				filter := dst.sub[operand.varName]
 				filter.textPred = textAnd(filter.textPred, func(s string) bool {
 					x := constant.MakeString(s)
 					return expectedResult == constant.Compare(x, e.Op, y)
 				})
-				dst[operand.varName] = filter
+				dst.sub[operand.varName] = filter
 				return nil
 			}
 		}
@@ -452,10 +453,22 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 		return p.walkFilter(dst, e.X, negate)
 	}
 
+	// File-related filters.
+	fileOperand := p.toFileFilterOperand(e)
+	switch fileOperand.path {
+	case "Imports":
+		pkgPath, ok := p.toStringValue(fileOperand.args[0])
+		if !ok {
+			return p.errorf(fileOperand.args[0], "expected a string literal argument")
+		}
+		dst.fileImports = append(dst.fileImports, pkgPath)
+		return nil
+	}
+
 	// TODO(quasilyte): refactor and extend.
 	operand := p.toFilterOperand(e)
 	args := operand.args
-	filter := dst[operand.varName]
+	filter := dst.sub[operand.varName]
 	switch operand.path {
 	default:
 		return p.errorf(e, "%s is not a valid filter expression", sprintNode(p.fset, e))
@@ -465,21 +478,21 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 		} else {
 			filter.pure = bool3true
 		}
-		dst[operand.varName] = filter
+		dst.sub[operand.varName] = filter
 	case "Const":
 		if negate {
 			filter.constant = bool3false
 		} else {
 			filter.constant = bool3true
 		}
-		dst[operand.varName] = filter
+		dst.sub[operand.varName] = filter
 	case "Addressable":
 		if negate {
 			filter.addressable = bool3false
 		} else {
 			filter.addressable = bool3true
 		}
-		dst[operand.varName] = filter
+		dst.sub[operand.varName] = filter
 	case "Text.Matches":
 		patternString, ok := p.toStringValue(args[0])
 		if !ok {
@@ -493,7 +506,7 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 		filter.textPred = textAnd(filter.textPred, func(s string) bool {
 			return wantMatched == re.MatchString(s)
 		})
-		dst[operand.varName] = filter
+		dst.sub[operand.varName] = filter
 	case "Type.Is":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
@@ -508,7 +521,7 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 		filter.typePred = typeAnd(filter.typePred, func(q typeQuery) bool {
 			return wantIdentical == pat.MatchIdentical(q.x)
 		})
-		dst[operand.varName] = filter
+		dst.sub[operand.varName] = filter
 	case "Type.ConvertibleTo":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
@@ -525,7 +538,7 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 		filter.typePred = typeAnd(filter.typePred, func(q typeQuery) bool {
 			return wantConvertible == types.ConvertibleTo(q.x, y)
 		})
-		dst[operand.varName] = filter
+		dst.sub[operand.varName] = filter
 	case "Type.AssignableTo":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
@@ -542,7 +555,7 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 		filter.typePred = typeAnd(filter.typePred, func(q typeQuery) bool {
 			return wantAssignable == types.AssignableTo(q.x, y)
 		})
-		dst[operand.varName] = filter
+		dst.sub[operand.varName] = filter
 	case "Type.Implements":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
@@ -583,7 +596,7 @@ func (p *rulesParser) walkFilter(dst map[string]submatchFilter, e ast.Expr, nega
 		filter.typePred = typeAnd(filter.typePred, func(q typeQuery) bool {
 			return wantImplemented == types.Implements(q.x, iface)
 		})
-		dst[operand.varName] = filter
+		dst.sub[operand.varName] = filter
 	}
 
 	return nil
@@ -619,6 +632,23 @@ func (p *rulesParser) toStringValue(x ast.Node) (string, bool) {
 		return str, true
 	}
 	return "", false
+}
+
+func (p *rulesParser) toFileFilterOperand(e ast.Expr) filterOperand {
+	var o filterOperand
+
+	call, ok := e.(*ast.CallExpr)
+	if !ok {
+		return o
+	}
+	selector, ok := call.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return o
+	}
+
+	o.args = call.Args
+	o.path = selector.Sel.Name
+	return o
 }
 
 func (p *rulesParser) toFilterOperand(e ast.Expr) filterOperand {
