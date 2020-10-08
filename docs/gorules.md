@@ -77,26 +77,36 @@ func _(m fluent.Matcher) {
 
 ## Filters
 
-Right now there are only match variable-based filters that can be added with a [`Where`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher.Where) call.
+There are 2 types of filters that can be used in [`Where`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher.Where) call:
+1. Submatch (named variable-based) filters
+2. Context filters (current file, etc)
 
 A match variable describes a named submatch of a pattern.
 
 Here are some examples of supported filters:
+
 * Submatch expression type is identical to `T`
 * Submatch expression type is assignable to `T`
 * Submatch expression type implements interface `I`
 * Submatch expression is side-effect free
 * Submatch expression is a const expression
 * Submatch text matches provided regexp
+* Current files imports package `P`
 
 A match variable can be accessed with `fluent.Matcher` function argument indexing:
 
 ```go
-Filter(m["a"].Type.Is(`int`) && !m["b"].Type.AssignableTo(`[]string`))
+Where(m["a"].Type.Is(`int`) && !m["b"].Type.AssignableTo(`[]string`))
 ```
 
 If we had a pattern with `$a` and `$b` match variables, a filter above would only accept it
 if `$a` expression had a type of `int` while `$b` is anything that is **not** assignable to `[]string`.
+
+Context-related filters can be applied through `m` members:
+```go
+// Using m.File() to apply a file-related filter.
+Where(m.File().Imports("io/ioutil"))
+```
 
 The filter concept is crucial to avoid false-positives in rules.
 
