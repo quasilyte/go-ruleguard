@@ -1,6 +1,9 @@
 package filtertest
 
-import "time"
+import (
+	"os"
+	"time"
+)
 
 type implementsAll struct{}
 
@@ -102,4 +105,10 @@ func detectText(foo, bar int) {
 func detectParensFilter() {
 	var err error
 	parensFilterTest(err, "type is error") // want `YES`
+}
+
+func fileFilters1() {
+	// No matches as this file doesn't import "path/filepath".
+	importsTest(os.PathSeparator, "path/filepath")
+	importsTest(os.PathListSeparator, "path/filepath")
 }

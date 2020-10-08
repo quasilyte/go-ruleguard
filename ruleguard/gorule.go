@@ -19,7 +19,12 @@ type goRule struct {
 	msg        string
 	location   string
 	suggestion string
-	filters    map[string]submatchFilter
+	filter     matchFilter
+}
+
+type matchFilter struct {
+	fileImports []string
+	sub         map[string]submatchFilter
 }
 
 type submatchFilter struct {

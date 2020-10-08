@@ -90,6 +90,16 @@ func _(m fluent.Matcher) {
 		Suggest(`$a+$b`)
 }
 
+func osFilepath(m fluent.Matcher) {
+	m.Match(`os.PathSeparator`).
+		Where(m.File().Imports("path/filepath")).
+		Suggest(`filepath.Separator`)
+
+	m.Match(`os.PathListSeparator`).
+		Where(m.File().Imports("path/filepath")).
+		Suggest(`filepath.ListSeparator`)
+}
+
 // See https://twitter.com/dgryski/status/1281348103505768449
 func useMathBits(m fluent.Matcher) {
 	// RotateLeft

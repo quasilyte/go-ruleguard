@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"go/printer"
 	"io/ioutil"
+	"strconv"
 	"strings"
 
 	"github.com/quasilyte/go-ruleguard/internal/mvdan.cc/gogrep"
@@ -15,6 +16,7 @@ type rulesRunner struct {
 	rules *GoRuleSet
 
 	filename string
+	imports  map[string]struct{}
 	src      []byte
 }
 
@@ -61,6 +63,7 @@ func (rr *rulesRunner) run(f *ast.File) error {
 	// TODO(quasilyte): run local rules as well.
 
 	rr.filename = rr.ctx.Fset.Position(f.Pos()).Filename
+	rr.collectImports(f)
 
 	for _, rule := range rr.rules.universal.uncategorized {
 		rule.pat.Match(f, func(m gogrep.MatchData) {
@@ -88,6 +91,12 @@ func (rr *rulesRunner) run(f *ast.File) error {
 }
 
 func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
+	for _, neededImport := range rule.filter.fileImports {
+		if _, ok := rr.imports[neededImport]; !ok {
+			return false
+		}
+	}
+
 	for name, node := range m.Values {
 		var expr ast.Expr
 		switch node := node.(type) {
@@ -98,7 +107,8 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 		default:
 			continue
 		}
-		filter, ok := rule.filters[name]
+
+		filter, ok := rule.filter.sub[name]
 		if !ok {
 			continue
 		}
@@ -168,6 +178,17 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 	}
 	rr.ctx.Report(info, node, message, suggestion)
 	return true
+}
+
+func (rr *rulesRunner) collectImports(f *ast.File) {
+	rr.imports = make(map[string]struct{}, len(f.Imports))
+	for _, spec := range f.Imports {
+		s, err := strconv.Unquote(spec.Path.Value)
+		if err != nil {
+			continue
+		}
+		rr.imports[s] = struct{}{}
+	}
 }
 
 func (rr *rulesRunner) renderMessage(msg string, n ast.Node, nodes map[string]ast.Node, truncate bool) string {

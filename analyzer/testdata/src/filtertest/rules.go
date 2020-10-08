@@ -78,4 +78,12 @@ func _(m fluent.Matcher) {
 	m.Match(`textTest($x, "doesn't match [A-Z]")`).Where(!m["x"].Text.Matches(`[A-Z]`)).Report(`YES`)
 
 	m.Match(`parensFilterTest($x, "type is error")`).Where((m["x"].Type.Is(`error`))).Report(`YES`)
+
+	m.Match(`importsTest(os.PathSeparator, "path/filepath")`).
+		Where(m.File().Imports("path/filepath")).
+		Report(`YES`)
+
+	m.Match(`importsTest(os.PathListSeparator, "path/filepath")`).
+		Where(m.File().Imports("path/filepath")).
+		Report(`YES`)
 }
