@@ -329,3 +329,16 @@ func testYodaExpr() {
 	if nil != clusterContext.PostInstallData.AnotherNestedStruct.DeeplyNestedField { // want `\Qsuggestion: $s != nil`
 	}
 }
+
+func superfluousParens() {
+	f := func(xs ...interface{}) int { return 0 }
+	xs := []int{1, 2}
+
+	f(0)
+	f((1))                   // want `\Qthe parentheses around 1 are superfluous`
+	f((xs[0] + 2))           // want `\Qthe parentheses around xs[0] + 2 are superfluous`
+	f(0, (1 + 2))            // want `\Qthe parentheses around 1 + 2 are superfluous`
+	f(0, 1, (xs[0] + xs[1])) // want `\Qthe parentheses around xs[0] + xs[1] are superfluous`
+	f(0, (f(0)), 0)          // want `\Qthe parentheses around f(0) are superfluous`
+	f((0), (1))              // want `\Qthe parentheses around 0 are superfluous`
+}

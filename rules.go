@@ -90,6 +90,12 @@ func _(m fluent.Matcher) {
 		Suggest(`$a+$b`)
 }
 
+func exprUnparen(m fluent.Matcher) {
+	m.Match(`$f($*_, ($x), $*_)`).
+		Report(`the parentheses around $x are superfluous`).
+		Suggest(`$f($x)`)
+}
+
 func osFilepath(m fluent.Matcher) {
 	// path/filepath package forwards path separators so if
 	// the file already uses filepath-related API it might be
