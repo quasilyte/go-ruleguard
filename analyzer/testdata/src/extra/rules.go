@@ -37,6 +37,9 @@ func _(m fluent.Matcher) {
 	// that ||, the result would not be functionally identical.
 	m.Match(`($a) || ($b)`).Report(`rewrite as '$a || $b'`)
 	m.Match(`($a) && ($b)`).Report(`rewrite as '$a && $b'`)
+	m.Match(`$f($*_, ($x), $*_)`).
+		Report(`the parentheses around $x are superfluous`).
+		Suggest(`$f($x)`)
 
 	m.Match(`context.TODO()`).Report(`might want to replace context.TODO()`)
 
