@@ -393,6 +393,11 @@ func gocriticFlagDeref(m fluent.Matcher) {
 		Report(`immediate deref in $$ is most likely an error`)
 }
 
+func gocriticBadLock(m fluent.Matcher) {
+	m.Match(`$mu.Lock(); defer $mu.RUnlock()`).Report(`maybe $mu.RLock() was intended?`)
+	m.Match(`$mu.RLock(); defer $mu.Unlock()`).Report(`maybe $mu.Lock() was intended?`)
+}
+
 func reviveBoolLiteralInExpr(m fluent.Matcher) {
 	m.Match(`$x == true`,
 		`$x != true`,

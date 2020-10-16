@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -341,4 +342,32 @@ func superfluousParens() {
 	f(0, 1, (xs[0] + xs[1])) // want `\Qthe parentheses around xs[0] + xs[1] are superfluous`
 	f(0, (f(0)), 0)          // want `\Qthe parentheses around f(0) are superfluous`
 	f((0), (1))              // want `\Qthe parentheses around 0 are superfluous`
+}
+
+type withMutex struct {
+	mu sync.RWMutex
+}
+
+func mismatchingUnlock1(mu *sync.RWMutex, op func()) {
+	mu.Lock() // want `\Qmaybe mu.RLock() was intended?`
+	defer mu.RUnlock()
+	op()
+}
+
+func mismatchingUnlock2(mu *sync.RWMutex, op func()) {
+	mu.RLock() // want `\Qmaybe mu.Lock() was intended?`
+	defer mu.Unlock()
+	op()
+}
+
+func mismatchingUnlock1Struct(x *withMutex, op func()) {
+	x.mu.Lock() // want `\Qmaybe x.mu.RLock() was intended?`
+	defer x.mu.RUnlock()
+	op()
+}
+
+func mismatchingUnlock2Struct(x *withMutex, op func()) {
+	x.mu.RLock() // want `\Qmaybe x.mu.Lock() was intended?`
+	defer x.mu.Unlock()
+	op()
 }
