@@ -140,4 +140,7 @@ func _(m fluent.Matcher) {
 	m.Match(`rune($x)`).Where(m["x"].Type.Is("rune")).Suggest(`$x`)
 
 	m.Match(`nil != $s`).Where(!m["s"].Const).Suggest(`$s != nil`)
+
+	m.Match(`$mu.Lock(); defer $mu.RUnlock()`).Report(`maybe $mu.RLock() was intended?`)
+	m.Match(`$mu.RLock(); defer $mu.Unlock()`).Report(`maybe $mu.Lock() was intended?`)
 }
