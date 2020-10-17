@@ -25,7 +25,9 @@ func TestAnalyzer(t *testing.T) {
 		t.Run(test, func(t *testing.T) {
 			testdata := analysistest.TestData()
 			rulesFilename := fmt.Sprintf("./testdata/src/%s/rules.go", test)
-			analyzer.Analyzer.Flags.Set("rules", rulesFilename)
+			if err := analyzer.Analyzer.Flags.Set("rules", rulesFilename); err != nil {
+				t.Fatalf("set rules flag: %v", err)
+			}
 			analysistest.Run(t, testdata, analyzer.Analyzer, test)
 		})
 	}
