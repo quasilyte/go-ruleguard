@@ -8,13 +8,16 @@ import (
 )
 
 var (
-	typeInt    = types.Typ[types.Int]
-	typeString = types.Typ[types.String]
-	typeInt32  = types.Typ[types.Int32]
-	typeUint8  = types.Typ[types.Uint8]
+	typeInt     = types.Typ[types.Int]
+	typeString  = types.Typ[types.String]
+	typeInt32   = types.Typ[types.Int32]
+	typeUint8   = types.Typ[types.Uint8]
+	typeEstruct = types.NewStruct(nil, nil)
 
-	intVar    = types.NewVar(token.NoPos, nil, "", typeInt)
-	stringVar = types.NewVar(token.NoPos, nil, "", typeString)
+	intVar     = types.NewVar(token.NoPos, nil, "_", typeInt)
+	int32Var   = types.NewVar(token.NoPos, nil, "_", typeInt32)
+	estructVar = types.NewVar(token.NoPos, nil, "_", typeEstruct)
+	stringVar  = types.NewVar(token.NoPos, nil, "_", typeString)
 
 	testContext = &Context{
 		Itab: NewImportsTab(map[string]string{
@@ -24,12 +27,16 @@ var (
 	}
 )
 
+func structType(fields ...*types.Var) *types.Struct {
+	return types.NewStruct(fields, nil)
+}
+
 func namedType2(pkgPath, typeName string) *types.Named {
 	return namedType(pkgPath, path.Base(pkgPath), typeName)
 }
 
 func namedType(pkgPath, pkgName, typeName string) *types.Named {
-	dummy := types.NewStruct(nil, nil)
+	dummy := typeEstruct
 	pkg := types.NewPackage(pkgPath, pkgName)
 	typename := types.NewTypeName(0, pkg, typeName, dummy)
 	return types.NewNamed(typename, dummy, nil)
@@ -92,6 +99,37 @@ func TestIdentical(t *testing.T) {
 
 		{`func($t, $t)`, types.NewSignature(nil, types.NewTuple(stringVar, stringVar), nil, false)},
 		{`func($t, $t)`, types.NewSignature(nil, types.NewTuple(intVar, intVar), nil, false)},
+
+		{`struct{}`, typeEstruct},
+		{`struct{int}`, types.NewStruct([]*types.Var{intVar}, nil)},
+		{`struct{string; int}`, types.NewStruct([]*types.Var{stringVar, intVar}, nil)},
+		{`struct{$_; string}`, types.NewStruct([]*types.Var{stringVar, stringVar}, nil)},
+		{`struct{$_; $_}`, types.NewStruct([]*types.Var{stringVar, intVar}, nil)},
+		{`struct{$x; $x}`, types.NewStruct([]*types.Var{intVar, intVar}, nil)},
+
+		// Any struct.
+		{`struct{$*_}`, typeEstruct},
+		{`struct{$*_}`, structType(intVar, intVar)},
+
+		// Struct has suffix.
+		{`struct{$*_; int}`, structType(intVar)},
+		{`struct{$*_; int}`, structType(stringVar, stringVar, intVar)},
+
+		// Struct has prefix.
+		{`struct{int; $*_}`, structType(intVar)},
+		{`struct{int; $*_}`, structType(intVar, stringVar, stringVar)},
+
+		// Struct contains.
+		{`struct{$*_; int; $*_}`, structType(intVar)},
+		{`struct{$*_; int; $*_}`, structType(stringVar, intVar)},
+		{`struct{$*_; int; $*_}`, structType(intVar, stringVar)},
+		{`struct{$*_; int; $*_}`, structType(stringVar, intVar, stringVar)},
+
+		// Struct with dups.
+		{`struct{$*_; $x; $*_; $x; $*_}`, structType(intVar, intVar)},
+		{`struct{$*_; $x; $*_; $x; $*_}`, structType(intVar, intVar, stringVar)},
+		{`struct{$*_; $x; $*_; $x; $*_}`, structType(intVar, int32Var, intVar, stringVar)},
+		{`struct{$*_; $x; $*_; $x; $*_}`, structType(intVar, int32Var, stringVar, intVar)},
 	}
 
 	for _, test := range tests {
@@ -148,6 +186,41 @@ func TestIdenticalNegative(t *testing.T) {
 
 		{`func($t, $t)`, types.NewSignature(nil, types.NewTuple(intVar, stringVar), nil, false)},
 		{`func($t, $t)`, types.NewSignature(nil, types.NewTuple(stringVar, intVar), nil, false)},
+
+		{`struct{}`, typeInt},
+		{`struct{}`, types.NewStruct([]*types.Var{intVar}, nil)},
+		{`struct{int}`, typeEstruct},
+		{`struct{int}`, types.NewStruct([]*types.Var{stringVar}, nil)},
+		{`struct{string; int}`, types.NewStruct([]*types.Var{intVar, stringVar}, nil)},
+		{`struct{$_; string}`, types.NewStruct([]*types.Var{stringVar, stringVar, intVar}, nil)},
+		{`struct{$_; $_}`, types.NewStruct([]*types.Var{stringVar}, nil)},
+		{`struct{$x; $x}`, types.NewStruct([]*types.Var{intVar, stringVar}, nil)},
+
+		// Any struct negative.
+		{`struct{$*_}`, typeInt},
+
+		// Struct has suffix negative.
+		{`struct{$*_; int}`, typeEstruct},
+		{`struct{$*_; int}`, structType(stringVar)},
+
+		// Struct has prefix negative.
+		{`struct{int; $*_}`, typeEstruct},
+		{`struct{int; $*_}`, structType(stringVar)},
+
+		// Struct contains negative.
+		{`struct{$*_; int; $*_}`, typeEstruct},
+		{`struct{$*_; int; $*_}`, structType(stringVar)},
+		{`struct{$*_; int; $*_}`, structType(stringVar, int32Var)},
+
+		// Struct with dups negative.
+		{`struct{$*_; $x; $*_; $x; $*_}`, typeEstruct},
+		{`struct{$*_; $x; $*_; $x; $*_}`, structType(int32Var, intVar)},
+		{`struct{$*_; $x; $*_; $x; $*_}`, structType(intVar, int32Var, stringVar)},
+		{`struct{$*_; $x; $*_; $x; $*_}`, structType(intVar, int32Var, estructVar, stringVar)},
+
+		// TODO: this should fail as $* is named.
+		// We don't support named $* now, but they should be supported.
+		//{`struct{$*x; int; $*x}`, structType(stringVar, intVar, intVar)},
 	}
 
 	for _, test := range tests {
