@@ -602,15 +602,6 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 	return nil
 }
 
-func (p *rulesParser) toIntValue(x ast.Node) (int64, bool) {
-	lit, ok := x.(*ast.BasicLit)
-	if !ok || lit.Kind != token.INT {
-		return 0, false
-	}
-	v, err := strconv.ParseInt(lit.Value, 10, 64)
-	return v, err == nil
-}
-
 func (p *rulesParser) toStringValue(x ast.Node) (string, bool) {
 	switch x := x.(type) {
 	case *ast.BasicLit:

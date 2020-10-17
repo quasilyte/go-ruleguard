@@ -7,3 +7,5 @@ const (
 	bool3false
 	bool3true
 )
+
+const _ = bool3unset
