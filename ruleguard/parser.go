@@ -469,6 +469,7 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 	operand := p.toFilterOperand(e)
 	args := operand.args
 	filter := dst.sub[operand.varName]
+	underlying := false
 	switch operand.path {
 	default:
 		return p.errorf(e, "%s is not a valid filter expression", sprintNode(p.fset, e))
@@ -507,6 +508,9 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return wantMatched == re.MatchString(s)
 		})
 		dst.sub[operand.varName] = filter
+	case "Type.Underlying.Is":
+		underlying = true
+		fallthrough
 	case "Type.Is":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
@@ -518,9 +522,15 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.errorf(args[0], "parse type expr: %v", err)
 		}
 		wantIdentical := !negate
-		filter.typePred = typeAnd(filter.typePred, func(q typeQuery) bool {
-			return wantIdentical == pat.MatchIdentical(q.x)
-		})
+		if underlying {
+			filter.typePred = typeAnd(filter.typePred, func(q typeQuery) bool {
+				return wantIdentical == pat.MatchIdentical(q.x.Underlying())
+			})
+		} else {
+			filter.typePred = typeAnd(filter.typePred, func(q typeQuery) bool {
+				return wantIdentical == pat.MatchIdentical(q.x)
+			})
+		}
 		dst.sub[operand.varName] = filter
 	case "Type.ConvertibleTo":
 		typeString, ok := p.toStringValue(args[0])
@@ -651,6 +661,10 @@ func (p *rulesParser) toFilterOperand(e ast.Expr) filterOperand {
 	}
 	var path string
 	for {
+		if call, ok := e.(*ast.CallExpr); ok {
+			e = call.Fun
+			continue
+		}
 		selector, ok := e.(*ast.SelectorExpr)
 		if !ok {
 			break
