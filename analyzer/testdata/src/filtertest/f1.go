@@ -11,6 +11,53 @@ func (implementsAll) Read([]byte) (int, error) { return 0, nil }
 func (implementsAll) String() string           { return "" }
 
 func detectType() {
+	{
+		type withNamedTime struct {
+			x int
+			y time.Time
+		}
+		var foo struct {
+			x time.Time
+		}
+		var bar withNamedTime
+		typeTest(withNamedTime{}, "contains time.Time") // want `YES`
+		typeTest(foo, "contains time.Time")             // want `YES`
+		typeTest(bar, "contains time.Time")             // want `YES`
+	}
+
+	{
+		type timeFirst struct {
+			y time.Time
+			x int
+		}
+		var foo struct {
+			x time.Time
+		}
+		var bar timeFirst
+		typeTest(timeFirst{}, "starts with time.Time") // want `YES`
+		typeTest(foo, "starts with time.Time")         // want `YES`
+		typeTest(bar, "starts with time.Time")         // want `YES`
+	}
+
+	{
+		type intPair struct {
+			y int
+			x int
+		}
+		var foo struct {
+			x float32
+			y float32
+		}
+		var bar intPair
+		typeTest(struct { // want `YES`
+			_ string
+			_ string
+		}{}, "non-underlying type test; T + T")
+		typeTest(intPair{}, "non-underlying type test; T + T") // type is Named, not struct
+		typeTest(foo, "non-underlying type test; T + T")       // want `YES`
+		typeTest(bar, "non-underlying type test; T + T")       // type is Named, not struct
+	}
+
 	var i1, i2 int
 	var ii []int
 	var s1, s2 string

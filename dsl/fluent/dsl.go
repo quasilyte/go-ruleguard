@@ -87,6 +87,11 @@ type ExprType struct {
 	Size int
 }
 
+// Underlying returns expression type underlying type.
+// See https://golang.org/pkg/go/types/#Type Underlying() method documentation.
+// Read https://golang.org/ref/spec#Types section to learn more about underlying types.
+func (ExprType) Underlying() ExprType { return underlyingType }
+
 // AssignableTo reports whether a type is assign-compatible with a given type.
 // See https://golang.org/pkg/go/types/#AssignableTo.
 func (ExprType) AssignableTo(typ string) bool { return boolResult }

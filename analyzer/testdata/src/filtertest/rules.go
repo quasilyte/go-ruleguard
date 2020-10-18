@@ -7,6 +7,18 @@ import "github.com/quasilyte/go-ruleguard/dsl/fluent"
 func _(m fluent.Matcher) {
 	m.Import(`github.com/quasilyte/go-ruleguard/analyzer/testdata/src/filtertest/foolib`)
 
+	m.Match(`typeTest($x, "contains time.Time")`).
+		Where(m["x"].Type.Underlying().Is(`struct{$*_; time.Time; $*_}`)).
+		Report(`YES`)
+
+	m.Match(`typeTest($x, "starts with time.Time")`).
+		Where(m["x"].Type.Underlying().Is(`struct{time.Time; $*_}`)).
+		Report(`YES`)
+
+	m.Match(`typeTest($x, "non-underlying type test; T + T")`).
+		Where(m["x"].Type.Is(`struct{$t; $t}`)).
+		Report(`YES`)
+
 	m.Match(`typeTest($x + $y)`).
 		Where(m["x"].Type.Is(`string`) && m["y"].Type.Is("string")).
 		Report(`concat`)

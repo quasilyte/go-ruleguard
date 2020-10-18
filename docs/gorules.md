@@ -142,6 +142,13 @@ Methods like [`ExprType.Is()`](https://godoc.org/github.com/quasilyte/go-rulegua
 * `[$len]$T` matches any array.
 * `map[$K]$V` matches any map.
 * `map[$T]$T` matches a map where a key and value types are the same.
+* `struct{$*_}` any struct type.
+* `struct{$x; $*_}` struct that has $x-typed first field.
+* `struct{$*_; $x; $*_}` struct that contains $x-typed field.
+* `struct{$*_; $x}` struct that has $x-typed last field.
+
+Note: when matching types, make sure to think whether you need to match a type or the **underlying type**.
+To match the underlying type, use [`ExprType.Underlying()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#ExprType.Underlying) method.
 
 You may recognize that it's the same pattern behavior as in AST patterns.
 
