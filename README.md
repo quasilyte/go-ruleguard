@@ -151,10 +151,10 @@ To learn more, check out the documentation and/or the source code.
 
 ## Ready to use rules
 
-There is the list of open source rules you can use in your project:
+There is the list of open-source rules you can use in your project:
 
 * [go-ruleguard/rules.go](https://github.com/quasilyte/go-ruleguard/blob/master/rules.go)
-* [gsemgrep-go/ruleguard.rules.go](https://github.com/dgryski/semgrep-go/blob/master/ruleguard.rules.go)
+* [semgrep-go/ruleguard.rules.go](https://github.com/dgryski/semgrep-go/blob/master/ruleguard.rules.go)
 * [go-critic/rules.go](https://github.com/go-critic/go-critic/blob/master/rules.go)
 
 ## Extra references
