@@ -26,7 +26,7 @@ var (
 )
 
 func init() {
-	Analyzer.Flags.StringVar(&flagRules, "rules", "", "comma-separated list of gorule file paths")
+	Analyzer.Flags.StringVar(&flagRules, "rules", "", "comma-separated list of gorule file paths or URLs")
 	Analyzer.Flags.StringVar(&flagE, "e", "", "execute a single rule from a given string")
 }
 
