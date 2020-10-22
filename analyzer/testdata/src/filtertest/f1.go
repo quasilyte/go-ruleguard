@@ -20,9 +20,12 @@ func detectType() {
 			x time.Time
 		}
 		var bar withNamedTime
+		type indirectFoo1 withNamedTime
+		type indirectFoo2 indirectFoo1
 		typeTest(withNamedTime{}, "contains time.Time") // want `YES`
 		typeTest(foo, "contains time.Time")             // want `YES`
 		typeTest(bar, "contains time.Time")             // want `YES`
+		typeTest(indirectFoo2{}, "contains time.Time")  // want `YES`
 	}
 
 	{
