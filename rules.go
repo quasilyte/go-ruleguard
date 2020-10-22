@@ -3,6 +3,8 @@
 package gorules
 
 import (
+	"strings"
+
 	"github.com/quasilyte/go-ruleguard/dsl/fluent"
 )
 
@@ -233,6 +235,28 @@ func badSplitNValue(m fluent.Matcher) {
 	m.Match(`bytes.Replace($s, $old, $new, 0)`).Suggest(`bytes.Replace($s, $old, $new, -1)`)
 	m.Match(`strings.SplitN($s, $sep, 0)`).Suggest(`strings.Split($s, $sep)`)
 	m.Match(`bytes.SplitN($s, $sep, 0)`).Suggest(`bytes.Split($s, $sep)`)
+
+	// For consistency, let's use `-1` as "match everything", not a random negative number
+	m.Match(`strings.Replace($s, $old, $new, $n)`).
+		Where(m["n"].Const).
+		Where(strings.HasPrefix(string(m["n"].Text), "-")).
+		Where(m["n"].Text != "-1").
+		Suggest(`strings.Replace($s, $old, $new, -1)`)
+	m.Match(`bytes.Replace($s, $old, $new, $n)`).
+		Where(m["n"].Const).
+		Where(strings.HasPrefix(string(m["n"].Text), "-")).
+		Where(m["n"].Text != "-1").
+		Suggest(`bytes.Replace($s, $old, $new, -1)`)
+	m.Match(`strings.SplitN($s, $sep, $n)`).
+		Where(m["n"].Const).
+		Where(strings.HasPrefix(string(m["n"].Text), "-")).
+		Where(m["n"].Text != "-1").
+		Suggest(`strings.Split($s, $sep`)
+	m.Match(`bytes.SplitN($s, $sep, $n)`).
+		Where(m["n"].Const).
+		Where(strings.HasPrefix(string(m["n"].Text), "-")).
+		Where(m["n"].Text != "-1").
+		Suggest(`bytes.Split($s, $sep`)
 
 	// The last argument of `SplitN` indicates parts count, not splits count
 	m.Match(`strings.SplitN($s, $sep, 1)`).Suggest(`strings.SplitN($s, $sep, 2)`)
