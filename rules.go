@@ -227,19 +227,21 @@ func gocriticArgOrder(m fluent.Matcher) {
 		Suggest(`strings.Contains($s2, $s1)`)
 }
 
-func gocriticBadCall(m fluent.Matcher) {
-	m.Match(`strings.Replace($_, $_, $_, 0)`,
-		`bytes.Replace($_, $_, $_, 0)`,
-		`strings.SplitN($_, $_, 0)`,
-		`bytes.SplitN($_, $_, 0)`).
-		Report(`n=0 argument does nothing, maybe n=-1 is indended?`)
+func badSplitNValue(m fluent.Matcher) {
+	// "Match everything" should be -1, not 0. 0 does nothing.
+	m.Match(`strings.Replace($s, $old, $new, 0)`).Suggest(`strings.Replace($s, $old, $new, -1)`)
+	m.Match(`bytes.Replace($s, $old, $new, 0)`).Suggest(`bytes.Replace($s, $old, $new, -1)`)
+	m.Match(`strings.SplitN($s, $sep, 0)`).Suggest(`strings.Split($s, $sep)`)
+	m.Match(`bytes.SplitN($s, $sep, 0)`).Suggest(`bytes.Split($s, $sep)`)
 
 	// The last argument of `SplitN` indicates parts count, not splits count
 	m.Match(`strings.SplitN($s, $sep, 1)`).Suggest(`strings.SplitN($s, $sep, 2)`)
 	m.Match(`bytes.SplitN($s, $sep, 1)`).Suggest(`bytes.SplitN($s, $sep, 2)`)
 	m.Match(`strings.SplitAfterN($s, $sep, 1)`).Suggest(`strings.SplitAfterN($s, $sep, 2)`)
 	m.Match(`bytes.SplitAfterN($s, $sep, 1)`).Suggest(`bytes.SplitAfterN($s, $sep, 2)`)
+}
 
+func gocriticBadCall(m fluent.Matcher) {
 	m.Match(`append($_)`).Report(`append called with 1 argument does nothing`)
 }
 
