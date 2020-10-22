@@ -44,6 +44,7 @@ func badString() {
 
 	p := fmt.Println
 	p(strings.Count(s1, s2) == 0) // want `\Qsuggestion: !strings.Contains(s1, s2)`
+	p(strings.Count(s1, s2) >= 0) // want `statement always true`
 	p(strings.Count(s1, s2) > 0)  // want `\Qsuggestion: strings.Contains(s1, s2)`
 	p(strings.Count(s1, s2) >= 1) // want `\Qsuggestion: strings.Contains(s1, s2)`
 	p(strings.Count(s1, s2) > 1)
