@@ -41,6 +41,12 @@ func badString() {
 	strings.SplitAfterN(s1, s2, 0)   // want `\Qsuggestion: strings.SplitAfter(s1, s2)`
 	strings.SplitAfterN(s1, s2, 1)   // want `\Qsuggestion: strings.SplitAfterN(s1, s2, 2)`
 	strings.SplitAfterN(s1, s2, 2)
+
+	p := fmt.Println
+	p(strings.Count(s1, s2) == 0) // want `\Qsuggestion: !strings.Contains(s1, s2)`
+	p(strings.Count(s1, s2) > 0)  // want `\Qsuggestion: strings.Contains(s1, s2)`
+	p(strings.Count(s1, s2) >= 1) // want `\Qsuggestion: strings.Contains(s1, s2)`
+	p(strings.Count(s1, s2) > 1)
 }
 
 func badBytes() {
