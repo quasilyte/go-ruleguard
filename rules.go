@@ -2,7 +2,9 @@
 
 package gorules
 
-import "github.com/quasilyte/go-ruleguard/dsl/fluent"
+import (
+	"github.com/quasilyte/go-ruleguard/dsl/fluent"
+)
 
 // This is an example rule file for ruleguard.
 //
@@ -232,8 +234,13 @@ func gocriticBadCall(m fluent.Matcher) {
 		`bytes.SplitN($_, $_, 0)`).
 		Report(`n=0 argument does nothing, maybe n=-1 is indended?`)
 
-	m.Match(`append($_)`).
-		Report(`append called with 1 argument does nothing`)
+	// The last argument of `SplitN` indicates parts count, not splits count
+	m.Match(`strings.SplitN($s, $sep, 1)`).Suggest(`strings.SplitN($s, $sep, 2)`)
+	m.Match(`bytes.SplitN($s, $sep, 1)`).Suggest(`bytes.SplitN($s, $sep, 2)`)
+	m.Match(`strings.SplitAfterN($s, $sep, 1)`).Suggest(`strings.SplitAfterN($s, $sep, 2)`)
+	m.Match(`bytes.SplitAfterN($s, $sep, 1)`).Suggest(`bytes.SplitAfterN($s, $sep, 2)`)
+
+	m.Match(`append($_)`).Report(`append called with 1 argument does nothing`)
 }
 
 func gocriticDupArg(m fluent.Matcher) {
