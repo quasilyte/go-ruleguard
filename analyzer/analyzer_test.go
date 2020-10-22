@@ -34,7 +34,7 @@ func TestAnalyzer(t *testing.T) {
 }
 
 func TestAnalyzer_Rules_RemoteConfig(t *testing.T) {
-	test := "rules"
+	test := "rules_master"
 	url := "https://raw.githubusercontent.com/quasilyte/go-ruleguard/master/rules.go"
 	testdata := analysistest.TestData()
 	err := analyzer.Analyzer.Flags.Set("rules", url)

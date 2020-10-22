@@ -3,8 +3,6 @@
 package gorules
 
 import (
-	"strings"
-
 	"github.com/quasilyte/go-ruleguard/dsl/fluent"
 )
 
@@ -177,15 +175,11 @@ func useMathBits(m fluent.Matcher) {
 }
 
 func gocriticWrapperFunc(m fluent.Matcher) {
-	m.Match(`strings.SplitN($s, $sep, -1)`).Suggest(`strings.Split($s, $sep)`)
-	m.Match(`strings.Replace($s, $old, $new, -1)`).Suggest(`strings.ReplaceAll($s, $old, $new)`)
 	m.Match(`strings.TrimFunc($s, unicode.IsSpace)`).Suggest(`strings.TrimSpace($s)`)
 	m.Match(`strings.Map(unicode.ToUpper, $s)`).Suggest(`strings.ToUpper($s)`)
 	m.Match(`strings.Map(unicode.ToLower, $s)`).Suggest(`strings.ToLower($s)`)
 	m.Match(`strings.Map(unicode.ToTitle, $s)`).Suggest(`strings.ToTitle($s)`)
 
-	m.Match(`bytes.SplitN($s, $sep, -1)`).Suggest(`bytes.Split($s, $sep)`)
-	m.Match(`bytes.Replace($s, $old, $new, -1)`).Suggest(`bytes.ReplaceAll($s, $old, $new)`)
 	m.Match(`bytes.TrimFunc($s, unicode.IsSpace)`).Suggest(`bytes.TrimSpace($s)`)
 	m.Match(`bytes.Map(unicode.ToUpper, $s)`).Suggest(`bytes.ToUpper($s)`)
 	m.Match(`bytes.Map(unicode.ToLower, $s)`).Suggest(`bytes.ToLower($s)`)
@@ -230,39 +224,33 @@ func gocriticArgOrder(m fluent.Matcher) {
 }
 
 func badSplitNValue(m fluent.Matcher) {
-	// "Match everything" should be -1, not 0. 0 does nothing.
-	m.Match(`strings.Replace($s, $old, $new, 0)`).Suggest(`strings.Replace($s, $old, $new, -1)`)
-	m.Match(`bytes.Replace($s, $old, $new, 0)`).Suggest(`bytes.Replace($s, $old, $new, -1)`)
-	m.Match(`strings.SplitN($s, $sep, 0)`).Suggest(`strings.Split($s, $sep)`)
-	m.Match(`bytes.SplitN($s, $sep, 0)`).Suggest(`bytes.Split($s, $sep)`)
-
-	// For consistency, let's use `-1` as "match everything", not a random negative number
-	m.Match(`strings.Replace($s, $old, $new, $n)`).
-		Where(m["n"].Const).
-		Where(strings.HasPrefix(string(m["n"].Text), "-")).
-		Where(m["n"].Text != "-1").
-		Suggest(`strings.Replace($s, $old, $new, -1)`)
-	m.Match(`bytes.Replace($s, $old, $new, $n)`).
-		Where(m["n"].Const).
-		Where(strings.HasPrefix(string(m["n"].Text), "-")).
-		Where(m["n"].Text != "-1").
-		Suggest(`bytes.Replace($s, $old, $new, -1)`)
-	m.Match(`strings.SplitN($s, $sep, $n)`).
-		Where(m["n"].Const).
-		Where(strings.HasPrefix(string(m["n"].Text), "-")).
-		Where(m["n"].Text != "-1").
-		Suggest(`strings.Split($s, $sep`)
-	m.Match(`bytes.SplitN($s, $sep, $n)`).
-		Where(m["n"].Const).
-		Where(strings.HasPrefix(string(m["n"].Text), "-")).
-		Where(m["n"].Text != "-1").
-		Suggest(`bytes.Split($s, $sep`)
+	// Interpret any non-positive match count as "match all" and replace it by a better function.
+	// The special case is zero. Zero does nothing, so it's a bug, so we replace it too.
+	// Everything else is for consistency.
+	m.Match(`strings.Replace($s, $d, $w, $n)`).
+		Where(m["n"].Const && m["n"].Text.Matches(`(\-[0-9]+|0)`)).
+		Suggest(`strings.ReplaceAll($s, $d, $w)`)
+	m.Match(`bytes.Replace($s, $d, $w, $n)`).
+		Where(m["n"].Const && m["n"].Text.Matches(`(\-[0-9]+|0)`)).
+		Suggest(`bytes.ReplaceAll($s, $d, $w)`)
+	m.Match(`strings.SplitN($s, $p, $n)`).
+		Where(m["n"].Const && m["n"].Text.Matches(`(\-[0-9]+|0)`)).
+		Suggest(`strings.Split($s, $p)`)
+	m.Match(`bytes.SplitN($s, $p, $n)`).
+		Where(m["n"].Const && m["n"].Text.Matches(`(\-[0-9]+|0)`)).
+		Suggest(`bytes.Split($s, $p)`)
+	m.Match(`strings.SplitAfterN($s, $p, $n)`).
+		Where(m["n"].Const && m["n"].Text.Matches(`(\-[0-9]+|0)`)).
+		Suggest(`strings.SplitAfter($s, $p)`)
+	m.Match(`bytes.SplitAfterN($s, $p, $n)`).
+		Where(m["n"].Const && m["n"].Text.Matches(`(\-[0-9]+|0)`)).
+		Suggest(`bytes.SplitAfter($s, $p)`)
 
 	// The last argument of `SplitN` indicates parts count, not splits count
-	m.Match(`strings.SplitN($s, $sep, 1)`).Suggest(`strings.SplitN($s, $sep, 2)`)
-	m.Match(`bytes.SplitN($s, $sep, 1)`).Suggest(`bytes.SplitN($s, $sep, 2)`)
-	m.Match(`strings.SplitAfterN($s, $sep, 1)`).Suggest(`strings.SplitAfterN($s, $sep, 2)`)
-	m.Match(`bytes.SplitAfterN($s, $sep, 1)`).Suggest(`bytes.SplitAfterN($s, $sep, 2)`)
+	m.Match(`strings.SplitN($s, $p, 1)`).Suggest(`strings.SplitN($s, $p, 2)`)
+	m.Match(`bytes.SplitN($s, $p, 1)`).Suggest(`bytes.SplitN($s, $p, 2)`)
+	m.Match(`strings.SplitAfterN($s, $p, 1)`).Suggest(`strings.SplitAfterN($s, $p, 2)`)
+	m.Match(`bytes.SplitAfterN($s, $p, 1)`).Suggest(`bytes.SplitAfterN($s, $p, 2)`)
 }
 
 func gocriticBadCall(m fluent.Matcher) {
