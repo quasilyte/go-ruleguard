@@ -91,20 +91,13 @@ func readRules() (*parseRulesResult, error) {
 
 	switch {
 	case flagRules != "":
-		if flagRules == "" {
-			return nil, fmt.Errorf("-rules values is empty")
-		}
 		filenames := strings.Split(flagRules, ",")
 		var ruleSets []*ruleguard.GoRuleSet
 		for _, filename := range filenames {
 			filename = strings.TrimSpace(filename)
-			data, err := ioutil.ReadFile(filename)
+			rset, err := loadLocalConfig(filename, fset)
 			if err != nil {
-				return nil, fmt.Errorf("read rules file: %v", err)
-			}
-			rset, err := ruleguard.ParseRules(filename, fset, bytes.NewReader(data))
-			if err != nil {
-				return nil, fmt.Errorf("parse rules file: %v", err)
+				return nil, err
 			}
 			ruleSets = append(ruleSets, rset)
 		}
@@ -126,4 +119,16 @@ func readRules() (*parseRulesResult, error) {
 	default:
 		return nil, fmt.Errorf("both -e and -rules flags are empty")
 	}
+}
+
+func loadLocalConfig(filename string, fset *token.FileSet) (*ruleguard.GoRuleSet, error) {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, fmt.Errorf("read rules file: %v", err)
+	}
+	rset, err := ruleguard.ParseRules(filename, fset, bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("parse rules file: %v", err)
+	}
+	return rset, nil
 }
