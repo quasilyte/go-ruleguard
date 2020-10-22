@@ -1,12 +1,11 @@
 package analyzer
 
 import (
-	"bytes"
 	"fmt"
 	"go/ast"
 	"go/token"
-	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -127,11 +126,11 @@ func readRules() (*parseRulesResult, error) {
 }
 
 func loadLocalConfig(filename string, fset *token.FileSet) (*ruleguard.GoRuleSet, error) {
-	data, err := ioutil.ReadFile(filename)
+	stream, err := os.Open(filename)
 	if err != nil {
 		return nil, fmt.Errorf("cannot open file: %v", err)
 	}
-	rset, err := ruleguard.ParseRules(filename, fset, bytes.NewReader(data))
+	rset, err := ruleguard.ParseRules(filename, fset, stream)
 	if err != nil {
 		return nil, fmt.Errorf("cannot parse rules: %v", err)
 	}
