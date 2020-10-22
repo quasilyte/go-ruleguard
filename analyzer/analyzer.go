@@ -6,6 +6,7 @@ import (
 	"go/ast"
 	"go/token"
 	"io/ioutil"
+	"net/http"
 	"path/filepath"
 	"strings"
 
@@ -95,9 +96,13 @@ func readRules() (*parseRulesResult, error) {
 		var ruleSets []*ruleguard.GoRuleSet
 		for _, filename := range filenames {
 			filename = strings.TrimSpace(filename)
-			rset, err := loadLocalConfig(filename, fset)
+			loader := loadLocalConfig
+			if strings.HasPrefix(filename, "http://") || strings.HasPrefix(filename, "https://") {
+				loader = loadRemoteConfig
+			}
+			rset, err := loader(filename, fset)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("cannot read rules: %v", err)
 			}
 			ruleSets = append(ruleSets, rset)
 		}
@@ -124,11 +129,25 @@ func readRules() (*parseRulesResult, error) {
 func loadLocalConfig(filename string, fset *token.FileSet) (*ruleguard.GoRuleSet, error) {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return nil, fmt.Errorf("read rules file: %v", err)
+		return nil, fmt.Errorf("cannot open file: %v", err)
 	}
 	rset, err := ruleguard.ParseRules(filename, fset, bytes.NewReader(data))
 	if err != nil {
-		return nil, fmt.Errorf("parse rules file: %v", err)
+		return nil, fmt.Errorf("cannot parse rules: %v", err)
+	}
+	return rset, nil
+}
+
+func loadRemoteConfig(url string, fset *token.FileSet) (*ruleguard.GoRuleSet, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("cannot open URL: %v", err)
+	}
+	defer resp.Body.Close()
+
+	rset, err := ruleguard.ParseRules(url, fset, resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("cannot parse rules: %v", err)
 	}
 	return rset, nil
 }
