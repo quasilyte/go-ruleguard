@@ -134,6 +134,7 @@ To learn more, check out the documentation and/or the source code.
 
 ## Extra references
 
+* Online ruleguard playground: [go-ruleguard.github.io/play](https://go-ruleguard.github.io/play)
 * [gogrep](https://github.com/mvdan/gogrep) - underlying AST matching engine
 * [NoVerify: Dynamic Rules for Static Analysis](https://medium.com/@vktech/noverify-dynamic-rules-for-static-analysis-8f42859e9253)
 * [Ruleguard comparison with Semgrep and CodeQL](https://speakerdeck.com/quasilyte/ruleguard-vs-semgrep-vs-codeql)
