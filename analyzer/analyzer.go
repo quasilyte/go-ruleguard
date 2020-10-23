@@ -91,9 +91,6 @@ func readRules() (*parseRulesResult, error) {
 
 	switch {
 	case flagRules != "":
-		if flagRules == "" {
-			return nil, fmt.Errorf("-rules values is empty")
-		}
 		filenames := strings.Split(flagRules, ",")
 		var ruleSets []*ruleguard.GoRuleSet
 		for _, filename := range filenames {
