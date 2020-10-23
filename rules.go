@@ -268,7 +268,7 @@ func gocriticDupArg(m fluent.Matcher) {
 		`bytes.Replace($_, $x, $x, $_)`,
 		`reflect.Copy($x, $x)`,
 		`reflect.DeepEqual($x, $x)`,
-		`types.Identical($x, $y)`,
+		`types.Identical($x, $x)`,
 		`io.Copy($x, $x)`,
 		`copy($x, $x)`).
 		Report(`suspicious duplicated args in $$`)
