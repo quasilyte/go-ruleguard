@@ -52,6 +52,13 @@ func _(m fluent.Matcher) {
 		Suggest(`!strings.Contains($s1, $s2)`)
 	m.Match(`strings.Count($s1, $s2) >= 0`).
 		Report(`statement always true`)
+	m.Match(`bytes.Count($s1, $s2) > 0`,
+		`bytes.Count($s1, $s2) >= 1`).
+		Suggest(`bytes.Contains($s1, $s2)`)
+	m.Match(`bytes.Count($s1, $s2) == 0`).
+		Suggest(`!bytes.Contains($s1, $s2)`)
+	m.Match(`bytes.Count($s1, $s2) >= 0`).
+		Report(`statement always true`)
 
 	m.Match(`sort.Slice($s, func($i, $j int) bool { return $s[$i] < $s[$j] })`).
 		Where(m["s"].Type.Is(`[]string`)).
