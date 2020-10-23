@@ -155,7 +155,6 @@ There is the list of open-source rules you can use in your project:
 
 * [go-ruleguard/rules.go](https://github.com/quasilyte/go-ruleguard/blob/master/rules.go)
 * [semgrep-go/ruleguard.rules.go](https://github.com/dgryski/semgrep-go/blob/master/ruleguard.rules.go)
-* [go-critic/rules.go](https://github.com/go-critic/go-critic/blob/master/rules.go)
 
 ## Extra references
 
