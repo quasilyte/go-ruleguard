@@ -155,10 +155,10 @@ There is the list of open-source rules you can use in your project:
 
 * [go-ruleguard/rules.go](https://github.com/quasilyte/go-ruleguard/blob/master/rules.go)
 * [semgrep-go/ruleguard.rules.go](https://github.com/dgryski/semgrep-go/blob/master/ruleguard.rules.go)
-* [go-critic/rules.go](https://github.com/go-critic/go-critic/blob/master/rules.go)
 
 ## Extra references
 
+* Online ruleguard playground: [go-ruleguard.github.io/play](https://go-ruleguard.github.io/play)
 * [gogrep](https://github.com/mvdan/gogrep) - underlying AST matching engine
 * [NoVerify: Dynamic Rules for Static Analysis](https://medium.com/@vktech/noverify-dynamic-rules-for-static-analysis-8f42859e9253)
 * [Ruleguard comparison with Semgrep and CodeQL](https://speakerdeck.com/quasilyte/ruleguard-vs-semgrep-vs-codeql)

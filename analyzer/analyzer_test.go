@@ -2,6 +2,9 @@ package analyzer_test
 
 import (
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"path"
 	"testing"
 
 	"github.com/quasilyte/go-ruleguard/analyzer"
@@ -33,22 +36,34 @@ func TestAnalyzer(t *testing.T) {
 	}
 }
 
+type RulesHandler struct {
+	testdata string
+}
+
+func (h *RulesHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	fpath := path.Join(h.testdata, "../../rules.go")
+	http.ServeFile(w, r, fpath)
+}
+
 func TestAnalyzer_Rules_RemoteConfig(t *testing.T) {
-	test := "rules_master"
-	url := "https://raw.githubusercontent.com/quasilyte/go-ruleguard/master/rules.go"
-	testdata := analysistest.TestData()
-	err := analyzer.Analyzer.Flags.Set("rules", url)
+	handler := RulesHandler{
+		testdata: analysistest.TestData(),
+	}
+	server := httptest.NewServer(&handler)
+	defer server.Close()
+
+	err := analyzer.Analyzer.Flags.Set("rules", server.URL)
 	if err != nil {
 		t.Fatalf("set rules flag: %v", err)
 	}
-	analysistest.Run(t, testdata, analyzer.Analyzer, test)
+	analysistest.Run(t, handler.testdata, analyzer.Analyzer, "rules")
 }
 
 func TestAnalyzer_Rules_LocalConfig(t *testing.T) {
 	test := "rules"
-	url := "../rules.go"
+	filename := "../rules.go"
 	testdata := analysistest.TestData()
-	err := analyzer.Analyzer.Flags.Set("rules", url)
+	err := analyzer.Analyzer.Flags.Set("rules", filename)
 	if err != nil {
 		t.Fatalf("set rules flag: %v", err)
 	}

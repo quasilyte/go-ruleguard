@@ -95,11 +95,7 @@ func readRules() (*parseRulesResult, error) {
 		var ruleSets []*ruleguard.GoRuleSet
 		for _, filename := range filenames {
 			filename = strings.TrimSpace(filename)
-			loader := loadLocalConfig
-			if strings.HasPrefix(filename, "http://") || strings.HasPrefix(filename, "https://") {
-				loader = loadRemoteConfig
-			}
-			rset, err := loader(filename, fset)
+			rset, err := loadConfig(filename, fset)
 			if err != nil {
 				return nil, fmt.Errorf("cannot read rules: %v", err)
 			}
@@ -123,6 +119,13 @@ func readRules() (*parseRulesResult, error) {
 	default:
 		return nil, fmt.Errorf("both -e and -rules flags are empty")
 	}
+}
+
+func loadConfig(filename string, fset *token.FileSet) (*ruleguard.GoRuleSet, error) {
+	if strings.HasPrefix(filename, "http://") || strings.HasPrefix(filename, "https://") {
+		return loadRemoteConfig(filename, fset)
+	}
+	return loadLocalConfig(filename, fset)
 }
 
 func loadLocalConfig(filename string, fset *token.FileSet) (*ruleguard.GoRuleSet, error) {
