@@ -191,6 +191,8 @@ func gocriticWrapperFunc(m fluent.Matcher) {
 func gocriticNilValReturn(m fluent.Matcher) {
 	m.Match(`if $*_; $v == nil { return $v }`).
 		Report(`returned expr is always nil; replace $v with nil`)
+	m.Match(`if $v == nil { return $v }`).
+		Suggest(`if $v == nil { return nil }`)
 }
 
 func gocriticBoolExprSimplify(m fluent.Matcher) {
