@@ -412,3 +412,23 @@ func gosimpleS1003(m fluent.Matcher) {
 	m.Match(`strings.IndexAny($s1, $s2) != -1`).Suggest(`strings.ContainsAny($s1, $s2)`)
 	m.Match(`strings.IndexAny($s1, $s2) == -1`).Suggest(`!strings.ContainsAny($s1, $s2)`)
 }
+
+func naming(m fluent.Matcher) {
+	// https://github.com/golang/go/wiki/CodeReviewComments#initialisms
+	m.Match(`$x`).
+		Where(!m["x"].Const && m["x"].Text.Matches(`.*Url.*`)).
+		Report(`Use URL instead of Url`)
+	m.Match(`$x`).
+		Where(!m["x"].Const && m["x"].Text.Matches(`.*Http.*`)).
+		Report(`Use HTTP instead of Http`)
+	m.Match(`$x`).
+		Where(!m["x"].Const && m["x"].Text.Matches(`.*Api.*`)).
+		Report(`Use API instead of Api`)
+	m.Match(`$x`).
+		Where(!m["x"].Const && m["x"].Text.Matches(`.*Xml.*`)).
+		Report(`Use XML instead of Xml`)
+
+	m.Match(`$x`).
+		Where(!m["x"].Const && !m["x"].Text.Matches(`.*\..*`) && m["x"].Text.Matches(`.{80,}`)).
+		Report(`Too long name`)
+}
