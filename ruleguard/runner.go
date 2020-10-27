@@ -97,6 +97,16 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 		}
 	}
 
+	// TODO(quasilyte): do not run filename check for every match.
+	// Exclude rules for the file that will never match due to the
+	// file-scoped filters. Same goes for the fileImports filter
+	// and ideas proposed in #78. Most rules do not have file-scoped
+	// filters, so we don't loose much here, but we can optimize
+	// this file filters in the future.
+	if rule.filter.filenamePred != nil && !rule.filter.filenamePred(rr.filename) {
+		return false
+	}
+
 	for name, node := range m.Values {
 		var expr ast.Expr
 		switch node := node.(type) {

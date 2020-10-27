@@ -10,6 +10,7 @@ import (
 	"go/types"
 	"io"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strconv"
 
@@ -453,18 +454,6 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 		return p.walkFilter(dst, e.X, negate)
 	}
 
-	// File-related filters.
-	fileOperand := p.toFileFilterOperand(e)
-	switch fileOperand.path {
-	case "Imports":
-		pkgPath, ok := p.toStringValue(fileOperand.args[0])
-		if !ok {
-			return p.errorf(fileOperand.args[0], "expected a string literal argument")
-		}
-		dst.fileImports = append(dst.fileImports, pkgPath)
-		return nil
-	}
-
 	// TODO(quasilyte): refactor and extend.
 	operand := p.toFilterOperand(e)
 	args := operand.args
@@ -473,6 +462,28 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 	switch operand.path {
 	default:
 		return p.errorf(e, "%s is not a valid filter expression", sprintNode(p.fset, e))
+	case "File.Imports":
+		pkgPath, ok := p.toStringValue(args[0])
+		if !ok {
+			return p.errorf(args[0], "expected a string literal argument")
+		}
+		dst.fileImports = append(dst.fileImports, pkgPath)
+		return nil
+	case "File.Name.Matches":
+		patternString, ok := p.toStringValue(args[0])
+		if !ok {
+			return p.errorf(args[0], "expected a string literal argument")
+		}
+		re, err := regexp.Compile(patternString)
+		if err != nil {
+			return p.errorf(args[0], "parse regexp: %v", err)
+		}
+		wantMatched := !negate
+		dst.filenamePred = func(filename string) bool {
+			return wantMatched == re.MatchString(filepath.Base(filename))
+		}
+		return nil
+
 	case "Pure":
 		if negate {
 			filter.pure = bool3false
@@ -635,23 +646,6 @@ func (p *rulesParser) toStringValue(x ast.Node) (string, bool) {
 	return "", false
 }
 
-func (p *rulesParser) toFileFilterOperand(e ast.Expr) filterOperand {
-	var o filterOperand
-
-	call, ok := e.(*ast.CallExpr)
-	if !ok {
-		return o
-	}
-	selector, ok := call.Fun.(*ast.SelectorExpr)
-	if !ok {
-		return o
-	}
-
-	o.args = call.Args
-	o.path = selector.Sel.Name
-	return o
-}
-
 func (p *rulesParser) toFilterOperand(e ast.Expr) filterOperand {
 	var o filterOperand
 
@@ -676,6 +670,9 @@ func (p *rulesParser) toFilterOperand(e ast.Expr) filterOperand {
 		}
 		e = selector.X
 	}
+
+	o.path = path
+
 	indexing, ok := e.(*ast.IndexExpr)
 	if !ok {
 		return o
@@ -684,14 +681,10 @@ func (p *rulesParser) toFilterOperand(e ast.Expr) filterOperand {
 	if !ok {
 		return o
 	}
-	indexString, ok := p.toStringValue(indexing.Index)
-	if !ok {
-		return o
-	}
-
 	o.mapName = mapIdent.Name
+	indexString, _ := p.toStringValue(indexing.Index)
 	o.varName = indexString
-	o.path = path
+
 	return o
 }
 

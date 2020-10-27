@@ -98,4 +98,12 @@ func _(m fluent.Matcher) {
 	m.Match(`importsTest(os.PathListSeparator, "path/filepath")`).
 		Where(m.File().Imports("path/filepath")).
 		Report(`YES`)
+
+	m.Match(`fileTest("with foo prefix")`).
+		Where(m.File().Name.Matches(`^foo_`)).
+		Report(`YES`)
+
+	m.Match(`fileTest("f1.go")`).
+		Where(m.File().Name.Matches(`^f1.go$`)).
+		Report(`YES`)
 }
