@@ -10,6 +10,11 @@ type implementsAll struct{}
 func (implementsAll) Read([]byte) (int, error) { return 0, nil }
 func (implementsAll) String() string           { return "" }
 
+func _() {
+	fileTest("with foo prefix")
+	fileTest("f1.go") // want `YES`
+}
+
 func detectType() {
 	{
 		type withNamedTime struct {

@@ -113,8 +113,17 @@ type MatchedText string
 // Matches reports whether the text matches the given regexp pattern.
 func (MatchedText) Matches(pattern string) bool { return boolResult }
 
+// String represents an arbitrary string-typed data.
+type String string
+
+// Matches reports whether a string matches the given regexp pattern.
+func (String) Matches(pattern string) bool { return boolResult }
+
 // File represents the current Go source file.
-type File struct{}
+type File struct {
+	// Name is a file base name.
+	Name String
+}
 
 // Imports reports whether the current file imports the given path.
 func (File) Imports(path string) bool { return boolResult }
