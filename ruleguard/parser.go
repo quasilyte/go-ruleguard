@@ -301,14 +301,29 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 		}
 		switch chain.Sel.Name {
 		case "Match":
+			if matchArgs != nil {
+				return p.errorf(chain.Sel, "Match() can't be repeated")
+			}
 			matchArgs = &call.Args
 		case "Where":
+			if whereArgs != nil {
+				return p.errorf(chain.Sel, "Where() can't be repeated")
+			}
 			whereArgs = &call.Args
 		case "Suggest":
+			if suggestArgs != nil {
+				return p.errorf(chain.Sel, "Suggest() can't be repeated")
+			}
 			suggestArgs = &call.Args
 		case "Report":
+			if reportArgs != nil {
+				return p.errorf(chain.Sel, "Report() can't be repeated")
+			}
 			reportArgs = &call.Args
 		case "At":
+			if atArgs != nil {
+				return p.errorf(chain.Sel, "At() can't be repeated")
+			}
 			atArgs = &call.Args
 		default:
 			return p.errorf(chain.Sel, "unexpected %s method", chain.Sel.Name)
