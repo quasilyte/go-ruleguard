@@ -7,6 +7,7 @@ import (
 	"go/printer"
 	"io/ioutil"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -115,7 +116,22 @@ func (rr *rulesRunner) reject(rule goRule, reason string, m gogrep.MatchData) {
 	pos := rr.ctx.Fset.Position(m.Node.Pos())
 	rr.ctx.DebugPrint(fmt.Sprintf("%s:%d: [%s:%d] rejected by %s",
 		pos.Filename, pos.Line, filepath.Base(rule.filename), rule.line, reason))
+
+	type namedNode struct {
+		name string
+		node ast.Node
+	}
+	values := make([]namedNode, 0, len(m.Values))
 	for name, node := range m.Values {
+		values = append(values, namedNode{name: name, node: node})
+	}
+	sort.Slice(values, func(i, j int) bool {
+		return values[i].name < values[j].name
+	})
+
+	for _, v := range values {
+		name := v.name
+		node := v.node
 		var expr ast.Expr
 		switch node := node.(type) {
 		case ast.Expr:
