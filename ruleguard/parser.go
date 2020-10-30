@@ -489,6 +489,20 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 		}
 		dst.fileImports = append(dst.fileImports, pkgPath)
 		return nil
+	case "File.PkgPath.Matches":
+		patternString, ok := p.toStringValue(args[0])
+		if !ok {
+			return p.errorf(args[0], "expected a string literal argument")
+		}
+		re, err := regexp.Compile(patternString)
+		if err != nil {
+			return p.errorf(args[0], "parse regexp: %v", err)
+		}
+		wantMatched := !negate
+		dst.packagePred = func(pkgPath string) bool {
+			return wantMatched == re.MatchString(pkgPath)
+		}
+		return nil
 	case "File.Name.Matches":
 		patternString, ok := p.toStringValue(args[0])
 		if !ok {

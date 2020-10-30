@@ -123,6 +123,10 @@ func (String) Matches(pattern string) bool { return boolResult }
 type File struct {
 	// Name is a file base name.
 	Name String
+
+	// PkgPath is a file package path.
+	// Examples: "io/ioutil", "strings", "github.com/quasilyte/go-ruleguard/dsl/fluent".
+	PkgPath String
 }
 
 // Imports reports whether the current file imports the given path.

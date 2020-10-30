@@ -143,6 +143,11 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 		return false
 	}
 
+	if rule.filter.packagePred != nil && !rule.filter.packagePred(rr.ctx.Pkg.Path()) {
+		rr.reject(rule, "file package filter", "", m)
+		return false
+	}
+
 	for name, node := range m.Values {
 		var expr ast.Expr
 		switch node := node.(type) {
