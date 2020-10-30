@@ -20,6 +20,7 @@ import (
 
 type rulesParser struct {
 	filename string
+	group    string
 	fset     *token.FileSet
 	res      *GoRuleSet
 	types    *types.Info
@@ -236,6 +237,8 @@ func (p *rulesParser) parseRuleGroup(f *ast.FuncDecl) error {
 	// TODO(quasilyte): do an actual matcher param type check?
 	matcher := params[0].Names[0].Name
 
+	p.group = f.Name.Name
+
 	p.itab.EnterScope()
 	defer p.itab.LeaveScope()
 
@@ -337,6 +340,8 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 	dst := p.res.universal
 	proto := goRule{
 		filename: p.filename,
+		line:     p.fset.Position(origCall.Pos()).Line,
+		group:    p.group,
 		filter: matchFilter{
 			sub: map[string]submatchFilter{},
 		},
