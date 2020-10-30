@@ -343,7 +343,8 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 		line:     p.fset.Position(origCall.Pos()).Line,
 		group:    p.group,
 		filter: matchFilter{
-			sub: map[string]submatchFilter{},
+			fileFilters: []fileFilter{},
+			subFilters:  map[string][]nodeFilter{},
 		},
 	}
 	var alternatives []string
@@ -417,23 +418,21 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 	return nil
 }
 
+func (p *rulesParser) appendFileFilter(dst *matchFilter, e ast.Expr, pred func(*fileFilterParams) bool) {
+	dst.fileFilters = append(dst.fileFilters, fileFilter{
+		src:  sprintNode(p.fset, e),
+		pred: pred,
+	})
+}
+
+func (p *rulesParser) appendSubFilter(dst *matchFilter, e ast.Expr, key string, pred func(*nodeFilterParams) bool) {
+	dst.subFilters[key] = append(dst.subFilters[key], nodeFilter{
+		src:  sprintNode(p.fset, e),
+		pred: pred,
+	})
+}
+
 func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) error {
-	typeAnd := func(x, y func(typeQuery) bool) func(typeQuery) bool {
-		if x == nil {
-			return y
-		}
-		return func(q typeQuery) bool {
-			return x(q) && y(q)
-		}
-	}
-	textAnd := func(x, y func(string) bool) func(string) bool {
-		if x == nil {
-			return y
-		}
-		return func(s string) bool {
-			return x(s) && y(s)
-		}
-	}
 	switch e := e.(type) {
 	case *ast.UnaryExpr:
 		if e.Op == token.NOT {
@@ -452,21 +451,18 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			y := p.types.Types[e.Y].Value
 			expectedResult := !negate
 			if operand.path == "Type.Size" && y != nil {
-				filter := dst.sub[operand.varName]
-				filter.typePred = typeAnd(filter.typePred, func(q typeQuery) bool {
-					x := constant.MakeInt64(q.ctx.Sizes.Sizeof(q.x))
+				p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+					x := constant.MakeInt64(params.ctx.Sizes.Sizeof(params.nodeType()))
 					return expectedResult == constant.Compare(x, e.Op, y)
 				})
-				dst.sub[operand.varName] = filter
 				return nil
 			}
 			if operand.path == "Text" && y != nil {
-				filter := dst.sub[operand.varName]
-				filter.textPred = textAnd(filter.textPred, func(s string) bool {
-					x := constant.MakeString(s)
+				p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+					s := params.nodeText(params.n)
+					x := constant.MakeString(string(s))
 					return expectedResult == constant.Compare(x, e.Op, y)
 				})
-				dst.sub[operand.varName] = filter
 				return nil
 			}
 		}
@@ -477,7 +473,6 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 	// TODO(quasilyte): refactor and extend.
 	operand := p.toFilterOperand(e)
 	args := operand.args
-	filter := dst.sub[operand.varName]
 	underlying := false
 	switch operand.path {
 	default:
@@ -487,7 +482,11 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 		if !ok {
 			return p.errorf(args[0], "expected a string literal argument")
 		}
-		dst.fileImports = append(dst.fileImports, pkgPath)
+		wantImported := !negate
+		p.appendFileFilter(dst, e, func(params *fileFilterParams) bool {
+			_, imported := params.imports[pkgPath]
+			return wantImported == imported
+		})
 		return nil
 	case "File.PkgPath.Matches":
 		patternString, ok := p.toStringValue(args[0])
@@ -499,9 +498,10 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.errorf(args[0], "parse regexp: %v", err)
 		}
 		wantMatched := !negate
-		dst.packagePred = func(pkgPath string) bool {
+		p.appendFileFilter(dst, e, func(params *fileFilterParams) bool {
+			pkgPath := params.ctx.Pkg.Path()
 			return wantMatched == re.MatchString(pkgPath)
-		}
+		})
 		return nil
 	case "File.Name.Matches":
 		patternString, ok := p.toStringValue(args[0])
@@ -513,32 +513,29 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.errorf(args[0], "parse regexp: %v", err)
 		}
 		wantMatched := !negate
-		dst.filenamePred = func(filename string) bool {
-			return wantMatched == re.MatchString(filepath.Base(filename))
-		}
+		p.appendFileFilter(dst, e, func(params *fileFilterParams) bool {
+			return wantMatched == re.MatchString(filepath.Base(params.filename))
+		})
 		return nil
 
 	case "Pure":
-		if negate {
-			filter.pure = bool3false
-		} else {
-			filter.pure = bool3true
-		}
-		dst.sub[operand.varName] = filter
+		wantPure := !negate
+		p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+			return wantPure == isPure(params.ctx.Types, params.n)
+		})
+
 	case "Const":
-		if negate {
-			filter.constant = bool3false
-		} else {
-			filter.constant = bool3true
-		}
-		dst.sub[operand.varName] = filter
+		wantConst := !negate
+		p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+			return wantConst == isConstant(params.ctx.Types, params.n)
+		})
+
 	case "Addressable":
-		if negate {
-			filter.addressable = bool3false
-		} else {
-			filter.addressable = bool3true
-		}
-		dst.sub[operand.varName] = filter
+		wantAddressable := !negate
+		p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+			return wantAddressable == isAddressable(params.ctx.Types, params.n)
+		})
+
 	case "Text.Matches":
 		patternString, ok := p.toStringValue(args[0])
 		if !ok {
@@ -549,10 +546,10 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.errorf(args[0], "parse regexp: %v", err)
 		}
 		wantMatched := !negate
-		filter.textPred = textAnd(filter.textPred, func(s string) bool {
-			return wantMatched == re.MatchString(s)
+		p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+			return wantMatched == re.Match(params.nodeText(params.n))
 		})
-		dst.sub[operand.varName] = filter
+
 	case "Type.Underlying.Is":
 		underlying = true
 		fallthrough
@@ -568,15 +565,14 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 		}
 		wantIdentical := !negate
 		if underlying {
-			filter.typePred = typeAnd(filter.typePred, func(q typeQuery) bool {
-				return wantIdentical == pat.MatchIdentical(q.x.Underlying())
+			p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+				return wantIdentical == pat.MatchIdentical(params.nodeType().Underlying())
 			})
 		} else {
-			filter.typePred = typeAnd(filter.typePred, func(q typeQuery) bool {
-				return wantIdentical == pat.MatchIdentical(q.x)
+			p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+				return wantIdentical == pat.MatchIdentical(params.nodeType())
 			})
 		}
-		dst.sub[operand.varName] = filter
 	case "Type.ConvertibleTo":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
@@ -590,10 +586,9 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.errorf(args[0], "can't convert %s into a type constraint yet", typeString)
 		}
 		wantConvertible := !negate
-		filter.typePred = typeAnd(filter.typePred, func(q typeQuery) bool {
-			return wantConvertible == types.ConvertibleTo(q.x, y)
+		p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+			return wantConvertible == types.ConvertibleTo(params.nodeType(), y)
 		})
-		dst.sub[operand.varName] = filter
 	case "Type.AssignableTo":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
@@ -607,10 +602,9 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.errorf(args[0], "can't convert %s into a type constraint yet", typeString)
 		}
 		wantAssignable := !negate
-		filter.typePred = typeAnd(filter.typePred, func(q typeQuery) bool {
-			return wantAssignable == types.AssignableTo(q.x, y)
+		p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+			return wantAssignable == types.AssignableTo(params.nodeType(), y)
 		})
-		dst.sub[operand.varName] = filter
 	case "Type.Implements":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
@@ -648,10 +642,9 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.errorf(e, "%s is not an interface type", e.Sel.Name)
 		}
 		wantImplemented := !negate
-		filter.typePred = typeAnd(filter.typePred, func(q typeQuery) bool {
-			return wantImplemented == types.Implements(q.x, iface)
+		p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+			return wantImplemented == types.Implements(params.nodeType(), iface)
 		})
-		dst.sub[operand.varName] = filter
 	}
 
 	return nil

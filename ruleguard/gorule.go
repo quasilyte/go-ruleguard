@@ -1,6 +1,7 @@
 package ruleguard
 
 import (
+	"go/ast"
 	"go/types"
 
 	"github.com/quasilyte/go-ruleguard/internal/mvdan.cc/gogrep"
@@ -25,21 +26,43 @@ type goRule struct {
 }
 
 type matchFilter struct {
-	fileImports  []string
-	filenamePred func(string) bool
-	packagePred  func(string) bool
-	sub          map[string]submatchFilter
+	fileFilters []fileFilter
+	subFilters  map[string][]nodeFilter
 }
 
-type submatchFilter struct {
-	typePred    func(typeQuery) bool
-	textPred    func(string) bool
-	pure        bool3
-	constant    bool3
-	addressable bool3
+type fileFilter struct {
+	src  string
+	pred func(*fileFilterParams) bool
 }
 
-type typeQuery struct {
-	x   types.Type
+type fileFilterParams struct {
+	ctx      *Context
+	filename string
+	imports  map[string]struct{}
+}
+
+type nodeFilter struct {
+	src  string
+	pred func(*nodeFilterParams) bool
+}
+
+type nodeFilterParams struct {
 	ctx *Context
+	n   ast.Expr
+
+	nodeText func(n ast.Node) []byte
+}
+
+func (params *nodeFilterParams) nodeType() types.Type {
+	return params.typeofNode(params.n)
+}
+
+func (params *nodeFilterParams) typeofNode(n ast.Node) types.Type {
+	if e, ok := n.(ast.Expr); ok {
+		if typ := params.ctx.Types.TypeOf(e); typ != nil {
+			return typ
+		}
+	}
+
+	return types.Typ[types.Invalid]
 }
