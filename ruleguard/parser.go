@@ -470,6 +470,14 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 		return p.walkFilter(dst, e.X, negate)
 	}
 
+	origExpr := e
+	appendFileFilter := func(pred func(*fileFilterParams) bool) {
+		p.appendFileFilter(dst, origExpr, pred)
+	}
+	appendSubFilter := func(sub string, pred func(*nodeFilterParams) bool) {
+		p.appendSubFilter(dst, origExpr, sub, pred)
+	}
+
 	// TODO(quasilyte): refactor and extend.
 	operand := p.toFilterOperand(e)
 	args := operand.args
@@ -483,7 +491,7 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.errorf(args[0], "expected a string literal argument")
 		}
 		wantImported := !negate
-		p.appendFileFilter(dst, e, func(params *fileFilterParams) bool {
+		appendFileFilter(func(params *fileFilterParams) bool {
 			_, imported := params.imports[pkgPath]
 			return wantImported == imported
 		})
@@ -498,7 +506,7 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.errorf(args[0], "parse regexp: %v", err)
 		}
 		wantMatched := !negate
-		p.appendFileFilter(dst, e, func(params *fileFilterParams) bool {
+		appendFileFilter(func(params *fileFilterParams) bool {
 			pkgPath := params.ctx.Pkg.Path()
 			return wantMatched == re.MatchString(pkgPath)
 		})
@@ -513,26 +521,26 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.errorf(args[0], "parse regexp: %v", err)
 		}
 		wantMatched := !negate
-		p.appendFileFilter(dst, e, func(params *fileFilterParams) bool {
+		appendFileFilter(func(params *fileFilterParams) bool {
 			return wantMatched == re.MatchString(filepath.Base(params.filename))
 		})
 		return nil
 
 	case "Pure":
 		wantPure := !negate
-		p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+		appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
 			return wantPure == isPure(params.ctx.Types, params.n)
 		})
 
 	case "Const":
 		wantConst := !negate
-		p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+		appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
 			return wantConst == isConstant(params.ctx.Types, params.n)
 		})
 
 	case "Addressable":
 		wantAddressable := !negate
-		p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+		appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
 			return wantAddressable == isAddressable(params.ctx.Types, params.n)
 		})
 
@@ -546,7 +554,7 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.errorf(args[0], "parse regexp: %v", err)
 		}
 		wantMatched := !negate
-		p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+		appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
 			return wantMatched == re.Match(params.nodeText(params.n))
 		})
 
@@ -565,11 +573,11 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 		}
 		wantIdentical := !negate
 		if underlying {
-			p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+			appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
 				return wantIdentical == pat.MatchIdentical(params.nodeType().Underlying())
 			})
 		} else {
-			p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+			appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
 				return wantIdentical == pat.MatchIdentical(params.nodeType())
 			})
 		}
@@ -586,7 +594,7 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.errorf(args[0], "can't convert %s into a type constraint yet", typeString)
 		}
 		wantConvertible := !negate
-		p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+		appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
 			return wantConvertible == types.ConvertibleTo(params.nodeType(), y)
 		})
 	case "Type.AssignableTo":
@@ -602,7 +610,7 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.errorf(args[0], "can't convert %s into a type constraint yet", typeString)
 		}
 		wantAssignable := !negate
-		p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+		appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
 			return wantAssignable == types.AssignableTo(params.nodeType(), y)
 		})
 	case "Type.Implements":
@@ -642,7 +650,7 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.errorf(e, "%s is not an interface type", e.Sel.Name)
 		}
 		wantImplemented := !negate
-		p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+		appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
 			return wantImplemented == types.Implements(params.nodeType(), iface)
 		})
 	}
