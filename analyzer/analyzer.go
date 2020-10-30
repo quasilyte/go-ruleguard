@@ -6,6 +6,7 @@ import (
 	"go/ast"
 	"go/token"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -23,11 +24,13 @@ var Analyzer = &analysis.Analyzer{
 var (
 	flagRules string
 	flagE     string
+	flagDebug string
 )
 
 func init() {
 	Analyzer.Flags.StringVar(&flagRules, "rules", "", "comma-separated list of gorule file paths")
 	Analyzer.Flags.StringVar(&flagE, "e", "", "execute a single rule from a given string")
+	Analyzer.Flags.StringVar(&flagDebug, "debug-group", "", "enable debug for the specified named rules group")
 }
 
 type parseRulesResult struct {
@@ -47,6 +50,10 @@ func runAnalyzer(pass *analysis.Pass) (interface{}, error) {
 	multiFile := parseResult.multiFile
 
 	ctx := &ruleguard.Context{
+		Debug: flagDebug,
+		DebugPrint: func(s string) {
+			fmt.Fprintln(os.Stderr, s)
+		},
 		Pkg:   pass.Pkg,
 		Types: pass.TypesInfo,
 		Sizes: pass.TypesSizes,

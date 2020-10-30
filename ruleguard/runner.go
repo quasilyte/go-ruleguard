@@ -2,9 +2,11 @@ package ruleguard
 
 import (
 	"bytes"
+	"fmt"
 	"go/ast"
 	"go/printer"
 	"io/ioutil"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -90,9 +92,42 @@ func (rr *rulesRunner) run(f *ast.File) error {
 	return nil
 }
 
+func (rr *rulesRunner) reject(rule goRule, reason, sub string, m gogrep.MatchData) {
+	// Note: we accept reason and sub args instead of formatted or
+	// concatenated string so it's cheaper for us to call this
+	// function is debugging is not enabled.
+
+	if rule.group != rr.ctx.Debug {
+		return // This rule is not being debugged
+	}
+
+	pos := rr.ctx.Fset.Position(m.Node.Pos())
+	if sub != "" {
+		reason = "$" + sub + " " + reason
+	}
+	rr.ctx.DebugPrint(fmt.Sprintf("%s:%d: rejected by %s:%d (%s)",
+		pos.Filename, pos.Line, filepath.Base(rule.filename), rule.line, reason))
+	for name, node := range m.Values {
+		var expr ast.Expr
+		switch node := node.(type) {
+		case ast.Expr:
+			expr = node
+		case *ast.ExprStmt:
+			expr = node.X
+		default:
+			continue
+		}
+
+		typ := rr.ctx.Types.TypeOf(expr)
+		s := strings.ReplaceAll(sprintNode(rr.ctx.Fset, expr), "\n", `\n`)
+		rr.ctx.DebugPrint(fmt.Sprintf("  $%s %s: %s", name, typ, s))
+	}
+}
+
 func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 	for _, neededImport := range rule.filter.fileImports {
 		if _, ok := rr.imports[neededImport]; !ok {
+			rr.reject(rule, "file imports filter", "", m)
 			return false
 		}
 	}
@@ -104,6 +139,7 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 	// filters, so we don't loose much here, but we can optimize
 	// this file filters in the future.
 	if rule.filter.filenamePred != nil && !rule.filter.filenamePred(rr.filename) {
+		rr.reject(rule, "file name filter", "", m)
 		return false
 	}
 
@@ -126,41 +162,49 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 			typ := rr.ctx.Types.TypeOf(expr)
 			q := typeQuery{x: typ, ctx: rr.ctx}
 			if !filter.typePred(q) {
+				rr.reject(rule, "type filter", name, m)
 				return false
 			}
 		}
 		if filter.textPred != nil {
 			if !filter.textPred(string(rr.nodeText(expr))) {
+				rr.reject(rule, "text filter", name, m)
 				return false
 			}
 		}
 		switch filter.addressable {
 		case bool3true:
 			if !isAddressable(rr.ctx.Types, expr) {
+				rr.reject(rule, "is not addressable", name, m)
 				return false
 			}
 		case bool3false:
 			if isAddressable(rr.ctx.Types, expr) {
+				rr.reject(rule, "is addressable", name, m)
 				return false
 			}
 		}
 		switch filter.pure {
 		case bool3true:
 			if !isPure(rr.ctx.Types, expr) {
+				rr.reject(rule, "is not pure", name, m)
 				return false
 			}
 		case bool3false:
 			if isPure(rr.ctx.Types, expr) {
+				rr.reject(rule, "is pure", name, m)
 				return false
 			}
 		}
 		switch filter.constant {
 		case bool3true:
 			if !isConstant(rr.ctx.Types, expr) {
+				rr.reject(rule, "is not const", name, m)
 				return false
 			}
 		case bool3false:
 			if isConstant(rr.ctx.Types, expr) {
+				rr.reject(rule, "is const", name, m)
 				return false
 			}
 		}

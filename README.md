@@ -109,6 +109,9 @@ example.go:5:10: !(v1 != v2)
 
 It automatically inserts `Report("$$")` into the specified pattern.
 
+For named functions (rule groups) you can use `-debug-group <name>` flag to see explanations
+on why some rules rejected the match (e.g. which `Where()` condition failed).
+
 ## How does it work?
 
 `ruleguard` parses [gorules](docs/gorules.md) (e.g. `rules.go`) during the start to load the rule set.  

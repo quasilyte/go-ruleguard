@@ -8,6 +8,9 @@ import (
 )
 
 type Context struct {
+	Debug      string
+	DebugPrint func(string)
+
 	Types  *types.Info
 	Sizes  types.Sizes
 	Fset   *token.FileSet
@@ -33,6 +36,12 @@ func RunRules(ctx *Context, f *ast.File, rules *GoRuleSet) error {
 type GoRuleInfo struct {
 	// Filename is a file that defined this rule.
 	Filename string
+
+	// Line is a line inside a file that defined this rule.
+	Line int
+
+	// Group is a function name that contained this rule.
+	Group string
 }
 
 type GoRuleSet struct {
