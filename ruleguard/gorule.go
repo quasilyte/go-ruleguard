@@ -27,6 +27,7 @@ type goRule struct {
 type matchFilter struct {
 	fileImports  []string
 	filenamePred func(string) bool
+	packagePred  func(string) bool
 	sub          map[string]submatchFilter
 }
 

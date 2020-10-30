@@ -106,4 +106,7 @@ func _(m fluent.Matcher) {
 	m.Match(`fileTest("f1.go")`).
 		Where(m.File().Name.Matches(`^f1.go$`)).
 		Report(`YES`)
+
+	m.Match(`(($x))`).Where(!m.File().PkgPath.Matches(`filtertest`)).Report(`suspicious double parens`)
+	m.Match(`((($x)))`).Where(m.File().PkgPath.Matches(`filtertest`)).Report(`suspicious tripple parens`)
 }
