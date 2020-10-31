@@ -457,6 +457,20 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 				})
 				return nil
 			}
+			if operand.path == "Value.Int" && y != nil {
+				p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+					tv := params.ctx.Types.Types[params.n]
+					x := tv.Value
+					if x == nil {
+						return false // The value is unknown
+					}
+					if x.Kind() != constant.Int {
+						return false // It's not int
+					}
+					return expectedResult == constant.Compare(x, e.Op, y)
+				})
+				return nil
+			}
 			if operand.path == "Text" && y != nil {
 				p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
 					s := params.nodeText(params.n)
