@@ -143,8 +143,12 @@ func (rr *rulesRunner) reject(rule goRule, reason string, m gogrep.MatchData) {
 		}
 
 		typ := rr.ctx.Types.TypeOf(expr)
+		typeString := "<unknown>"
+		if typ != nil {
+			typeString = typ.String()
+		}
 		s := strings.ReplaceAll(sprintNode(rr.ctx.Fset, expr), "\n", `\n`)
-		rr.ctx.DebugPrint(fmt.Sprintf("  $%s %s: %s", name, typ, s))
+		rr.ctx.DebugPrint(fmt.Sprintf("  $%s %s: %s", name, typeString, s))
 	}
 }
 
