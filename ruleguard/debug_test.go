@@ -49,6 +49,31 @@ func TestDebug(t *testing.T) {
 				`  $x int: int(10)`,
 			},
 		},
+
+		`m.Match("$x + $_").Where(m["x"].Value.Int() >= 10)`: {
+			`sink = 20 + 1`: nil,
+
+			// OK: $x is const-folded.
+			`sink = (2 << 3) + 1`: nil,
+
+			// Not an int.
+			`sink = "20" + "x"`: {
+				`input.go:4: [rules.go:5] rejected by m["x"].Value.Int() >= 10`,
+				`  $x untyped string: "20"`,
+			},
+
+			// Not a const value.
+			`sink = f().(int) + 0`: {
+				`input.go:4: [rules.go:5] rejected by m["x"].Value.Int() >= 10`,
+				`  $x int: f().(int)`,
+			},
+
+			// Less than 10.
+			`sink = 4 + 1`: {
+				`input.go:4: [rules.go:5] rejected by m["x"].Value.Int() >= 10`,
+				`  $x untyped int: 4`,
+			},
+		},
 	}
 
 	exprToRules := func(s string) *GoRuleSet {

@@ -63,6 +63,9 @@ type Var struct {
 	// Const reports whether expr matched by var is a constant value.
 	Const bool
 
+	// Value is a compile-time computable value of the expression.
+	Value ExprValue
+
 	// Addressable reports whether the corresponding expression is addressable.
 	// See https://golang.org/ref/spec#Address_operators.
 	Addressable bool
@@ -80,6 +83,13 @@ type Var struct {
 	// Text is a captured node text as in the source code.
 	Text MatchedText
 }
+
+// ExprValue describes a compile-time computable value of a matched expr.
+type ExprValue struct{}
+
+// Int returns compile-time computable int value of the expression.
+// If value can't be computed, condition will fail.
+func (ExprValue) Int() int { return intResult }
 
 // ExprType describes a type of a matcher expr.
 type ExprType struct {
