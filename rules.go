@@ -412,3 +412,7 @@ func gosimpleS1003(m fluent.Matcher) {
 	m.Match(`strings.IndexAny($s1, $s2) != -1`).Suggest(`strings.ContainsAny($s1, $s2)`)
 	m.Match(`strings.IndexAny($s1, $s2) == -1`).Suggest(`!strings.ContainsAny($s1, $s2)`)
 }
+
+func contextTODO(m fluent.Matcher) {
+	m.Match(`context.TODO()`).Report(`consider to use well-defined context`)
+}
