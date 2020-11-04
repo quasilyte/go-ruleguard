@@ -1,6 +1,7 @@
 package filtertest
 
 import (
+	"errors"
 	"os"
 	"time"
 )
@@ -9,6 +10,17 @@ type implementsAll struct{}
 
 func (implementsAll) Read([]byte) (int, error) { return 0, nil }
 func (implementsAll) String() string           { return "" }
+func (*implementsAll) Error() string           { return "" }
+
+type implementsAllNewtype implementsAll
+
+type embedImplementsAll struct {
+	implementsAll
+}
+
+type embedImplementsAllPtr struct {
+	*implementsAll
+}
 
 func _() {
 	fileTest("with foo prefix")
@@ -87,6 +99,17 @@ func detectType() {
 	typeTest(implementsAll{}, "implements foolib.Stringer") // want `YES`
 	typeTest(i1, "implements foolib.Stringer")
 	typeTest(ss, "implements foolib.Stringer")
+	typeTest(implementsAll{}, "implements error")
+	typeTest(&implementsAll{}, "implements error") // want `YES`
+	typeTest(i1, "implements error")
+	typeTest(error(nil), "implements error")            // want `YES`
+	typeTest(errors.New("example"), "implements error") // want `YES`
+	typeTest(implementsAllNewtype{}, "implements error")
+	typeTest(&implementsAllNewtype{}, "implements error")
+	typeTest(embedImplementsAll{}, "implements error")
+	typeTest(&embedImplementsAll{}, "implements error")    // want `YES`
+	typeTest(embedImplementsAllPtr{}, "implements error")  // want `YES`
+	typeTest(&embedImplementsAllPtr{}, "implements error") // want `YES`
 
 	typeTest([100]byte{}, "size>=100") // want `YES`
 	typeTest([105]byte{}, "size>=100") // want `YES`
