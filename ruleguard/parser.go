@@ -636,33 +636,41 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 		if err != nil {
 			return p.errorf(args[0], "parse type expr: %v", err)
 		}
-		e, ok := n.(*ast.SelectorExpr)
-		if !ok {
-			return p.errorf(args[0], "only qualified names are supported")
-		}
-		pkgName, ok := e.X.(*ast.Ident)
-		if !ok {
-			return p.errorf(e.X, "invalid package name")
-		}
-		pkgPath, ok := p.itab.Lookup(pkgName.Name)
-		if !ok {
-			return p.errorf(e.X, "package %s is not imported", pkgName.Name)
-		}
-		pkg, err := p.stdImporter.Import(pkgPath)
-		if err != nil {
-			pkg, err = p.srcImporter.Import(pkgPath)
-			if err != nil {
-				return p.errorf(e, "can't load %s: %v", pkgPath, err)
+		var iface *types.Interface
+		switch n := n.(type) {
+		case *ast.Ident:
+			if n.Name != `error` {
+				return p.errorf(n, "only `error` unqualified type is recognized")
 			}
+			iface = types.Universe.Lookup("error").Type().Underlying().(*types.Interface)
+		case *ast.SelectorExpr:
+			pkgName, ok := n.X.(*ast.Ident)
+			if !ok {
+				return p.errorf(n.X, "invalid package name")
+			}
+			pkgPath, ok := p.itab.Lookup(pkgName.Name)
+			if !ok {
+				return p.errorf(n.X, "package %s is not imported", pkgName.Name)
+			}
+			pkg, err := p.stdImporter.Import(pkgPath)
+			if err != nil {
+				pkg, err = p.srcImporter.Import(pkgPath)
+				if err != nil {
+					return p.errorf(n, "can't load %s: %v", pkgPath, err)
+				}
+			}
+			obj := pkg.Scope().Lookup(n.Sel.Name)
+			if obj == nil {
+				return p.errorf(n, "%s is not found in %s", n.Sel.Name, pkgPath)
+			}
+			iface, ok = obj.Type().Underlying().(*types.Interface)
+			if !ok {
+				return p.errorf(n, "%s is not an interface type", n.Sel.Name)
+			}
+		default:
+			return p.errorf(args[0], "only qualified names (and `error`) are supported")
 		}
-		obj := pkg.Scope().Lookup(e.Sel.Name)
-		if obj == nil {
-			return p.errorf(e, "%s is not found in %s", e.Sel.Name, pkgPath)
-		}
-		iface, ok := obj.Type().Underlying().(*types.Interface)
-		if !ok {
-			return p.errorf(e, "%s is not an interface type", e.Sel.Name)
-		}
+
 		wantImplemented := !negate
 		appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
 			return wantImplemented == types.Implements(params.nodeType(), iface)

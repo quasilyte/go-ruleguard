@@ -51,6 +51,8 @@ func _(m fluent.Matcher) {
 		Where(m["x"].Type.Implements(`io.Reader`)).Report(`YES`)
 	m.Match(`typeTest($x, "implements foolib.Stringer")`).
 		Where(m["x"].Type.Implements(`foolib.Stringer`)).Report(`YES`)
+	m.Match(`typeTest($x, "implements error")`).
+		Where(m["x"].Type.Implements(`error`)).Report(`YES`)
 
 	m.Match(`typeTest($x, "size>=100")`).Where(m["x"].Type.Size >= 100).Report(`YES`)
 	m.Match(`typeTest($x, "size<=100")`).Where(m["x"].Type.Size <= 100).Report(`YES`)
