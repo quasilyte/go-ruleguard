@@ -128,7 +128,7 @@ To learn more, check out the documentation and/or the source code.
 
 ## Documentation
 
-* [Ruleguard by example](https://go-ruleguard.github.io/by-example/)
+* [Ruleguard by example](https://go-ruleguard.github.io/by-example/) tour
 * Example rule files: [rules.go](rules.go)
 * Another great example: [github.com/dgryski/semgrep-go/ruleguard.rules.go](https://github.com/dgryski/semgrep-go/blob/master/ruleguard.rules.go)
 * [gorules](docs/gorules.md) format documentation
