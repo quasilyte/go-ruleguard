@@ -21,6 +21,9 @@ type rulesRunner struct {
 	filename string
 	src      []byte
 
+	// A slice that is used to do a nodes keys sorting in renderMessage().
+	sortScratch []string
+
 	fileFilterParams fileFilterParams
 	nodeFilterParams nodeFilterParams
 }
@@ -35,6 +38,7 @@ func newRulesRunner(ctx *Context, rules *GoRuleSet) *rulesRunner {
 		nodeFilterParams: nodeFilterParams{
 			ctx: ctx,
 		},
+		sortScratch: make([]string, 0, 8),
 	}
 	rr.nodeFilterParams.nodeText = rr.nodeText
 	return rr
@@ -224,7 +228,17 @@ func (rr *rulesRunner) renderMessage(msg string, n ast.Node, nodes map[string]as
 	if len(nodes) == 0 {
 		return msg
 	}
-	for name, n := range nodes {
+
+	rr.sortScratch = rr.sortScratch[:0]
+	for name := range nodes {
+		rr.sortScratch = append(rr.sortScratch, name)
+	}
+	sort.Slice(rr.sortScratch, func(i, j int) bool {
+		return len(rr.sortScratch[i]) > len(rr.sortScratch[j])
+	})
+
+	for _, name := range rr.sortScratch {
+		n := nodes[name]
 		key := "$" + name
 		if !strings.Contains(msg, key) {
 			continue
