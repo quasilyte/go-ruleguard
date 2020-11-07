@@ -190,3 +190,40 @@ func fileFilters1() {
 	importsTest(os.PathSeparator, "path/filepath")
 	importsTest(os.PathListSeparator, "path/filepath")
 }
+
+func detectNode() {
+	var i int
+	var s string
+	var rows [][]byte
+
+	nodeTest("123", "Expr") // want `YES`
+	nodeTest(`123`, "Expr") // want `YES`
+	nodeTest(12, "Expr")    // want `YES`
+	nodeTest(1.56, "Expr")  // want `YES`
+	nodeTest(1+2, "Expr")   // want `YES`
+	nodeTest(i, "Expr")     // want `YES`
+	nodeTest(s, "Expr")     // want `YES`
+
+	nodeTest("123", "BasicLit") // want `YES`
+	nodeTest(`123`, "BasicLit") // want `YES`
+	nodeTest(12, "BasicLit")    // want `YES`
+	nodeTest(1.56, "BasicLit")  // want `YES`
+	nodeTest(1+2, "BasicLit")
+	nodeTest(i, "BasicLit")
+	nodeTest(s, "BasicLit")
+
+	nodeTest("123", "Ident")
+	nodeTest(12, "Ident")
+	nodeTest(i, "Ident") // want `YES`
+	nodeTest(s, "Ident") // want `YES`
+
+	nodeTest("42", "!Ident") // want `YES`
+	nodeTest(12, "!Ident")   // want `YES`
+	nodeTest(s[0], "!Ident") // want `YES`
+	nodeTest(i, "!Ident")
+	nodeTest(s, "!Ident")
+
+	nodeTest(s[0], "IndexExpr")       // want `YES`
+	nodeTest(rows[0][5], "IndexExpr") // want `YES`
+	nodeTest("42", "IndexExpr")
+}

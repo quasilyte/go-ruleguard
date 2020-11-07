@@ -74,6 +74,23 @@ func TestDebug(t *testing.T) {
 				`  $x untyped int: 4`,
 			},
 		},
+
+		`m.Match("_ = $x").Where(m["x"].Node.Is("ParenExpr"))`: {
+			`_ = (1)`: nil,
+
+			`_ = 10`: {
+				`input.go:4: [rules.go:5] rejected by m["x"].Node.Is("ParenExpr")`,
+				`  $x int: 10`,
+			},
+			`_ = "hello"`: {
+				`input.go:4: [rules.go:5] rejected by m["x"].Node.Is("ParenExpr")`,
+				`  $x string: "hello"`,
+			},
+			`_ = f((10))`: {
+				`input.go:4: [rules.go:5] rejected by m["x"].Node.Is("ParenExpr")`,
+				`  $x interface{}: f((10))`,
+			},
+		},
 	}
 
 	exprToRules := func(s string) *GoRuleSet {

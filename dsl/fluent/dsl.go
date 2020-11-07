@@ -82,7 +82,19 @@ type Var struct {
 
 	// Text is a captured node text as in the source code.
 	Text MatchedText
+
+	// Node is a captured AST node.
+	Node MatchedNode
 }
+
+// MatchedNode represents an AST node associated with a named submatch.
+type MatchedNode struct{}
+
+// Is reports whether a matched node AST type is compatible with the specified type.
+// A valid argument is a ast.Node implementing type name from the "go/ast" package.
+// Examples: "BasicLit", "Expr", "Stmt", "Ident", "ParenExpr".
+// See https://golang.org/pkg/go/ast/.
+func (MatchedNode) Is(typ string) bool { return boolResult }
 
 // ExprValue describes a compile-time computable value of a matched expr.
 type ExprValue struct{}

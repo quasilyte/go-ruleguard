@@ -111,4 +111,10 @@ func _(m fluent.Matcher) {
 
 	m.Match(`(($x))`).Where(!m.File().PkgPath.Matches(`filtertest`)).Report(`suspicious double parens`)
 	m.Match(`((($x)))`).Where(m.File().PkgPath.Matches(`filtertest`)).Report(`suspicious tripple parens`)
+
+	m.Match(`nodeTest($x, "Expr")`).Where(m["x"].Node.Is(`Expr`)).Report(`YES`)
+	m.Match(`nodeTest($x, "BasicLit")`).Where(m["x"].Node.Is(`BasicLit`)).Report(`YES`)
+	m.Match(`nodeTest($x, "Ident")`).Where(m["x"].Node.Is(`Ident`)).Report(`YES`)
+	m.Match(`nodeTest($x, "!Ident")`).Where(!m["x"].Node.Is(`Ident`)).Report(`YES`)
+	m.Match(`nodeTest($x, "IndexExpr")`).Where(m["x"].Node.Is(`IndexExpr`)).Report(`YES`)
 }
