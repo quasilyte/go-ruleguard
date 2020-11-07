@@ -19,7 +19,7 @@
         {
           name: "Upload coverage",
           uses: "codecov/codecov-action@v1",
-          with:
+          "with":
           {
             token: ${{secrets.CODECOV_TOKEN}}
             file: ./coverage.txt
