@@ -164,6 +164,7 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 		}
 	}
 
+	rr.nodeFilterParams.values = m.Values
 	for name, node := range m.Values {
 		var expr ast.Expr
 		switch node := node.(type) {

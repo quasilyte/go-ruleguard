@@ -442,3 +442,22 @@ func rangeExprCopy() {
 		}
 	}
 }
+
+func badCond(x, y int) {
+	if x < -10 && x > 10 { // want `\Qthe condition is always false because -10 <= 10`
+	}
+
+	if x > 10 && x < -10 { // want `\Qthe condition is always false because 10 >= -10`
+	}
+
+	const ten = 10
+	if x > ten+1 && x < -10 { // want `\Qthe condition is always false because ten+1 >= -10`
+	}
+
+	// Don't know what value `y` have.
+	if x < y && x > 10 {
+	}
+
+	if x < -10 && y > 10 {
+	}
+}
