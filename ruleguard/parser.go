@@ -572,6 +572,30 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return wantMatched == re.Match(params.nodeText(params.n))
 		})
 
+	case "Node.Is":
+		typeString, ok := p.toStringValue(args[0])
+		if !ok {
+			return p.errorf(args[0], "expected a string literal argument")
+		}
+		cat := categorizeNodeString(typeString)
+		if cat == nodeUnknown {
+			return p.errorf(args[0], "%s is not a valid go/ast type name", typeString)
+		}
+		wantMatched := !negate
+		appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
+			switch cat {
+			case nodeExpr:
+				_, ok := params.n.(ast.Expr)
+				return wantMatched == ok
+			case nodeStmt:
+				_, ok := params.n.(ast.Stmt)
+				return wantMatched == ok
+			default:
+				ok := cat == categorizeNode(params.n)
+				return wantMatched == ok
+			}
+		})
+
 	case "Type.Underlying.Is":
 		underlying = true
 		fallthrough
