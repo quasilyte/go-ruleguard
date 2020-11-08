@@ -2,6 +2,7 @@ package ruleguard
 
 import (
 	"go/ast"
+	"go/constant"
 	"go/parser"
 	"go/printer"
 	"go/token"
@@ -104,6 +105,17 @@ func typeFromNode(e ast.Expr) types.Type {
 	}
 
 	return nil
+}
+
+func intValueOf(info *types.Info, expr ast.Expr) constant.Value {
+	tv := info.Types[expr]
+	if tv.Value == nil {
+		return nil
+	}
+	if tv.Value.Kind() != constant.Int {
+		return nil
+	}
+	return tv.Value
 }
 
 // isPure reports whether expr is a softly safe expression and contains

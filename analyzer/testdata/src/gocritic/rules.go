@@ -136,3 +136,22 @@ func _(m fluent.Matcher) {
 		At(m["x"]).
 		Suggest(`&$x`)
 }
+
+func badCond(m fluent.Matcher) {
+	m.Match(`$x < $a && $x > $b`).
+		Where(m["a"].Value.Int() <= m["b"].Value.Int()).
+		Report("the condition is always false because $a <= $b")
+
+	m.Match(`$x > $a && $x < $b`).
+		Where(m["a"].Value.Int() >= m["b"].Value.Int()).
+		Report("the condition is always false because $a >= $b")
+}
+
+func appendAssign(m fluent.Matcher) {
+	m.Match(`$x = append($y, $_, $*_)`).
+		Where(m["x"].Text != m["y"].Text &&
+			m["x"].Text != "_" &&
+			m["x"].Node.Is(`Ident`) &&
+			m["y"].Node.Is(`Ident`)).
+		Report("append result not assigned to the same slice")
+}

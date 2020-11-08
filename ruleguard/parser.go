@@ -448,33 +448,54 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.walkFilter(dst, e.Y, negate)
 		case token.GEQ, token.LEQ, token.LSS, token.GTR, token.EQL, token.NEQ:
 			operand := p.toFilterOperand(e.X)
-			y := p.types.Types[e.Y].Value
+			rhs := p.toFilterOperand(e.Y)
+			rhsValue := p.types.Types[e.Y].Value
 			expectedResult := !negate
-			if operand.path == "Type.Size" && y != nil {
+			if operand.path == "Type.Size" && rhsValue != nil {
 				p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
 					x := constant.MakeInt64(params.ctx.Sizes.Sizeof(params.nodeType()))
-					return expectedResult == constant.Compare(x, e.Op, y)
+					return expectedResult == constant.Compare(x, e.Op, rhsValue)
 				})
 				return nil
 			}
-			if operand.path == "Value.Int" && y != nil {
+			if operand.path == "Value.Int" && rhsValue != nil {
 				p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
-					tv := params.ctx.Types.Types[params.n]
-					x := tv.Value
+					x := intValueOf(params.ctx.Types, params.n)
 					if x == nil {
 						return false // The value is unknown
 					}
-					if x.Kind() != constant.Int {
-						return false // It's not int
+					return expectedResult == constant.Compare(x, e.Op, rhsValue)
+				})
+				return nil
+			}
+			if operand.path == "Value.Int" && rhs.path == "Value.Int" && rhs.varName != "" {
+				p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+					x := intValueOf(params.ctx.Types, params.n)
+					if x == nil {
+						return false // The value is unknown
+					}
+					y := intValueOf(params.ctx.Types, params.values[rhs.varName].(ast.Expr))
+					if y == nil {
+						return false
 					}
 					return expectedResult == constant.Compare(x, e.Op, y)
 				})
 				return nil
 			}
-			if operand.path == "Text" && y != nil {
+			if operand.path == "Text" && rhsValue != nil {
 				p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
 					s := params.nodeText(params.n)
 					x := constant.MakeString(string(s))
+					return expectedResult == constant.Compare(x, e.Op, rhsValue)
+				})
+				return nil
+			}
+			if operand.path == "Text" && rhs.path == "Text" && rhs.varName != "" {
+				p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
+					s := params.nodeText(params.n)
+					x := constant.MakeString(string(s))
+					s2 := params.nodeText(params.values[rhs.varName])
+					y := constant.MakeString(string(s2))
 					return expectedResult == constant.Compare(x, e.Op, y)
 				})
 				return nil

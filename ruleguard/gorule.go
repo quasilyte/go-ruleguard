@@ -47,8 +47,9 @@ type nodeFilter struct {
 }
 
 type nodeFilterParams struct {
-	ctx *Context
-	n   ast.Expr
+	ctx    *Context
+	n      ast.Expr
+	values map[string]ast.Node
 
 	nodeText func(n ast.Node) []byte
 }
