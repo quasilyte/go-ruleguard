@@ -397,7 +397,7 @@ func gocriticBadLock(m fluent.Matcher) {
 	m.Match(`$mu.Lock(); defer $mu.RUnlock()`).Report(`maybe $mu.RLock() was intended?`)
 	m.Match(`$mu.RLock(); defer $mu.Unlock()`).Report(`maybe $mu.Lock() was intended?`)
 
-	// `mu1` and `mu2` are added to make possible report line were `m2` is used (with defer)
+	// `mu1` and `mu2` are added to make possible report a line where `m2` is used (with a defer)
 	m.Match(`$mu1.Lock(); defer $mu2.Lock()`).
 		Where(m["mu1"].Text == m["mu2"].Text).
 		At(m["mu2"]).
