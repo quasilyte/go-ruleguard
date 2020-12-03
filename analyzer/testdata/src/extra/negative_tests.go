@@ -20,6 +20,18 @@ func goodRUnlock(mu *sync.RWMutex, op func()) {
 	op()
 }
 
+func goodStrangeLocks(x1, x2 *sync.RWMutex, op func()) {
+	x1.Lock()
+	defer x2.Lock()
+	op()
+}
+
+func goodStrangeRLocks(x1, x2 *sync.RWMutex, op func()) {
+	x1.RLock()
+	defer x2.RLock()
+	op()
+}
+
 func differentMutexes(mu1, mu2 *sync.RWMutex, op func()) {
 	{
 		mu2.RLock()
