@@ -396,6 +396,16 @@ func gocriticFlagDeref(m fluent.Matcher) {
 func gocriticBadLock(m fluent.Matcher) {
 	m.Match(`$mu.Lock(); defer $mu.RUnlock()`).Report(`maybe $mu.RLock() was intended?`)
 	m.Match(`$mu.RLock(); defer $mu.Unlock()`).Report(`maybe $mu.Lock() was intended?`)
+
+	// `mu1` and `mu2` are added to make possible report line were `m2` is used (with defer)
+	m.Match(`$mu1.Lock(); defer $mu2.Lock()`).
+		Where(m["mu1"].Text == m["mu2"].Text).
+		At(m["mu2"]).
+		Report(`maybe defer $mu1.Unlock() was intended?`)
+	m.Match(`$mu1.RLock(); defer $mu2.RLock()`).
+		Where(m["mu1"].Text == m["mu2"].Text).
+		At(m["mu2"]).
+		Report(`maybe defer $mu1.RUnlock() was intended?`)
 }
 
 func reviveBoolLiteralInExpr(m fluent.Matcher) {
