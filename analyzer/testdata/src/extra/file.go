@@ -371,3 +371,15 @@ func mismatchingUnlock2Struct(x *withMutex, op func()) {
 	defer x.mu.Unlock()
 	op()
 }
+
+func mismatchingDeferLock1(x *withMutex, op func()) {
+	x.mu.Lock()
+	defer x.mu.Lock() // want `\Qmaybe defer x.mu.Unlock() was intended?`
+	op()
+}
+
+func mismatchingDeferLock2(x *withMutex, op func()) {
+	x.mu.RLock()
+	defer x.mu.RLock() // want `\Qmaybe defer x.mu.RUnlock() was intended?`
+	op()
+}
