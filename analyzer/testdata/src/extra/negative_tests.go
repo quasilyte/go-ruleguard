@@ -48,7 +48,7 @@ func differentMutexes(mu1, mu2 *sync.RWMutex, op func()) {
 	}
 }
 
-func usefulLenCheck(xs, ys []int, op func()) {
+func usefulLenCheck(xs, ys []int, v int, op func()) {
 	if len(xs) != 0 {
 		for range xs {
 			// nothing to do
@@ -70,7 +70,6 @@ func usefulLenCheck(xs, ys []int, op func()) {
 		op()
 	}
 
-	var v int
 	if len(xs) == 0 {
 		op()
 		for _, v = range xs {
