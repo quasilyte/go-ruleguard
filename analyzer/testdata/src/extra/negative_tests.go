@@ -47,3 +47,39 @@ func differentMutexes(mu1, mu2 *sync.RWMutex, op func()) {
 		mu2.Unlock()
 	}
 }
+
+func usefulLenCheck(xs, ys []int, v int, op func()) {
+	if len(xs) != 0 {
+		for range xs {
+			// nothing to do
+		}
+		op()
+	}
+
+	if len(xs) != 0 {
+		op()
+		for i := range xs {
+			println(i)
+		}
+	}
+
+	if len(xs) == 0 {
+		for _, v := range xs {
+			println(v)
+		}
+		op()
+	}
+
+	if len(xs) == 0 {
+		op()
+		for _, v = range xs {
+			println(v)
+		}
+	}
+
+	if len(xs) != 0 {
+		for range ys {
+			// nothing to do
+		}
+	}
+}

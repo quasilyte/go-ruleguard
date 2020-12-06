@@ -426,3 +426,13 @@ func gosimpleS1003(m fluent.Matcher) {
 func contextTODO(m fluent.Matcher) {
 	m.Match(`context.TODO()`).Report(`consider to use well-defined context`)
 }
+
+func redundantLenCheck(m fluent.Matcher) {
+	m.Match(`if len($xs) != 0 { for range $xs { $*_ } }`,
+		`if len($xs) != 0 { for $i := range $xs { $*_ } }`,
+		`if len($xs) != 0 { for _, $x := range $xs { $*_ } }`,
+		`if $xs != nil { for range $xs { $*_ } }`,
+		`if $xs != nil { for $i := range $xs { $*_ } }`,
+		`if $xs != nil { for _, $x := range $xs { $*_ } }`).
+		Report(`length check is redundant, empty/nil slices and maps can be safely iterated`)
+}

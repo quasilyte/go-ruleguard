@@ -383,3 +383,53 @@ func mismatchingDeferLock2(x *withMutex, op func()) {
 	defer x.mu.RLock() // want `\Qmaybe defer x.mu.RUnlock() was intended?`
 	op()
 }
+
+func redundantLenCheck(xs []int, v int) {
+	if len(xs) != 0 { // want `\Qcheck on xs is redundant, empty/nil slices and maps can be safely iterated`
+		for range xs {
+			// nothing to do
+		}
+	}
+
+	if len(xs) != 0 { // want `\Qcheck on xs is redundant, empty/nil slices and maps can be safely iterated`
+		for i := range xs {
+			println(i)
+		}
+	}
+
+	if len(xs) != 0 { // want `\Qcheck on xs is redundant, empty/nil slices and maps can be safely iterated`
+		for _, v := range xs {
+			println(v)
+		}
+	}
+
+	if len(xs) != 0 { // want `\Qcheck on xs is redundant, empty/nil slices and maps can be safely iterated`
+		for _, v = range xs {
+			println(v)
+		}
+	}
+
+	if xs != nil { // want `\Qcheck on xs is redundant, empty/nil slices and maps can be safely iterated`
+		for range xs {
+			// nothing to do
+		}
+	}
+
+	if xs != nil { // want `\Qcheck on xs is redundant, empty/nil slices and maps can be safely iterated`
+		for i := range xs {
+			println(i)
+		}
+	}
+
+	if xs != nil { // want `\Qcheck on xs is redundant, empty/nil slices and maps can be safely iterated`
+		for _, v := range xs {
+			println(v)
+		}
+	}
+
+	if xs != nil { // want `\Qcheck on xs is redundant, empty/nil slices and maps can be safely iterated`
+		for _, v = range xs {
+			println(v)
+		}
+	}
+}
