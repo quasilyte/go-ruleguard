@@ -383,3 +383,30 @@ func mismatchingDeferLock2(x *withMutex, op func()) {
 	defer x.mu.RLock() // want `\Qmaybe defer x.mu.RUnlock() was intended?`
 	op()
 }
+
+func redundantLenCheck(xs []int, sink func()) {
+	if len(xs) != 0 { // want `\Qredundant length verification`
+		for range xs {
+			// nothing to do
+		}
+	}
+
+	if len(xs) != 0 { // want `\Qredundant length verification`
+		for i := range xs {
+			println(i)
+		}
+	}
+
+	if len(xs) != 0 { // want `\Qredundant length verification`
+		for _, v := range xs {
+			println(v)
+		}
+	}
+
+	var v int
+	if len(xs) != 0 { // want `\Qredundant length verification`
+		for _, v = range xs {
+			println(v)
+		}
+	}
+}

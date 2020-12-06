@@ -152,4 +152,9 @@ func _(m fluent.Matcher) {
 		Where(m["mu1"].Text == m["mu2"].Text).
 		At(m["mu2"]).
 		Report(`maybe defer $mu1.RUnlock() was intended?`)
+
+	m.Match(`if len($xs) != 0 { for range $xs { $*_ } }`,
+		`if len($xs) != 0 { for $i := range $xs { $*_ } }`,
+		`if len($xs) != 0 { for _, $x := range $xs { $*_ } }`).
+		Report(`redundant length verification`)
 }
