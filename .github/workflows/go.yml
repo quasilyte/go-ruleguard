@@ -17,9 +17,9 @@
         {name: "Linter", run: "make lint"},
         {name: "Test", run: "make test"},
         {
-          "name": "Upload coverage",
-          "uses": "codecov/codecov-action@v1",
-          "with": {"token": ${{secrets.CODECOV_TOKEN}}, "file": ./coverage.txt, "fail_ci_if_error": false},
+          name: "Upload coverage",
+          uses: "codecov/codecov-action@v1",
+          with: {"token": ${{secrets.CODECOV_TOKEN}}, "file": ./coverage.txt, "fail_ci_if_error": false},
         },
       ],
     },
