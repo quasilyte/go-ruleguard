@@ -19,7 +19,7 @@
         {
           name: "Upload coverage",
           uses: "codecov/codecov-action@v1",
-        #   "with": {"token": ${{secrets.CODECOV_TOKEN}}, "file": ./coverage.txt, "fail_ci_if_error": false},
+          "with": {"token": ${{secrets.CODECOV_TOKEN}}, "file": ./coverage.txt, "fail_ci_if_error": false},
         },
       ],
     },
