@@ -385,26 +385,26 @@ func mismatchingDeferLock2(x *withMutex, op func()) {
 }
 
 func redundantLenCheck(xs []int, sink func()) {
-	if len(xs) != 0 { // want `\Qredundant length verification`
+	if len(xs) != 0 { // want `\Qlength check is redundant, empty/nil slices and maps can be safely iterated`
 		for range xs {
 			// nothing to do
 		}
 	}
 
-	if len(xs) != 0 { // want `\Qredundant length verification`
+	if len(xs) != 0 { // want `\Qlength check is redundant, empty/nil slices and maps can be safely iterated`
 		for i := range xs {
 			println(i)
 		}
 	}
 
-	if len(xs) != 0 { // want `\Qredundant length verification`
+	if len(xs) != 0 { // want `\Qlength check is redundant, empty/nil slices and maps can be safely iterated`
 		for _, v := range xs {
 			println(v)
 		}
 	}
 
 	var v int
-	if len(xs) != 0 { // want `\Qredundant length verification`
+	if len(xs) != 0 { // want `\Qlength check is redundant, empty/nil slices and maps can be safely iterated`
 		for _, v = range xs {
 			println(v)
 		}

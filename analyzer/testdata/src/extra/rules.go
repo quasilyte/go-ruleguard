@@ -156,5 +156,5 @@ func _(m fluent.Matcher) {
 	m.Match(`if len($xs) != 0 { for range $xs { $*_ } }`,
 		`if len($xs) != 0 { for $i := range $xs { $*_ } }`,
 		`if len($xs) != 0 { for _, $x := range $xs { $*_ } }`).
-		Report(`redundant length verification`)
+		Report(`length check is redundant, empty/nil slices and maps can be safely iterated`)
 }
