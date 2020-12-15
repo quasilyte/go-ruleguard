@@ -517,6 +517,7 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 	operand := p.toFilterOperand(e)
 	args := operand.args
 	underlying := false
+	pointer := false
 	switch operand.path {
 	default:
 		return p.errorf(e, "%s is not a valid filter expression", sprintNode(p.fset, e))
@@ -640,6 +641,9 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 				return wantIdentical == pat.MatchIdentical(params.nodeType())
 			})
 		}
+	case "Type.Pointer.ConvertibleTo":
+		pointer = true
+		fallthrough
 	case "Type.ConvertibleTo":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
@@ -653,9 +657,18 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.errorf(args[0], "can't convert %s into a type constraint yet", typeString)
 		}
 		wantConvertible := !negate
-		appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
-			return wantConvertible == types.ConvertibleTo(params.nodeType(), y)
-		})
+		if pointer {
+			appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
+				return wantConvertible == types.ConvertibleTo(types.NewPointer(params.nodeType()), y)
+			})
+		} else {
+			appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
+				return wantConvertible == types.ConvertibleTo(params.nodeType(), y)
+			})
+		}
+	case "Type.Pointer.AssignableTo":
+		pointer = true
+		fallthrough
 	case "Type.AssignableTo":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
@@ -669,9 +682,18 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.errorf(args[0], "can't convert %s into a type constraint yet", typeString)
 		}
 		wantAssignable := !negate
-		appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
-			return wantAssignable == types.AssignableTo(params.nodeType(), y)
-		})
+		if pointer {
+			appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
+				return wantAssignable == types.AssignableTo(types.NewPointer(params.nodeType()), y)
+			})
+		} else {
+			appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
+				return wantAssignable == types.AssignableTo(params.nodeType(), y)
+			})
+		}
+	case "Type.Pointer.Implements":
+		pointer = true
+		fallthrough
 	case "Type.Implements":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
@@ -717,9 +739,15 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 		}
 
 		wantImplemented := !negate
-		appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
-			return wantImplemented == types.Implements(params.nodeType(), iface)
-		})
+		if pointer {
+			appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
+				return wantImplemented == types.Implements(types.NewPointer(params.nodeType()), iface)
+			})
+		} else {
+			appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
+				return wantImplemented == types.Implements(params.nodeType(), iface)
+			})
+		}
 	}
 
 	return nil
