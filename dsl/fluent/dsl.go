@@ -129,8 +129,11 @@ func (ExprType) Implements(typ string) bool { return boolResult }
 // Is reports whether a type is identical to a given type.
 func (ExprType) Is(typ string) bool { return boolResult }
 
-// Pointer returns a pointer type for the given ExprType.
-// For example, this can be used to match a struct type that implements an interface.
+// Pointer returns a pointer type for the receiver expression type.
+// If the receiver is type 'A', the return value is type '*A'.
+//
+// For example, this can be used to match a struct initialization
+// that implements a specified interface:
 //   Match(`$x.MyStruct{$*_}`).
 //   Where(m[x].Type.Pointer.Implements(`mypkg.MyInterface`)
 // See https://golang.org/pkg/go/types/#NewPointer.
