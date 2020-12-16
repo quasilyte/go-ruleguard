@@ -636,7 +636,7 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 				return wantIdentical == pat.MatchIdentical(params.nodeType())
 			})
 		}
-	case "Type.ConvertibleTo", "Type.Pointer.ConvertibleTo":
+	case "Type.ConvertibleTo":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
 			return p.errorf(args[0], "expected a string literal argument")
@@ -649,16 +649,10 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.errorf(args[0], "can't convert %s into a type constraint yet", typeString)
 		}
 		wantConvertible := !negate
-		if operand.path == "Type.Pointer.ConvertibleTo" {
-			appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
-				return wantConvertible == types.ConvertibleTo(types.NewPointer(params.nodeType()), y)
-			})
-		} else {
-			appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
-				return wantConvertible == types.ConvertibleTo(params.nodeType(), y)
-			})
-		}
-	case "Type.AssignableTo", "Type.Pointer.AssignableTo":
+		appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
+			return wantConvertible == types.ConvertibleTo(params.nodeType(), y)
+		})
+	case "Type.AssignableTo":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
 			return p.errorf(args[0], "expected a string literal argument")
@@ -671,15 +665,9 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.errorf(args[0], "can't convert %s into a type constraint yet", typeString)
 		}
 		wantAssignable := !negate
-		if operand.path == "Type.Pointer.AssignableTo" {
-			appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
-				return wantAssignable == types.AssignableTo(types.NewPointer(params.nodeType()), y)
-			})
-		} else {
-			appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
-				return wantAssignable == types.AssignableTo(params.nodeType(), y)
-			})
-		}
+		appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
+			return wantAssignable == types.AssignableTo(params.nodeType(), y)
+		})
 	case "Type.Implements", "Type.Pointer.Implements":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
