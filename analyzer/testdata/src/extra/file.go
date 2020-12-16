@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"extra/worker"
 )
 
 type canStringer struct{}
@@ -432,4 +434,27 @@ func redundantLenCheck(xs []int, v int) {
 			println(v)
 		}
 	}
+}
+
+func invalidStructInitialization() {
+	j := worker.Job{} // want `Replace struct initialization with call to NewWorker factory method`
+	j.Run()
+
+	j = worker.Job{Name: "abc"} // want `Replace struct initialization with call to NewWorker factory method`
+	j.Run()
+
+	j2 := &worker.Job{Name: "abc"} // want `Replace struct initialization with call to NewWorker factory method`
+	j2.Run()
+
+	t := worker.Task{} // want `Replace struct initialization with call to NewWorker factory method`
+	t.Run()
+
+	t2 := new(worker.Task) // want `Replace struct initialization with call to NewWorker factory method`
+	t2.Run()
+
+	j3 := worker.NewWorker("job", "foo")
+	j3.Run()
+
+	other := worker.Other{}
+	other.String()
 }

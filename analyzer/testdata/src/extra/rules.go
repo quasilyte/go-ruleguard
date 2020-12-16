@@ -5,6 +5,8 @@ package gorules
 import "github.com/quasilyte/go-ruleguard/dsl/fluent"
 
 func _(m fluent.Matcher) {
+	m.Import(`github.com/quasilyte/go-ruleguard/analyzer/testdata/src/extra/worker`)
+
 	// We don't want to suggest int64(x) if x is already int64,
 	// this is why 2 rules are needed.
 	// Maybe there will be a way to group these 2 together in
@@ -160,4 +162,13 @@ func _(m fluent.Matcher) {
 		`if $xs != nil { for $i := range $xs { $*_ } }`,
 		`if $xs != nil { for _, $x := range $xs { $*_ } }`).
 		Report(`check on $xs is redundant, empty/nil slices and maps can be safely iterated`)
+
+	m.Match(`$x{$*_}`).
+		Where(m["x"].Type.Pointer().Implements("worker.TaskExecuter")).
+		Report("Replace struct initialization with call to NewWorker factory method")
+
+	m.Match(`new($x)`).
+		Where(m["x"].Type.Pointer().Implements("worker.TaskExecuter")).
+		Report("Replace struct initialization with call to NewWorker factory method")
+
 }
