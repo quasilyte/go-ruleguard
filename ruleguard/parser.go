@@ -516,7 +516,6 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 	// TODO(quasilyte): refactor and extend.
 	operand := p.toFilterOperand(e)
 	args := operand.args
-	underlying := false
 	switch operand.path {
 	default:
 		return p.errorf(e, "%s is not a valid filter expression", sprintNode(p.fset, e))
@@ -617,10 +616,7 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			}
 		})
 
-	case "Type.Underlying.Is":
-		underlying = true
-		fallthrough
-	case "Type.Is":
+	case "Type.Is", "Type.Underlying.Is":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
 			return p.errorf(args[0], "expected a string literal argument")
@@ -631,7 +627,7 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.errorf(args[0], "parse type expr: %v", err)
 		}
 		wantIdentical := !negate
-		if underlying {
+		if operand.path == "Type.Underlying.Is" {
 			appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
 				return wantIdentical == pat.MatchIdentical(params.nodeType().Underlying())
 			})
