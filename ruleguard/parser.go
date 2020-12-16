@@ -516,8 +516,6 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 	// TODO(quasilyte): refactor and extend.
 	operand := p.toFilterOperand(e)
 	args := operand.args
-	underlying := false
-	pointer := false
 	switch operand.path {
 	default:
 		return p.errorf(e, "%s is not a valid filter expression", sprintNode(p.fset, e))
@@ -618,10 +616,7 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			}
 		})
 
-	case "Type.Underlying.Is":
-		underlying = true
-		fallthrough
-	case "Type.Is":
+	case "Type.Is", "Type.Underlying.Is":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
 			return p.errorf(args[0], "expected a string literal argument")
@@ -632,7 +627,7 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.errorf(args[0], "parse type expr: %v", err)
 		}
 		wantIdentical := !negate
-		if underlying {
+		if operand.path == "Type.Underlying.Is" {
 			appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
 				return wantIdentical == pat.MatchIdentical(params.nodeType().Underlying())
 			})
@@ -641,10 +636,7 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 				return wantIdentical == pat.MatchIdentical(params.nodeType())
 			})
 		}
-	case "Type.Pointer.ConvertibleTo":
-		pointer = true
-		fallthrough
-	case "Type.ConvertibleTo":
+	case "Type.ConvertibleTo", "Type.Pointer.ConvertibleTo":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
 			return p.errorf(args[0], "expected a string literal argument")
@@ -657,7 +649,7 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.errorf(args[0], "can't convert %s into a type constraint yet", typeString)
 		}
 		wantConvertible := !negate
-		if pointer {
+		if operand.path == "Type.Pointer.ConvertibleTo" {
 			appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
 				return wantConvertible == types.ConvertibleTo(types.NewPointer(params.nodeType()), y)
 			})
@@ -666,10 +658,7 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 				return wantConvertible == types.ConvertibleTo(params.nodeType(), y)
 			})
 		}
-	case "Type.Pointer.AssignableTo":
-		pointer = true
-		fallthrough
-	case "Type.AssignableTo":
+	case "Type.AssignableTo", "Type.Pointer.AssignableTo":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
 			return p.errorf(args[0], "expected a string literal argument")
@@ -682,7 +671,7 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 			return p.errorf(args[0], "can't convert %s into a type constraint yet", typeString)
 		}
 		wantAssignable := !negate
-		if pointer {
+		if operand.path == "Type.Pointer.AssignableTo" {
 			appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
 				return wantAssignable == types.AssignableTo(types.NewPointer(params.nodeType()), y)
 			})
@@ -691,10 +680,7 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 				return wantAssignable == types.AssignableTo(params.nodeType(), y)
 			})
 		}
-	case "Type.Pointer.Implements":
-		pointer = true
-		fallthrough
-	case "Type.Implements":
+	case "Type.Implements", "Type.Pointer.Implements":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
 			return p.errorf(args[0], "expected a string literal argument")
@@ -739,7 +725,7 @@ func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) erro
 		}
 
 		wantImplemented := !negate
-		if pointer {
+		if operand.path == "Type.Pointer.Implements" {
 			appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
 				return wantImplemented == types.Implements(types.NewPointer(params.nodeType()), iface)
 			})
