@@ -304,6 +304,7 @@ func parseExpr(ctx *Context, e ast.Expr) *pattern {
 	return nil
 }
 
+// MatchIdentical returns true if the go typ matches pattern p.
 func (p *Pattern) MatchIdentical(typ types.Type) bool {
 	p.reset()
 	return p.matchIdentical(p.root, typ)
@@ -455,7 +456,9 @@ func (p *Pattern) matchIdentical(sub *pattern, typ types.Type) bool {
 		}
 		pkgPath := sub.value.([2]string)[0]
 		typeName := sub.value.([2]string)[1]
-		return obj.Pkg().Path() == pkgPath && typeName == obj.Name()
+		// obj.Pkg().Path() may be in a vendor directory.
+		path := strings.SplitAfter(obj.Pkg().Path(), "/vendor/")
+		return path[len(path)-1] == pkgPath && typeName == obj.Name()
 
 	case opFunc:
 		typ, ok := typ.(*types.Signature)
