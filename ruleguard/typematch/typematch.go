@@ -88,7 +88,7 @@ func Parse(ctx *Context, s string) (*Pattern, error) {
 	}
 	root := parseExpr(ctx, n)
 	if root == nil {
-		return nil, fmt.Errorf("can't convert %s type expression (%T)", s, n)
+		return nil, fmt.Errorf("can't convert %s type expression", s)
 	}
 	p := &Pattern{
 		typeMatches:  map[string]types.Type{},

@@ -1,7 +1,6 @@
 package ruleguard
 
 import (
-	"errors"
 	"fmt"
 	"go/ast"
 	"go/importer"
@@ -16,6 +15,10 @@ import (
 	"github.com/quasilyte/go-ruleguard/internal/mvdan.cc/gogrep"
 	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
 )
+
+type parseError string
+
+func (e parseError) Error() string { return string(e) }
 
 type rulesParser struct {
 	filename string
@@ -195,7 +198,7 @@ func (p *rulesParser) ParseFile(filename string, fset *token.FileSet, r io.Reade
 	parserFlags := parser.Mode(0)
 	f, err := parser.ParseFile(fset, filename, r, parserFlags)
 	if err != nil {
-		return nil, fmt.Errorf("parser error: %v", err)
+		return nil, fmt.Errorf("parse file error: %v", err)
 	}
 
 	if f.Name.Name != "gorules" {
@@ -222,7 +225,19 @@ func (p *rulesParser) ParseFile(filename string, fset *token.FileSet, r io.Reade
 	return p.res, nil
 }
 
-func (p *rulesParser) parseRuleGroup(f *ast.FuncDecl) error {
+func (p *rulesParser) parseRuleGroup(f *ast.FuncDecl) (err error) {
+	defer func() {
+		rv := recover()
+		if rv == nil {
+			return
+		}
+		if parseErr, ok := rv.(parseError); ok {
+			err = parseErr
+			return
+		}
+		panic(rv) // not our panic
+	}()
+
 	if f.Body == nil {
 		return p.errorf(f, "unexpected empty function body")
 	}
@@ -348,27 +363,15 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 		return p.errorf(origCall, "missing Match() call")
 	}
 	for _, arg := range *matchArgs {
-		alt, ok := p.toStringValue(arg)
-		if !ok {
-			return p.errorf(arg, "expected a string literal argument")
-		}
-		alternatives = append(alternatives, alt)
+		alternatives = append(alternatives, p.parseStringArg(arg))
 	}
 
 	if whereArgs != nil {
-		filter, err := p.parseFilter((*whereArgs)[0])
-		if err != nil {
-			return err
-		}
-		proto.filter = filter
+		proto.filter = p.parseFilter((*whereArgs)[0])
 	}
 
 	if suggestArgs != nil {
-		s, ok := p.toStringValue((*suggestArgs)[0])
-		if !ok {
-			return p.errorf((*suggestArgs)[0], "expected string literal argument")
-		}
-		proto.suggestion = s
+		proto.suggestion = p.parseStringArg((*suggestArgs)[0])
 	}
 
 	if reportArgs == nil {
@@ -377,11 +380,7 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 		}
 		proto.msg = "suggestion: " + proto.suggestion
 	} else {
-		message, ok := p.toStringValue((*reportArgs)[0])
-		if !ok {
-			return p.errorf((*reportArgs)[0], "expected string literal argument")
-		}
-		proto.msg = message
+		proto.msg = p.parseStringArg((*reportArgs)[0])
 	}
 
 	if atArgs != nil {
@@ -400,7 +399,7 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 		rule := proto
 		pat, err := gogrep.Parse(p.fset, alt)
 		if err != nil {
-			return p.errorf((*matchArgs)[i], "gogrep parse: %v", err)
+			return p.errorf((*matchArgs)[i], "parse match pattern: %v", err)
 		}
 		rule.pat = pat
 		cat := categorizeNode(pat.Expr)
@@ -415,29 +414,49 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 	return nil
 }
 
-type filterParseError string
-
-func (p *rulesParser) parseFilter(root ast.Expr) (result matchFilter, err error) {
-	defer func() {
-		rv := recover()
-		if rv == nil {
-			return
-		}
-		if parseErr, ok := rv.(filterParseError); ok {
-			err = errors.New(string(parseErr))
-			return
-		}
-		panic(rv) // not our panic
-	}()
-
-	f := p.parseFilterExpr(root)
-	return f, nil // error is set via defer
+func (p *rulesParser) parseFilter(root ast.Expr) matchFilter {
+	return p.parseFilterExpr(root)
 }
 
-func (p *rulesParser) filterError(n ast.Node, format string, args ...interface{}) filterParseError {
+func (p *rulesParser) errorf(n ast.Node, format string, args ...interface{}) parseError {
 	loc := p.fset.Position(n.Pos())
-	message := fmt.Sprintf("%s:%d: %s: %s", loc.Filename, loc.Line, sprintNode(p.fset, n), fmt.Sprintf(format, args...))
-	return filterParseError(message)
+	message := fmt.Sprintf("%s:%d: %s", loc.Filename, loc.Line, fmt.Sprintf(format, args...))
+	return parseError(message)
+}
+
+func (p *rulesParser) parseStringArg(e ast.Expr) string {
+	s, ok := p.toStringValue(e)
+	if !ok {
+		panic(p.errorf(e, "expected a string literal argument"))
+	}
+	return s
+}
+
+func (p *rulesParser) parseRegexpArg(e ast.Expr) *regexp.Regexp {
+	patternString, ok := p.toStringValue(e)
+	if !ok {
+		panic(p.errorf(e, "expected a regexp pattern argument"))
+	}
+	re, err := regexp.Compile(patternString)
+	if err != nil {
+		panic(p.errorf(e, err.Error()))
+	}
+	return re
+}
+
+func (p *rulesParser) parseTypeStringArg(e ast.Expr) types.Type {
+	typeString, ok := p.toStringValue(e)
+	if !ok {
+		panic(p.errorf(e, "expected a type string argument"))
+	}
+	typ, err := typeFromString(typeString)
+	if err != nil {
+		panic(p.errorf(e, "parse type expr: %v", err))
+	}
+	if typ == nil {
+		panic(p.errorf(e, "can't convert %s into a type constraint yet", typeString))
+	}
+	return typ
 }
 
 func (p *rulesParser) parseFilterExpr(e ast.Expr) matchFilter {
@@ -453,7 +472,7 @@ func (p *rulesParser) parseFilterExpr(e ast.Expr) matchFilter {
 			result.fn = makeNotFilter(result.src, x)
 			return result
 		}
-		panic(p.filterError(e, "unsupported unary op"))
+		panic(p.errorf(e, "unsupported unary op: %s", result.src))
 
 	case *ast.BinaryExpr:
 		switch e.Op {
@@ -488,42 +507,25 @@ func (p *rulesParser) parseFilterExpr(e ast.Expr) matchFilter {
 				return result
 			}
 		}
-		panic(p.filterError(e, "unsupported binary op"))
+		panic(p.errorf(e, "unsupported binary op: %s", result.src))
 	}
 
 	operand := p.toFilterOperand(e)
 	args := operand.args
 	switch operand.path {
 	default:
-		panic(p.filterError(e, "unsupported expr"))
+		panic(p.errorf(e, "unsupported expr: %s", result.src))
 
 	case "File.Imports":
-		pkgPath, ok := p.toStringValue(args[0])
-		if !ok {
-			panic(p.filterError(args[0], "expected a string literal argument"))
-		}
+		pkgPath := p.parseStringArg(args[0])
 		result.fn = makeFileImportsFilter(result.src, pkgPath)
 
 	case "File.PkgPath.Matches":
-		patternString, ok := p.toStringValue(args[0])
-		if !ok {
-			panic(p.filterError(args[0], "expected a string literal argument"))
-		}
-		re, err := regexp.Compile(patternString)
-		if err != nil {
-			panic(p.filterError(args[0], "parse regexp: %v", err))
-		}
+		re := p.parseRegexpArg(args[0])
 		result.fn = makeFilePkgPathMatchesFilter(result.src, re)
 
 	case "File.Name.Matches":
-		patternString, ok := p.toStringValue(args[0])
-		if !ok {
-			panic(p.filterError(args[0], "expected a string literal argument"))
-		}
-		re, err := regexp.Compile(patternString)
-		if err != nil {
-			panic(p.filterError(args[0], "parse regexp: %v", err))
-		}
+		re := p.parseRegexpArg(args[0])
 		result.fn = makeFileNameMatchesFilter(result.src, re)
 
 	case "Pure":
@@ -538,108 +540,81 @@ func (p *rulesParser) parseFilterExpr(e ast.Expr) matchFilter {
 	case "Type.Is", "Type.Underlying.Is":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
-			panic(p.filterError(args[0], "expected a string literal argument"))
+			panic(p.errorf(args[0], "expected a string literal argument"))
 		}
 		ctx := typematch.Context{Itab: p.itab}
 		pat, err := typematch.Parse(&ctx, typeString)
 		if err != nil {
-			panic(p.filterError(args[0], "parse type expr: %v", err))
+			panic(p.errorf(args[0], "parse type expr: %v", err))
 		}
 		underlying := operand.path == "Type.Underlying.Is"
 		result.fn = makeTypeIsFilter(result.src, operand.varName, underlying, pat)
 
 	case "Type.ConvertibleTo":
-		typeString, ok := p.toStringValue(args[0])
-		if !ok {
-			panic(p.filterError(args[0], "expected a string literal argument"))
-		}
-		dstType, err := typeFromString(typeString)
-		if err != nil {
-			panic(p.filterError(args[0], "parse type expr: %v", err))
-		}
-		if dstType == nil {
-			panic(p.filterError(args[0], "can't convert %s into a type constraint yet", typeString))
-		}
+		dstType := p.parseTypeStringArg(args[0])
 		result.fn = makeTypeConvertibleToFilter(result.src, operand.varName, dstType)
 
 	case "Type.AssignableTo":
-		typeString, ok := p.toStringValue(args[0])
-		if !ok {
-			panic(p.filterError(args[0], "expected a string literal argument"))
-		}
-		dstType, err := typeFromString(typeString)
-		if err != nil {
-			panic(p.filterError(args[0], "parse type expr: %v", err))
-		}
-		if dstType == nil {
-			panic(p.filterError(args[0], "can't convert %s into a type constraint yet", typeString))
-		}
+		dstType := p.parseTypeStringArg(args[0])
 		result.fn = makeTypeAssignableToFilter(result.src, operand.varName, dstType)
 
 	case "Type.Implements":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
-			panic(p.filterError(args[0], "expected a string literal argument"))
+			panic(p.errorf(args[0], "expected a string literal argument"))
 		}
 		n, err := parser.ParseExpr(typeString)
 		if err != nil {
-			panic(p.filterError(args[0], "parse type expr: %v", err))
+			panic(p.errorf(args[0], "parse type expr: %v", err))
 		}
 		var iface *types.Interface
 		switch n := n.(type) {
 		case *ast.Ident:
 			if n.Name != `error` {
-				panic(p.filterError(n, "only `error` unqualified type is recognized"))
+				panic(p.errorf(n, "only `error` unqualified type is recognized"))
 			}
 			iface = types.Universe.Lookup("error").Type().Underlying().(*types.Interface)
 		case *ast.SelectorExpr:
 			pkgName, ok := n.X.(*ast.Ident)
 			if !ok {
-				panic(p.filterError(n.X, "invalid package name"))
+				panic(p.errorf(n.X, "invalid package name"))
 			}
 			pkgPath, ok := p.itab.Lookup(pkgName.Name)
 			if !ok {
-				panic(p.filterError(n.X, "package %s is not imported", pkgName.Name))
+				panic(p.errorf(n.X, "package %s is not imported", pkgName.Name))
 			}
 			pkg, err := p.stdImporter.Import(pkgPath)
 			if err != nil {
 				pkg, err = p.srcImporter.Import(pkgPath)
 				if err != nil {
-					panic(p.filterError(n, "can't load %s: %v", pkgPath, err))
+					panic(p.errorf(n, "can't load %s: %v", pkgPath, err))
 				}
 			}
 			obj := pkg.Scope().Lookup(n.Sel.Name)
 			if obj == nil {
-				panic(p.filterError(n, "%s is not found in %s", n.Sel.Name, pkgPath))
+				panic(p.errorf(n, "%s is not found in %s", n.Sel.Name, pkgPath))
 			}
 			iface, ok = obj.Type().Underlying().(*types.Interface)
 			if !ok {
-				panic(p.filterError(n, "%s is not an interface type", n.Sel.Name))
+				panic(p.errorf(n, "%s is not an interface type", n.Sel.Name))
 			}
 		default:
-			panic(p.filterError(args[0], "only qualified names (and `error`) are supported"))
+			panic(p.errorf(args[0], "only qualified names (and `error`) are supported"))
 		}
 		result.fn = makeTypeImplementsFilter(result.src, operand.varName, iface)
 
 	case "Text.Matches":
-		patternString, ok := p.toStringValue(args[0])
-		if !ok {
-			panic(p.filterError(args[0], "expected a string literal argument"))
-		}
-		re, err := regexp.Compile(patternString)
-		if err != nil {
-			panic(p.filterError(args[0], "parse regexp: %v", err))
-		}
+		re := p.parseRegexpArg(args[0])
 		result.fn = makeTextMatchesFilter(result.src, operand.varName, re)
 
 	case "Node.Is":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
-			panic(p.filterError(args[0], "expected a string literal argument"))
+			panic(p.errorf(args[0], "expected a string literal argument"))
 		}
 		cat := categorizeNodeString(typeString)
 		if cat == nodeUnknown {
-			panic(p.filterError(args[0], "%s is not a valid go/ast type name", typeString))
+			panic(p.errorf(args[0], "%s is not a valid go/ast type name", typeString))
 		}
 		result.fn = makeNodeIsFilter(result.src, operand.varName, cat)
 	}
@@ -713,12 +688,6 @@ func (p *rulesParser) toFilterOperand(e ast.Expr) filterOperand {
 	o.varName = indexString
 
 	return o
-}
-
-func (p *rulesParser) errorf(n ast.Node, format string, args ...interface{}) error {
-	loc := p.fset.Position(n.Pos())
-	return fmt.Errorf("%s:%d: %s",
-		loc.Filename, loc.Line, fmt.Sprintf(format, args...))
 }
 
 type filterOperand struct {
