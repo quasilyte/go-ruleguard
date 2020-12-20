@@ -1,16 +1,15 @@
 package ruleguard
 
 import (
+	"errors"
 	"fmt"
 	"go/ast"
-	"go/constant"
 	"go/importer"
 	"go/parser"
 	"go/token"
 	"go/types"
 	"io"
 	"path"
-	"path/filepath"
 	"regexp"
 	"strconv"
 
@@ -342,10 +341,6 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 		filename: p.filename,
 		line:     p.fset.Position(origCall.Pos()).Line,
 		group:    p.group,
-		filter: matchFilter{
-			fileFilters: []fileFilter{},
-			subFilters:  map[string][]nodeFilter{},
-		},
 	}
 	var alternatives []string
 
@@ -361,9 +356,11 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 	}
 
 	if whereArgs != nil {
-		if err := p.walkFilter(&proto.filter, (*whereArgs)[0], false); err != nil {
+		filter, err := p.parseFilter((*whereArgs)[0])
+		if err != nil {
 			return err
 		}
+		proto.filter = filter
 	}
 
 	if suggestArgs != nil {
@@ -418,307 +415,239 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 	return nil
 }
 
-func (p *rulesParser) appendFileFilter(dst *matchFilter, e ast.Expr, pred func(*fileFilterParams) bool) {
-	dst.fileFilters = append(dst.fileFilters, fileFilter{
-		src:  sprintNode(p.fset, e),
-		pred: pred,
-	})
-}
+type filterParseError string
 
-func (p *rulesParser) appendSubFilter(dst *matchFilter, e ast.Expr, key string, pred func(*nodeFilterParams) bool) {
-	dst.subFilters[key] = append(dst.subFilters[key], nodeFilter{
-		src:  sprintNode(p.fset, e),
-		pred: pred,
-	})
-}
-
-func (p *rulesParser) walkFilter(dst *matchFilter, e ast.Expr, negate bool) error {
-	switch e := e.(type) {
-	case *ast.UnaryExpr:
-		if e.Op == token.NOT {
-			return p.walkFilter(dst, e.X, !negate)
+func (p *rulesParser) parseFilter(root ast.Expr) (result matchFilter, err error) {
+	defer func() {
+		rv := recover()
+		if rv == nil {
+			return
 		}
+		if parseErr, ok := rv.(filterParseError); ok {
+			err = errors.New(string(parseErr))
+			return
+		}
+		panic(rv) // not our panic
+	}()
+
+	f := p.parseFilterExpr(root)
+	return f, nil // error is set via defer
+}
+
+func (p *rulesParser) filterError(n ast.Node, format string, args ...interface{}) filterParseError {
+	loc := p.fset.Position(n.Pos())
+	message := fmt.Sprintf("%s:%d: %s: %s", loc.Filename, loc.Line, sprintNode(p.fset, n), fmt.Sprintf(format, args...))
+	return filterParseError(message)
+}
+
+func (p *rulesParser) parseFilterExpr(e ast.Expr) matchFilter {
+	result := matchFilter{src: sprintNode(p.fset, e)}
+
+	switch e := e.(type) {
+	case *ast.ParenExpr:
+		return p.parseFilterExpr(e.X)
+
+	case *ast.UnaryExpr:
+		x := p.parseFilterExpr(e.X)
+		if e.Op == token.NOT {
+			result.fn = makeNotFilter(result.src, x)
+			return result
+		}
+		panic(p.filterError(e, "unsupported unary op"))
+
 	case *ast.BinaryExpr:
 		switch e.Op {
 		case token.LAND:
-			err := p.walkFilter(dst, e.X, negate)
-			if err != nil {
-				return err
-			}
-			return p.walkFilter(dst, e.Y, negate)
+			result.fn = makeAndFilter(p.parseFilterExpr(e.X), p.parseFilterExpr(e.Y))
+			return result
+		case token.LOR:
+			result.fn = makeOrFilter(p.parseFilterExpr(e.X), p.parseFilterExpr(e.Y))
+			return result
 		case token.GEQ, token.LEQ, token.LSS, token.GTR, token.EQL, token.NEQ:
 			operand := p.toFilterOperand(e.X)
 			rhs := p.toFilterOperand(e.Y)
 			rhsValue := p.types.Types[e.Y].Value
-			expectedResult := !negate
 			if operand.path == "Type.Size" && rhsValue != nil {
-				p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
-					x := constant.MakeInt64(params.ctx.Sizes.Sizeof(params.nodeType()))
-					return expectedResult == constant.Compare(x, e.Op, rhsValue)
-				})
-				return nil
+				result.fn = makeTypeSizeConstFilter(result.src, operand.varName, e.Op, rhsValue)
+				return result
 			}
 			if operand.path == "Value.Int" && rhsValue != nil {
-				p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
-					x := intValueOf(params.ctx.Types, params.n)
-					if x == nil {
-						return false // The value is unknown
-					}
-					return expectedResult == constant.Compare(x, e.Op, rhsValue)
-				})
-				return nil
+				result.fn = makeValueIntConstFilter(result.src, operand.varName, e.Op, rhsValue)
+				return result
 			}
 			if operand.path == "Value.Int" && rhs.path == "Value.Int" && rhs.varName != "" {
-				p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
-					x := intValueOf(params.ctx.Types, params.n)
-					if x == nil {
-						return false // The value is unknown
-					}
-					y := intValueOf(params.ctx.Types, params.values[rhs.varName].(ast.Expr))
-					if y == nil {
-						return false
-					}
-					return expectedResult == constant.Compare(x, e.Op, y)
-				})
-				return nil
+				result.fn = makeValueIntFilter(result.src, operand.varName, e.Op, rhs.varName)
+				return result
 			}
 			if operand.path == "Text" && rhsValue != nil {
-				p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
-					s := params.nodeText(params.n)
-					x := constant.MakeString(string(s))
-					return expectedResult == constant.Compare(x, e.Op, rhsValue)
-				})
-				return nil
+				result.fn = makeTextConstFilter(result.src, operand.varName, e.Op, rhsValue)
+				return result
 			}
 			if operand.path == "Text" && rhs.path == "Text" && rhs.varName != "" {
-				p.appendSubFilter(dst, e, operand.varName, func(params *nodeFilterParams) bool {
-					s := params.nodeText(params.n)
-					x := constant.MakeString(string(s))
-					s2 := params.nodeText(params.values[rhs.varName])
-					y := constant.MakeString(string(s2))
-					return expectedResult == constant.Compare(x, e.Op, y)
-				})
-				return nil
+				result.fn = makeTextFilter(result.src, operand.varName, e.Op, rhs.varName)
+				return result
 			}
 		}
-	case *ast.ParenExpr:
-		return p.walkFilter(dst, e.X, negate)
+		panic(p.filterError(e, "unsupported binary op"))
 	}
 
-	origExpr := e
-	appendFileFilter := func(pred func(*fileFilterParams) bool) {
-		p.appendFileFilter(dst, origExpr, pred)
-	}
-	appendSubFilter := func(sub string, pred func(*nodeFilterParams) bool) {
-		p.appendSubFilter(dst, origExpr, sub, pred)
-	}
-
-	// TODO(quasilyte): refactor and extend.
 	operand := p.toFilterOperand(e)
 	args := operand.args
 	switch operand.path {
 	default:
-		return p.errorf(e, "%s is not a valid filter expression", sprintNode(p.fset, e))
+		panic(p.filterError(e, "unsupported expr"))
+
 	case "File.Imports":
 		pkgPath, ok := p.toStringValue(args[0])
 		if !ok {
-			return p.errorf(args[0], "expected a string literal argument")
+			panic(p.filterError(args[0], "expected a string literal argument"))
 		}
-		wantImported := !negate
-		appendFileFilter(func(params *fileFilterParams) bool {
-			_, imported := params.imports[pkgPath]
-			return wantImported == imported
-		})
-		return nil
+		result.fn = makeFileImportsFilter(result.src, pkgPath)
+
 	case "File.PkgPath.Matches":
 		patternString, ok := p.toStringValue(args[0])
 		if !ok {
-			return p.errorf(args[0], "expected a string literal argument")
+			panic(p.filterError(args[0], "expected a string literal argument"))
 		}
 		re, err := regexp.Compile(patternString)
 		if err != nil {
-			return p.errorf(args[0], "parse regexp: %v", err)
+			panic(p.filterError(args[0], "parse regexp: %v", err))
 		}
-		wantMatched := !negate
-		appendFileFilter(func(params *fileFilterParams) bool {
-			pkgPath := params.ctx.Pkg.Path()
-			return wantMatched == re.MatchString(pkgPath)
-		})
-		return nil
+		result.fn = makeFilePkgPathMatchesFilter(result.src, re)
+
 	case "File.Name.Matches":
 		patternString, ok := p.toStringValue(args[0])
 		if !ok {
-			return p.errorf(args[0], "expected a string literal argument")
+			panic(p.filterError(args[0], "expected a string literal argument"))
 		}
 		re, err := regexp.Compile(patternString)
 		if err != nil {
-			return p.errorf(args[0], "parse regexp: %v", err)
+			panic(p.filterError(args[0], "parse regexp: %v", err))
 		}
-		wantMatched := !negate
-		appendFileFilter(func(params *fileFilterParams) bool {
-			return wantMatched == re.MatchString(filepath.Base(params.filename))
-		})
-		return nil
+		result.fn = makeFileNameMatchesFilter(result.src, re)
 
 	case "Pure":
-		wantPure := !negate
-		appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
-			return wantPure == isPure(params.ctx.Types, params.n)
-		})
+		result.fn = makePureFilter(result.src, operand.varName)
 
 	case "Const":
-		wantConst := !negate
-		appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
-			return wantConst == isConstant(params.ctx.Types, params.n)
-		})
+		result.fn = makeConstFilter(result.src, operand.varName)
 
 	case "Addressable":
-		wantAddressable := !negate
-		appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
-			return wantAddressable == isAddressable(params.ctx.Types, params.n)
-		})
-
-	case "Text.Matches":
-		patternString, ok := p.toStringValue(args[0])
-		if !ok {
-			return p.errorf(args[0], "expected a string literal argument")
-		}
-		re, err := regexp.Compile(patternString)
-		if err != nil {
-			return p.errorf(args[0], "parse regexp: %v", err)
-		}
-		wantMatched := !negate
-		appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
-			return wantMatched == re.Match(params.nodeText(params.n))
-		})
-
-	case "Node.Is":
-		typeString, ok := p.toStringValue(args[0])
-		if !ok {
-			return p.errorf(args[0], "expected a string literal argument")
-		}
-		cat := categorizeNodeString(typeString)
-		if cat == nodeUnknown {
-			return p.errorf(args[0], "%s is not a valid go/ast type name", typeString)
-		}
-		wantMatched := !negate
-		appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
-			switch cat {
-			case nodeExpr:
-				_, ok := params.n.(ast.Expr)
-				return wantMatched == ok
-			case nodeStmt:
-				_, ok := params.n.(ast.Stmt)
-				return wantMatched == ok
-			default:
-				ok := cat == categorizeNode(params.n)
-				return wantMatched == ok
-			}
-		})
+		result.fn = makeAddressableFilter(result.src, operand.varName)
 
 	case "Type.Is", "Type.Underlying.Is":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
-			return p.errorf(args[0], "expected a string literal argument")
+			panic(p.filterError(args[0], "expected a string literal argument"))
 		}
 		ctx := typematch.Context{Itab: p.itab}
 		pat, err := typematch.Parse(&ctx, typeString)
 		if err != nil {
-			return p.errorf(args[0], "parse type expr: %v", err)
+			panic(p.filterError(args[0], "parse type expr: %v", err))
 		}
-		wantIdentical := !negate
-		if operand.path == "Type.Underlying.Is" {
-			appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
-				return wantIdentical == pat.MatchIdentical(params.nodeType().Underlying())
-			})
-		} else {
-			appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
-				return wantIdentical == pat.MatchIdentical(params.nodeType())
-			})
-		}
+		underlying := operand.path == "Type.Underlying.Is"
+		result.fn = makeTypeIsFilter(result.src, operand.varName, underlying, pat)
+
 	case "Type.ConvertibleTo":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
-			return p.errorf(args[0], "expected a string literal argument")
+			panic(p.filterError(args[0], "expected a string literal argument"))
 		}
-		y, err := typeFromString(typeString)
+		dstType, err := typeFromString(typeString)
 		if err != nil {
-			return p.errorf(args[0], "parse type expr: %v", err)
+			panic(p.filterError(args[0], "parse type expr: %v", err))
 		}
-		if y == nil {
-			return p.errorf(args[0], "can't convert %s into a type constraint yet", typeString)
+		if dstType == nil {
+			panic(p.filterError(args[0], "can't convert %s into a type constraint yet", typeString))
 		}
-		wantConvertible := !negate
-		appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
-			return wantConvertible == types.ConvertibleTo(params.nodeType(), y)
-		})
+		result.fn = makeTypeConvertibleToFilter(result.src, operand.varName, dstType)
+
 	case "Type.AssignableTo":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
-			return p.errorf(args[0], "expected a string literal argument")
+			panic(p.filterError(args[0], "expected a string literal argument"))
 		}
-		y, err := typeFromString(typeString)
+		dstType, err := typeFromString(typeString)
 		if err != nil {
-			return p.errorf(args[0], "parse type expr: %v", err)
+			panic(p.filterError(args[0], "parse type expr: %v", err))
 		}
-		if y == nil {
-			return p.errorf(args[0], "can't convert %s into a type constraint yet", typeString)
+		if dstType == nil {
+			panic(p.filterError(args[0], "can't convert %s into a type constraint yet", typeString))
 		}
-		wantAssignable := !negate
-		appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
-			return wantAssignable == types.AssignableTo(params.nodeType(), y)
-		})
+		result.fn = makeTypeAssignableToFilter(result.src, operand.varName, dstType)
+
 	case "Type.Implements":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
-			return p.errorf(args[0], "expected a string literal argument")
+			panic(p.filterError(args[0], "expected a string literal argument"))
 		}
 		n, err := parser.ParseExpr(typeString)
 		if err != nil {
-			return p.errorf(args[0], "parse type expr: %v", err)
+			panic(p.filterError(args[0], "parse type expr: %v", err))
 		}
 		var iface *types.Interface
 		switch n := n.(type) {
 		case *ast.Ident:
 			if n.Name != `error` {
-				return p.errorf(n, "only `error` unqualified type is recognized")
+				panic(p.filterError(n, "only `error` unqualified type is recognized"))
 			}
 			iface = types.Universe.Lookup("error").Type().Underlying().(*types.Interface)
 		case *ast.SelectorExpr:
 			pkgName, ok := n.X.(*ast.Ident)
 			if !ok {
-				return p.errorf(n.X, "invalid package name")
+				panic(p.filterError(n.X, "invalid package name"))
 			}
 			pkgPath, ok := p.itab.Lookup(pkgName.Name)
 			if !ok {
-				return p.errorf(n.X, "package %s is not imported", pkgName.Name)
+				panic(p.filterError(n.X, "package %s is not imported", pkgName.Name))
 			}
 			pkg, err := p.stdImporter.Import(pkgPath)
 			if err != nil {
 				pkg, err = p.srcImporter.Import(pkgPath)
 				if err != nil {
-					return p.errorf(n, "can't load %s: %v", pkgPath, err)
+					panic(p.filterError(n, "can't load %s: %v", pkgPath, err))
 				}
 			}
 			obj := pkg.Scope().Lookup(n.Sel.Name)
 			if obj == nil {
-				return p.errorf(n, "%s is not found in %s", n.Sel.Name, pkgPath)
+				panic(p.filterError(n, "%s is not found in %s", n.Sel.Name, pkgPath))
 			}
 			iface, ok = obj.Type().Underlying().(*types.Interface)
 			if !ok {
-				return p.errorf(n, "%s is not an interface type", n.Sel.Name)
+				panic(p.filterError(n, "%s is not an interface type", n.Sel.Name))
 			}
 		default:
-			return p.errorf(args[0], "only qualified names (and `error`) are supported")
+			panic(p.filterError(args[0], "only qualified names (and `error`) are supported"))
 		}
+		result.fn = makeTypeImplementsFilter(result.src, operand.varName, iface)
 
-		wantImplemented := !negate
-		appendSubFilter(operand.varName, func(params *nodeFilterParams) bool {
-			return wantImplemented == types.Implements(params.nodeType(), iface)
-		})
+	case "Text.Matches":
+		patternString, ok := p.toStringValue(args[0])
+		if !ok {
+			panic(p.filterError(args[0], "expected a string literal argument"))
+		}
+		re, err := regexp.Compile(patternString)
+		if err != nil {
+			panic(p.filterError(args[0], "parse regexp: %v", err))
+		}
+		result.fn = makeTextMatchesFilter(result.src, operand.varName, re)
+
+	case "Node.Is":
+		typeString, ok := p.toStringValue(args[0])
+		if !ok {
+			panic(p.filterError(args[0], "expected a string literal argument"))
+		}
+		cat := categorizeNodeString(typeString)
+		if cat == nodeUnknown {
+			panic(p.filterError(args[0], "%s is not a valid go/ast type name", typeString))
+		}
+		result.fn = makeNodeIsFilter(result.src, operand.varName, cat)
 	}
 
-	return nil
+	if result.fn == nil {
+		panic("bug: nil func for the filter") // Should never happen
+	}
+	return result
 }
 
 func (p *rulesParser) toStringValue(x ast.Node) (string, bool) {

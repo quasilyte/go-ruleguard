@@ -19,3 +19,9 @@ func issue72(m fluent.Matcher) {
 		`fmt.Sprintf("%s<%s>", $name, $email)`).
 		Report("use net/mail Address.String() instead of fmt.Sprintf()")
 }
+
+func issue115(m fluent.Matcher) {
+	m.Match(`println($x)`).
+		Where(!(m["x"].Const && m["x"].Type.Is("int"))).
+		Report("$x is not a constexpr int")
+}
