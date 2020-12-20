@@ -48,7 +48,7 @@ func (rr *rulesRunner) nodeText(n ast.Node) []byte {
 	from := rr.ctx.Fset.Position(n.Pos()).Offset
 	to := rr.ctx.Fset.Position(n.End()).Offset
 	src := rr.fileBytes()
-	if (from >= 0 && int(from) < len(src)) && (to >= 0 && int(to) < len(src)) {
+	if (from >= 0 && from < len(src)) && (to >= 0 && to < len(src)) {
 		return src[from:to]
 	}
 	// Fallback to the printer.
