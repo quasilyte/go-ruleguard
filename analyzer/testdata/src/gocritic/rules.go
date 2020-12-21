@@ -4,7 +4,7 @@ package gorules
 
 import "github.com/quasilyte/go-ruleguard/dsl/fluent"
 
-func _(m fluent.Matcher) {
+func testRules(m fluent.Matcher) {
 	m.Match(`$x = $x`).Report(`suspicious self-assignment in $$`)
 
 	m.Match(`$tmp := $x; $x = $y; $y = $tmp`).

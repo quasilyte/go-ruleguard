@@ -39,15 +39,13 @@ package gorules
 
 import "github.com/quasilyte/go-ruleguard/dsl/fluent"
 
-func _(m fluent.Matcher) {
+func regexpMust(m fluent.Matcher) {
 	m.Match(`regexp.Compile($pat)`,
 		`regexp.CompilePOSIX($pat)`).
 		Where(m["pat"].Const).
 		Report(`can use MustCompile for const patterns`)
 }
 ```
-
-A rule group that has `_` function name is called **anonymous**. You can have as much anonymous groups as you like.
 
 A `Report` argument string can use `$<varname>` notation to interpolate the named pattern submatches into the report message.
 There is a special case of `$$` which can be used to inject the entire pattern match into the message.
@@ -61,7 +59,7 @@ As everything else, statements are `Matcher` methods. [`Import()`](https://godoc
 Rule group statements only affect the current rule group and last from the line they were defined until the end of a function block.
 
 ```go
-func _(m fluent.Matcher) {
+func testGroup(m fluent.Matcher) {
 	// <- Empty imports table.
 
 	m.Import(`github.com/some/pkg`)

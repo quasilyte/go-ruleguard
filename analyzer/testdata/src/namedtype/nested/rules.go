@@ -4,7 +4,7 @@ package gorules
 
 import "github.com/quasilyte/go-ruleguard/dsl/fluent"
 
-func _(m fluent.Matcher) {
+func testRules(m fluent.Matcher) {
 	m.Import(`namedtype/x/nested`)
 	m.Import(`extra`)
 

@@ -4,7 +4,7 @@ package gorules
 
 import "github.com/quasilyte/go-ruleguard/dsl/fluent"
 
-func _(m fluent.Matcher) {
+func testRules(m fluent.Matcher) {
 	// We don't want to suggest int64(x) if x is already int64,
 	// this is why 2 rules are needed.
 	// Maybe there will be a way to group these 2 together in

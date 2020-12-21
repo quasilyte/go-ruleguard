@@ -63,12 +63,14 @@ package gorules
 
 import "github.com/quasilyte/go-ruleguard/dsl/fluent"
 
-func _(m fluent.Matcher) {
+func dupSubExpr(m fluent.Matcher) {
 	m.Match(`$x || $x`,
 		`$x && $x`).
 		Where(m["x"].Pure).
 		Report(`suspicious identical LHS and RHS`)
+}
 
+func boolExprSimplify(m fluent.Matcher) {
 	m.Match(`!($x != $y)`).Suggest(`$x == $y`)
 	m.Match(`!($x == $y)`).Suggest(`$x != $y`)
 }
@@ -109,8 +111,10 @@ example.go:5:10: !(v1 != v2)
 
 It automatically inserts `Report("$$")` into the specified pattern.
 
-For named functions (rule groups) you can use `-debug-group <name>` flag to see explanations
+You can use `-debug-group <name>` flag to see explanations
 on why some rules rejected the match (e.g. which `Where()` condition failed).
+
+The `-e` generated rule will have `e` name, so it can be debugged as well.
 
 ## How does it work?
 
