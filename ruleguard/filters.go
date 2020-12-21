@@ -103,9 +103,12 @@ func makeAddressableFilter(src, varname string) filterFunc {
 	}
 }
 
-func makeTypeImplementsFilter(src, varname string, iface *types.Interface) filterFunc {
+func makeTypeImplementsFilter(src, varname string, iface *types.Interface, toPointer bool) filterFunc {
 	return func(params *filterParams) matchFilterResult {
 		typ := params.typeofNode(params.subExpr(varname))
+		if toPointer {
+			typ = types.NewPointer(typ)
+		}
 		if types.Implements(typ, iface) {
 			return filterSuccess
 		}
