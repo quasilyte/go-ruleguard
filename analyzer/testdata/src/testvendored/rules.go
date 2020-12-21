@@ -4,7 +4,7 @@ package gorules
 
 import "github.com/quasilyte/go-ruleguard/dsl/fluent"
 
-func _(m fluent.Matcher) {
+func testRules(m fluent.Matcher) {
 	// Test a vendored dependency can be imported successfully and used in a Where statement.
 	// Otherwise, the rules semantics are not important.
 

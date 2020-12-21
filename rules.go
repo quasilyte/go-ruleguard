@@ -21,10 +21,7 @@ import "github.com/quasilyte/go-ruleguard/dsl/fluent"
 //
 // If you want to report any issue, please do so: https://github.com/quasilyte/go-ruleguard/issues/new
 
-// "_" is a special "unnamed" rules group.
-// It's not a good style to use these, but it can be a convenient place for
-// various rules for which you can't find a good name.
-func _(m fluent.Matcher) {
+func miscRules(m fluent.Matcher) {
 	// See http://golang.org/issue/36225
 	m.Match(`json.NewDecoder($_).Decode($_)`).
 		Report(`this json.Decoder usage is erroneous`)
