@@ -40,12 +40,11 @@ func TestDebug(t *testing.T) {
 			},
 		},
 
-		// TODO(quasilyte): don't lose "!" in the debug output.
 		`m.Match("$x + $_").Where(!m["x"].Type.Is("int"))`: {
 			`sink = "a" + "b"`: nil,
 
 			`sink = int(10) + 20`: {
-				`input.go:4: [rules.go:5] rejected by m["x"].Type.Is("int")`,
+				`input.go:4: [rules.go:5] rejected by !m["x"].Type.Is("int")`,
 				`  $x int: int(10)`,
 			},
 		},
@@ -89,6 +88,56 @@ func TestDebug(t *testing.T) {
 			`_ = f((10))`: {
 				`input.go:4: [rules.go:5] rejected by m["x"].Node.Is("ParenExpr")`,
 				`  $x interface{}: f((10))`,
+			},
+		},
+
+		// When debugging OR, the last alternative will be reported as the failure reason,
+		// although it should be obvious that all operands are falsy.
+		// We don't return the entire OR expression as a reason to avoid the output cluttering.
+		`m.Match("_ = $x").Where(m["x"].Type.Is("int") || m["x"].Type.Is("string"))`: {
+			`_ = ""`: nil,
+			`_ = 10`: nil,
+
+			`_ = []int{}`: {
+				`input.go:4: [rules.go:5] rejected by m["x"].Type.Is("string")`,
+				`  $x []int: []int{}`,
+			},
+
+			`_ = int32(0)`: {
+				`input.go:4: [rules.go:5] rejected by m["x"].Type.Is("string")`,
+				`  $x int32: int32(0)`,
+			},
+		},
+
+		// Using 3 operands for || and different ()-groupings.
+		`m.Match("_ = $x").Where(m["x"].Type.Is("int") || m["x"].Type.Is("string") || m["x"].Text == "f()")`: {
+			`_ = ""`:  nil,
+			`_ = 10`:  nil,
+			`_ = f()`: nil,
+
+			`_ = []string{"x"}`: {
+				`input.go:4: [rules.go:5] rejected by m["x"].Text == "f()"`,
+				`  $x []string: []string{"x"}`,
+			},
+		},
+		`m.Match("_ = $x").Where(m["x"].Type.Is("int") || (m["x"].Type.Is("string") || m["x"].Text == "f()"))`: {
+			`_ = ""`:  nil,
+			`_ = 10`:  nil,
+			`_ = f()`: nil,
+
+			`_ = []string{"x"}`: {
+				`input.go:4: [rules.go:5] rejected by m["x"].Text == "f()"`,
+				`  $x []string: []string{"x"}`,
+			},
+		},
+		`m.Match("_ = $x").Where((m["x"].Type.Is("int") || m["x"].Type.Is("string")) || m["x"].Text == "f()")`: {
+			`_ = ""`:  nil,
+			`_ = 10`:  nil,
+			`_ = f()`: nil,
+
+			`_ = []string{"x"}`: {
+				`input.go:4: [rules.go:5] rejected by m["x"].Text == "f()"`,
+				`  $x []string: []string{"x"}`,
 			},
 		},
 	}
