@@ -44,8 +44,8 @@ func TestParseRuleError(t *testing.T) {
 	for _, test := range tests {
 		file := fmt.Sprintf(`
 			package gorules
-			import "github.com/quasilyte/go-ruleguard/dsl/fluent"
-			func testrule(m fluent.Matcher) {
+			import "github.com/quasilyte/go-ruleguard/dsl"
+			func testrule(m dsl.Matcher) {
 				%s
 			}`,
 			test.expr)
@@ -133,8 +133,8 @@ func TestParseFilterError(t *testing.T) {
 	for _, test := range tests {
 		file := fmt.Sprintf(`
 			package gorules
-			import "github.com/quasilyte/go-ruleguard/dsl/fluent"
-			func testrule(m fluent.Matcher) {
+			import "github.com/quasilyte/go-ruleguard/dsl"
+			func testrule(m dsl.Matcher) {
 				m.Match("$x + $y[$key]").Where(%s).Report("$$")
 			}`,
 			test.expr)

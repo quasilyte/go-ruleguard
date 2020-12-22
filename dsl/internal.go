@@ -1,4 +1,4 @@
-package fluent
+package dsl
 
 var boolResult bool
 var intResult int

@@ -2,9 +2,9 @@
 
 package gorules
 
-import "github.com/quasilyte/go-ruleguard/dsl/fluent"
+import "github.com/quasilyte/go-ruleguard/dsl"
 
-func testRules(m fluent.Matcher) {
+func testRules(m dsl.Matcher) {
 	m.Match(`runtime.GC()`).Report(`explicit call to GC`)
 
 	m.Match(`$x = atomic.AddInt32(&$x, $_)`,
