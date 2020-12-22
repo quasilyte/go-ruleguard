@@ -33,3 +33,14 @@ func TestAnalyzer(t *testing.T) {
 		})
 	}
 }
+
+func TestAnalyzer_Rules_LocalConfig(t *testing.T) {
+	test := "rules"
+	filename := "../rules.go"
+	testdata := analysistest.TestData()
+	err := analyzer.Analyzer.Flags.Set("rules", filename)
+	if err != nil {
+		t.Fatalf("set rules flag: %v", err)
+	}
+	analysistest.Run(t, testdata, analyzer.Analyzer, test)
+}

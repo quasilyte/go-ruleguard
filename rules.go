@@ -2,7 +2,9 @@
 
 package gorules
 
-import "github.com/quasilyte/go-ruleguard/dsl/fluent"
+import (
+	"github.com/quasilyte/go-ruleguard/dsl/fluent"
+)
 
 // This is an example rule file for ruleguard.
 //
@@ -45,6 +47,15 @@ func miscRules(m fluent.Matcher) {
 		Suggest(`strings.Contains($s1, $s2)`)
 	m.Match(`strings.Count($s1, $s2) == 0`).
 		Suggest(`!strings.Contains($s1, $s2)`)
+	m.Match(`strings.Count($s1, $s2) >= 0`).
+		Report(`statement always true`)
+	m.Match(`bytes.Count($s1, $s2) > 0`,
+		`bytes.Count($s1, $s2) >= 1`).
+		Suggest(`bytes.Contains($s1, $s2)`)
+	m.Match(`bytes.Count($s1, $s2) == 0`).
+		Suggest(`!bytes.Contains($s1, $s2)`)
+	m.Match(`bytes.Count($s1, $s2) >= 0`).
+		Report(`statement always true`)
 
 	m.Match(`sort.Slice($s, func($i, $j int) bool { return $s[$i] < $s[$j] })`).
 		Where(m["s"].Type.Is(`[]string`)).
@@ -170,15 +181,11 @@ func useMathBits(m fluent.Matcher) {
 }
 
 func gocriticWrapperFunc(m fluent.Matcher) {
-	m.Match(`strings.SplitN($s, $sep, -1)`).Suggest(`strings.Split($s, $sep)`)
-	m.Match(`strings.Replace($s, $old, $new, -1)`).Suggest(`strings.ReplaceAll($s, $old, $new)`)
 	m.Match(`strings.TrimFunc($s, unicode.IsSpace)`).Suggest(`strings.TrimSpace($s)`)
 	m.Match(`strings.Map(unicode.ToUpper, $s)`).Suggest(`strings.ToUpper($s)`)
 	m.Match(`strings.Map(unicode.ToLower, $s)`).Suggest(`strings.ToLower($s)`)
 	m.Match(`strings.Map(unicode.ToTitle, $s)`).Suggest(`strings.ToTitle($s)`)
 
-	m.Match(`bytes.SplitN($s, $sep, -1)`).Suggest(`bytes.Split($s, $sep)`)
-	m.Match(`bytes.Replace($s, $old, $new, -1)`).Suggest(`bytes.ReplaceAll($s, $old, $new)`)
 	m.Match(`bytes.TrimFunc($s, unicode.IsSpace)`).Suggest(`bytes.TrimSpace($s)`)
 	m.Match(`bytes.Map(unicode.ToUpper, $s)`).Suggest(`bytes.ToUpper($s)`)
 	m.Match(`bytes.Map(unicode.ToLower, $s)`).Suggest(`bytes.ToLower($s)`)
@@ -222,15 +229,38 @@ func gocriticArgOrder(m fluent.Matcher) {
 		Suggest(`strings.Contains($s2, $s1)`)
 }
 
-func gocriticBadCall(m fluent.Matcher) {
-	m.Match(`strings.Replace($_, $_, $_, 0)`,
-		`bytes.Replace($_, $_, $_, 0)`,
-		`strings.SplitN($_, $_, 0)`,
-		`bytes.SplitN($_, $_, 0)`).
-		Report(`n=0 argument does nothing, maybe n=-1 is indended?`)
+func badSplitNValue(m fluent.Matcher) {
+	// Interpret any non-positive match count as "match all" and replace it by a better function.
+	// The special case is zero. Zero does nothing, so it's a bug, so we replace it too.
+	// Everything else is for consistency.
+	m.Match(`strings.Replace($s, $d, $w, $n)`).
+		Where(m["n"].Const && m["n"].Text.Matches(`(\-[0-9]+|0)`)).
+		Suggest(`strings.ReplaceAll($s, $d, $w)`)
+	m.Match(`bytes.Replace($s, $d, $w, $n)`).
+		Where(m["n"].Const && m["n"].Text.Matches(`(\-[0-9]+|0)`)).
+		Suggest(`bytes.ReplaceAll($s, $d, $w)`)
+	m.Match(`strings.SplitN($s, $p, $n)`).
+		Where(m["n"].Const && m["n"].Text.Matches(`(\-[0-9]+|0)`)).
+		Suggest(`strings.Split($s, $p)`)
+	m.Match(`bytes.SplitN($s, $p, $n)`).
+		Where(m["n"].Const && m["n"].Text.Matches(`(\-[0-9]+|0)`)).
+		Suggest(`bytes.Split($s, $p)`)
+	m.Match(`strings.SplitAfterN($s, $p, $n)`).
+		Where(m["n"].Const && m["n"].Text.Matches(`(\-[0-9]+|0)`)).
+		Suggest(`strings.SplitAfter($s, $p)`)
+	m.Match(`bytes.SplitAfterN($s, $p, $n)`).
+		Where(m["n"].Const && m["n"].Text.Matches(`(\-[0-9]+|0)`)).
+		Suggest(`bytes.SplitAfter($s, $p)`)
 
-	m.Match(`append($_)`).
-		Report(`append called with 1 argument does nothing`)
+	// The last argument of `SplitN` indicates parts count, not splits count
+	m.Match(`strings.SplitN($s, $p, 1)`).Suggest(`strings.SplitN($s, $p, 2)`)
+	m.Match(`bytes.SplitN($s, $p, 1)`).Suggest(`bytes.SplitN($s, $p, 2)`)
+	m.Match(`strings.SplitAfterN($s, $p, 1)`).Suggest(`strings.SplitAfterN($s, $p, 2)`)
+	m.Match(`bytes.SplitAfterN($s, $p, 1)`).Suggest(`bytes.SplitAfterN($s, $p, 2)`)
+}
+
+func gocriticBadCall(m fluent.Matcher) {
+	m.Match(`append($_)`).Report(`append called with 1 argument does nothing`)
 }
 
 func gocriticDupArg(m fluent.Matcher) {
