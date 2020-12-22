@@ -176,7 +176,9 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 		}
 	}
 	info := GoRuleInfo{
+		Group:    rule.group,
 		Filename: rule.filename,
+		Line:     rule.line,
 	}
 	rr.ctx.Report(info, node, message, suggestion)
 	return true

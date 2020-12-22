@@ -30,7 +30,7 @@ var (
 func init() {
 	Analyzer.Flags.StringVar(&flagRules, "rules", "", "comma-separated list of gorule file paths")
 	Analyzer.Flags.StringVar(&flagE, "e", "", "execute a single rule from a given string")
-	Analyzer.Flags.StringVar(&flagDebug, "debug-group", "", "enable debug for the specified named rules group")
+	Analyzer.Flags.StringVar(&flagDebug, "debug-group", "", "enable debug for the specified function")
 }
 
 type parseRulesResult struct {
@@ -119,7 +119,7 @@ func readRules() (*parseRulesResult, error) {
 		ruleText := fmt.Sprintf(`
 			package gorules
 			import "github.com/quasilyte/go-ruleguard/dsl/fluent"
-			func _(m fluent.Matcher) {
+			func e(m fluent.Matcher) {
 				%s.Report("$$")
 			}`,
 			flagE)

@@ -238,6 +238,9 @@ func (p *rulesParser) parseRuleGroup(f *ast.FuncDecl) (err error) {
 		panic(rv) // not our panic
 	}()
 
+	if f.Name.String() == "_" {
+		return p.errorf(f.Name, "`_` is not a valid rule group function name")
+	}
 	if f.Body == nil {
 		return p.errorf(f, "unexpected empty function body")
 	}
