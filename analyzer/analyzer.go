@@ -118,8 +118,8 @@ func readRules() (*parseRulesResult, error) {
 	case flagE != "":
 		ruleText := fmt.Sprintf(`
 			package gorules
-			import "github.com/quasilyte/go-ruleguard/dsl/fluent"
-			func e(m fluent.Matcher) {
+			import "github.com/quasilyte/go-ruleguard/dsl"
+			func e(m dsl.Matcher) {
 				%s.Report("$$")
 			}`,
 			flagE)

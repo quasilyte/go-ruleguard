@@ -145,8 +145,8 @@ func TestDebug(t *testing.T) {
 	exprToRules := func(s string) *GoRuleSet {
 		file := fmt.Sprintf(`
 			package gorules
-			import "github.com/quasilyte/go-ruleguard/dsl/fluent"
-			func testrule(m fluent.Matcher) {
+			import "github.com/quasilyte/go-ruleguard/dsl"
+			func testrule(m dsl.Matcher) {
 				%s.Report("$$")
 			}`,
 			s)
