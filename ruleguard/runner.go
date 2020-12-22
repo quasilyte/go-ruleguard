@@ -158,11 +158,7 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 		}
 	}
 
-	prefix := ""
-	if rule.severity != "" {
-		prefix = rule.severity + ": "
-	}
-	message := prefix + rr.renderMessage(rule.msg, m.Node, m.Values, true)
+	message := rr.renderMessage(rule.msg, m.Node, m.Values, true)
 	node := m.Node
 	if rule.location != "" {
 		node = m.Values[rule.location]

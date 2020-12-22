@@ -17,7 +17,6 @@ type goRule struct {
 	group      string
 	filename   string
 	line       int
-	severity   string
 	pat        *gogrep.Pattern
 	msg        string
 	location   string
