@@ -25,7 +25,7 @@ type Suggestion struct {
 }
 
 func ParseRules(filename string, fset *token.FileSet, r io.Reader) (*GoRuleSet, error) {
-	p := newRulesParser()
+	p := newRulesParser(fset)
 	return p.ParseFile(filename, fset, r)
 }
 

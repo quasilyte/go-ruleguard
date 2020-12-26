@@ -3,7 +3,6 @@ package ruleguard
 import (
 	"fmt"
 	"go/ast"
-	"go/importer"
 	"go/parser"
 	"go/token"
 	"go/types"
@@ -27,12 +26,11 @@ type rulesParser struct {
 	res      *GoRuleSet
 	types    *types.Info
 
-	itab        *typematch.ImportsTab
-	stdImporter types.Importer // TODO(quasilyte): share importer with gogrep?
-	srcImporter types.Importer
+	itab     *typematch.ImportsTab
+	importer *goImporter
 }
 
-func newRulesParser() *rulesParser {
+func newRulesParser(fset *token.FileSet) *rulesParser {
 	var stdlib = map[string]string{
 		"adler32":         "hash/adler32",
 		"aes":             "crypto/aes",
@@ -176,12 +174,9 @@ func newRulesParser() *rulesParser {
 		"zlib":            "compress/zlib",
 	}
 
-	// TODO(quasilyte): do we need to pass the fileset here?
-	fset := token.NewFileSet()
 	return &rulesParser{
-		itab:        typematch.NewImportsTab(stdlib),
-		stdImporter: importer.Default(),
-		srcImporter: importer.ForCompiler(fset, "source", nil),
+		itab:     typematch.NewImportsTab(stdlib),
+		importer: newGoImporter(fset),
 	}
 }
 
@@ -203,7 +198,7 @@ func (p *rulesParser) ParseFile(filename string, fset *token.FileSet, r io.Reade
 		return nil, fmt.Errorf("expected a gorules package name, found %s", f.Name.Name)
 	}
 
-	typechecker := types.Config{Importer: p.srcImporter}
+	typechecker := types.Config{Importer: p.importer}
 	p.types = &types.Info{Types: map[ast.Expr]types.TypeAndValue{}}
 	_, err = typechecker.Check("gorules", fset, []*ast.File{f}, p.types)
 	if err != nil {
@@ -584,12 +579,9 @@ func (p *rulesParser) parseFilterExpr(e ast.Expr) matchFilter {
 			if !ok {
 				panic(p.errorf(n.X, "package %s is not imported", pkgName.Name))
 			}
-			pkg, err := p.stdImporter.Import(pkgPath)
+			pkg, err := p.importer.Import(pkgPath)
 			if err != nil {
-				pkg, err = p.srcImporter.Import(pkgPath)
-				if err != nil {
-					panic(p.errorf(n, "can't load %s: %v", pkgPath, err))
-				}
+				panic(p.errorf(n, "can't load %s: %v", pkgPath, err))
 			}
 			obj := pkg.Scope().Lookup(n.Sel.Name)
 			if obj == nil {
