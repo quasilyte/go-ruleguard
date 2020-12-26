@@ -1,2 +1,4 @@
-/root/target.go:8:10: the parentheses around 1 are superfluous
-/root/target.go:9:10: the parentheses around 2 are superfluous
+/root/target.go:8:10: exprUnparen: the parentheses around 1 are superfluous (rules.go:15)
+/root/target.go:9:10: exprUnparen: the parentheses around 2 are superfluous (rules.go:15)
+/root/target.go:11:10: boolComparison: omit bool literal in expression (rules1.go:8)
+/root/target.go:12:10: boolExprSimplify: suggestion: b (rules2.go:6)

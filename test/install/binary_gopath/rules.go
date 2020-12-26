@@ -4,7 +4,12 @@ package gorules
 
 import (
 	"github.com/quasilyte/go-ruleguard/dsl"
+	testrules "github.com/quasilyte/ruleguard-rules-test"
 )
+
+func init() {
+	dsl.ImportRules("", testrules.Bundle)
+}
 
 func exprUnparen(m dsl.Matcher) {
 	m.Match(`$f($*_, ($x), $*_)`).

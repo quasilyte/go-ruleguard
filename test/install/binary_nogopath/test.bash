@@ -18,6 +18,7 @@ unzip ruleguard-linux-amd64.zip
 
 go mod init test
 go get -v -u github.com/quasilyte/go-ruleguard/dsl@master
+go get -v -u github.com/quasilyte/ruleguard-rules-test@master
 
 ./ruleguard -rules rules.go /root/target.go &> actual.txt || true
 diff -u actual.txt /root/expected.txt
