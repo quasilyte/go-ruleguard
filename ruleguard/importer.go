@@ -61,6 +61,8 @@ func (imp *goImporter) Import(path string) (*types.Package, error) {
 		return pkg, nil
 	}
 
+	// TODO: report all err1, err2 and err3 in debug mode.
+
 	return nil, err1
 }
 
