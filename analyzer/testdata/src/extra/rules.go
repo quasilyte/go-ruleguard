@@ -163,6 +163,10 @@ func testRules(m dsl.Matcher) {
 		`if $xs != nil { for _, $x := range $xs { $*_ } }`).
 		Report(`check on $xs is redundant, empty/nil slices and maps can be safely iterated`)
 
+	// The purpose of this rule is to match a struct initialization pattern such as
+	// mypkg.MyStruct{} where *mypkg.MyStruct implements a specified interface.
+	// However currently it does not work because the `mypkg.MyStruct{}` code is not a pointer,
+	// and there is no DSL to convert to a pointer.
 	// Where(m["x"].Type.Pointer.Implements("worker.TaskExecuter")).
 	m.Match(`$x{$*_}`).
 		Where(m["x"].Type.Implements("worker.TaskExecuter")).
