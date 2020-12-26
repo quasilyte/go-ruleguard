@@ -8,6 +8,7 @@ test:
 
 test-master:
 	cd test/install/gitclone && docker build --no-cache .
+	cd test/regress/issue103 && docker build --no-cache .
 	@echo "everything is OK"
 
 test-release:
