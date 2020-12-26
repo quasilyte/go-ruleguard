@@ -2,7 +2,9 @@
 
 package gorules
 
-import "github.com/quasilyte/go-ruleguard/dsl/fluent"
+import (
+	"github.com/quasilyte/go-ruleguard/dsl"
+)
 
 // This is an example rule file for ruleguard.
 //
@@ -21,10 +23,7 @@ import "github.com/quasilyte/go-ruleguard/dsl/fluent"
 //
 // If you want to report any issue, please do so: https://github.com/quasilyte/go-ruleguard/issues/new
 
-// "_" is a special "unnamed" rules group.
-// It's not a good style to use these, but it can be a convenient place for
-// various rules for which you can't find a good name.
-func _(m fluent.Matcher) {
+func miscRules(m dsl.Matcher) {
 	// See http://golang.org/issue/36225
 	m.Match(`json.NewDecoder($_).Decode($_)`).
 		Report(`this json.Decoder usage is erroneous`)
@@ -90,13 +89,13 @@ func _(m fluent.Matcher) {
 		Suggest(`$a+$b`)
 }
 
-func exprUnparen(m fluent.Matcher) {
+func exprUnparen(m dsl.Matcher) {
 	m.Match(`$f($*_, ($x), $*_)`).
 		Report(`the parentheses around $x are superfluous`).
 		Suggest(`$f($x)`)
 }
 
-func osFilepath(m fluent.Matcher) {
+func osFilepath(m dsl.Matcher) {
 	// path/filepath package forwards path separators so if
 	// the file already uses filepath-related API it might be
 	// a good idea to reduce the direct os package dependency.
@@ -112,7 +111,7 @@ func osFilepath(m fluent.Matcher) {
 }
 
 // See https://twitter.com/dgryski/status/1281348103505768449
-func useMathBits(m fluent.Matcher) {
+func useMathBits(m dsl.Matcher) {
 	// RotateLeft
 	m.Match(`$x << $n | $x >> (8 - $n)`,
 		`$x >> (8 - $n) | $x << $n`,
@@ -172,7 +171,7 @@ func useMathBits(m fluent.Matcher) {
 		Suggest(`bits.RotateLeft64($x, -$n)`)
 }
 
-func gocriticWrapperFunc(m fluent.Matcher) {
+func gocriticWrapperFunc(m dsl.Matcher) {
 	m.Match(`strings.SplitN($s, $sep, -1)`).Suggest(`strings.Split($s, $sep)`)
 	m.Match(`strings.Replace($s, $old, $new, -1)`).Suggest(`strings.ReplaceAll($s, $old, $new)`)
 	m.Match(`strings.TrimFunc($s, unicode.IsSpace)`).Suggest(`strings.TrimSpace($s)`)
@@ -188,30 +187,30 @@ func gocriticWrapperFunc(m fluent.Matcher) {
 	m.Match(`bytes.Map(unicode.ToTitle, $s)`).Suggest(`bytes.ToTitle($s)`)
 }
 
-func gocriticNilValReturn(m fluent.Matcher) {
+func gocriticNilValReturn(m dsl.Matcher) {
 	m.Match(`if $*_; $v == nil { return $v }`).
 		Report(`returned expr is always nil; replace $v with nil`)
 }
 
-func gocriticBoolExprSimplify(m fluent.Matcher) {
+func gocriticBoolExprSimplify(m dsl.Matcher) {
 	m.Match(`!!$x`).Suggest(`$x`)
 	m.Match(`!($x != $y)`).Suggest(`$x == $y`)
 	m.Match(`!($x == $y)`).Suggest(`$x != $y`)
 }
 
-func gocriticOffBy1(m fluent.Matcher) {
+func gocriticOffBy1(m dsl.Matcher) {
 	m.Match(`$s[len($s)]`).
 		Where(m["s"].Type.Is(`[]$elem`) && m["s"].Pure).
 		Report(`index expr always panics; maybe you wanted $s[len($s)-1]?`)
 }
 
-func gocriticStringXBytes(m fluent.Matcher) {
+func gocriticStringXBytes(m dsl.Matcher) {
 	m.Match(`copy($b, []byte($s))`).
 		Where(m["s"].Type.Is(`string`)).
 		Suggest(`copy($b, $s)`)
 }
 
-func gocriticArgOrder(m fluent.Matcher) {
+func gocriticArgOrder(m dsl.Matcher) {
 	m.Match(`strings.HasPrefix($s1, $s2)`).
 		Where(m["s1"].Const && !m["s2"].Const).
 		Suggest(`strings.HasPrefix($s2, $s1)`)
@@ -225,7 +224,7 @@ func gocriticArgOrder(m fluent.Matcher) {
 		Suggest(`strings.Contains($s2, $s1)`)
 }
 
-func gocriticBadCall(m fluent.Matcher) {
+func gocriticBadCall(m dsl.Matcher) {
 	m.Match(`strings.Replace($_, $_, $_, 0)`,
 		`bytes.Replace($_, $_, $_, 0)`,
 		`strings.SplitN($_, $_, 0)`,
@@ -236,7 +235,7 @@ func gocriticBadCall(m fluent.Matcher) {
 		Report(`append called with 1 argument does nothing`)
 }
 
-func gocriticDupArg(m fluent.Matcher) {
+func gocriticDupArg(m dsl.Matcher) {
 	m.Match(`math.Max($x, $x)`,
 		`math.Min($x, $x)`,
 		`strings.Contains($x, $x)`,
@@ -274,7 +273,7 @@ func gocriticDupArg(m fluent.Matcher) {
 		Report(`suspicious duplicated args in $$`)
 }
 
-func gocriticDupSubExpr(m fluent.Matcher) {
+func gocriticDupSubExpr(m dsl.Matcher) {
 	m.Match(`$x || $x`,
 		`$x && $x`,
 		`$x | $x`,
@@ -294,11 +293,11 @@ func gocriticDupSubExpr(m fluent.Matcher) {
 		Report(`suspicious identical LHS and RHS`)
 }
 
-func gocriticValSwap(m fluent.Matcher) {
+func gocriticValSwap(m dsl.Matcher) {
 	m.Match(`$tmp := $x; $x = $y; $y = $tmp`).Suggest(`$x, $y = $y, $x`)
 }
 
-func gocriticAssignOp(m fluent.Matcher) {
+func gocriticAssignOp(m dsl.Matcher) {
 	// We need to define ++ and -- rules before the other,
 	// so they can take a precedence.
 	m.Match(`$x = $x + 1`).Suggest(`$x++`)
@@ -316,38 +315,38 @@ func gocriticAssignOp(m fluent.Matcher) {
 	m.Match(`$x = $x &^ $y`).Suggest(`$x &^= $y`)
 }
 
-func gocriticRegexpMust(m fluent.Matcher) {
+func gocriticRegexpMust(m dsl.Matcher) {
 	m.Match(`regexp.Compile($pat)`,
 		`regexp.CompilePOSIX($pat)`).
 		Where(m["pat"].Const).
 		Report(`can use MustCompile for const patterns`)
 }
 
-func gocriticMapKey(m fluent.Matcher) {
+func gocriticMapKey(m dsl.Matcher) {
 	m.Match(`map[$_]$_{$*_, $k: $_, $*_, $k: $_, $*_}`).
 		Where(m["k"].Pure).
 		Report(`suspicious duplicate key $k`).
 		At(m["k"])
 }
 
-func gocriticAppendCombine(m fluent.Matcher) {
+func gocriticAppendCombine(m dsl.Matcher) {
 	m.Match(`$dst = append($x, $a); $dst = append($x, $b)`).
 		Suggest(`$dst = append($x, $a, $b)`)
 }
 
-func gocriticYodaStyleExpr(m fluent.Matcher) {
+func gocriticYodaStyleExpr(m dsl.Matcher) {
 	m.Match(`nil != $_`,
 		`0 != $_`).
 		Report(`yoda-style expression`)
 }
 
-func gocriticUnderef(m fluent.Matcher) {
+func gocriticUnderef(m dsl.Matcher) {
 	m.Match(`(*$arr)[$i]`).
 		Where(m["arr"].Type.Is(`*[$_]$_`)).
 		Suggest(`$arr[$i]`)
 }
 
-func gocriticEmptyStringTest(m fluent.Matcher) {
+func gocriticEmptyStringTest(m dsl.Matcher) {
 	m.Match(`len($s) == 0`).
 		Where(m["s"].Type.Is(`string`)).
 		Suggest(`$s == ""`)
@@ -356,22 +355,22 @@ func gocriticEmptyStringTest(m fluent.Matcher) {
 		Suggest(`$s != ""`)
 }
 
-func gocriticUnslice(m fluent.Matcher) {
+func gocriticUnslice(m dsl.Matcher) {
 	m.Match(`$s[:]`).Where(m["s"].Type.Is(`string`)).Suggest(`$s`)
 	m.Match(`$s[:]`).Where(m["s"].Type.Is(`[]$_`)).Suggest(`$s`)
 }
 
-func gocriticSwitchTrue(m fluent.Matcher) {
+func gocriticSwitchTrue(m dsl.Matcher) {
 	m.Match(`switch true {$*_}`).Report(`can omit true in switch`)
 }
 
-func gocriticSloppyLen(m fluent.Matcher) {
+func gocriticSloppyLen(m dsl.Matcher) {
 	m.Match(`len($_) >= 0`).Report(`$$ is always true`)
 	m.Match(`len($_) < 0`).Report(`$$ is always false`)
 	m.Match(`len($s) <= 0`).Suggest(`len($s) == 0`)
 }
 
-func gocriticNewDeref(m fluent.Matcher) {
+func gocriticNewDeref(m dsl.Matcher) {
 	// TODO: add missing patterns.
 	m.Match(`*new(bool)`).Suggest(`false`)
 	m.Match(`*new(string)`).Suggest(`""`)
@@ -381,7 +380,7 @@ func gocriticNewDeref(m fluent.Matcher) {
 	m.Match(`*new(float32)`).Suggest(`float32(0)`)
 }
 
-func gocriticFlagDeref(m fluent.Matcher) {
+func gocriticFlagDeref(m dsl.Matcher) {
 	m.Match(`*flag.Bool($*_)`,
 		`*flag.Float64($*_)`,
 		`*flag.Duration($*_)`,
@@ -393,7 +392,7 @@ func gocriticFlagDeref(m fluent.Matcher) {
 		Report(`immediate deref in $$ is most likely an error`)
 }
 
-func gocriticBadLock(m fluent.Matcher) {
+func gocriticBadLock(m dsl.Matcher) {
 	m.Match(`$mu.Lock(); defer $mu.RUnlock()`).Report(`maybe $mu.RLock() was intended?`)
 	m.Match(`$mu.RLock(); defer $mu.Unlock()`).Report(`maybe $mu.Lock() was intended?`)
 
@@ -408,7 +407,7 @@ func gocriticBadLock(m fluent.Matcher) {
 		Report(`maybe defer $mu1.RUnlock() was intended?`)
 }
 
-func reviveBoolLiteralInExpr(m fluent.Matcher) {
+func reviveBoolLiteralInExpr(m dsl.Matcher) {
 	m.Match(`$x == true`,
 		`$x != true`,
 		`$x == false`,
@@ -416,18 +415,18 @@ func reviveBoolLiteralInExpr(m fluent.Matcher) {
 		Report(`omit bool literal in expression`)
 }
 
-func gosimpleS1003(m fluent.Matcher) {
+func gosimpleS1003(m dsl.Matcher) {
 	m.Match(`strings.Index($s1, $s2) != -1`).Suggest(`strings.Contains($s1, $s2)`)
 	m.Match(`strings.Index($s1, $s2) == -1`).Suggest(`!strings.Contains($s1, $s2)`)
 	m.Match(`strings.IndexAny($s1, $s2) != -1`).Suggest(`strings.ContainsAny($s1, $s2)`)
 	m.Match(`strings.IndexAny($s1, $s2) == -1`).Suggest(`!strings.ContainsAny($s1, $s2)`)
 }
 
-func contextTODO(m fluent.Matcher) {
+func contextTODO(m dsl.Matcher) {
 	m.Match(`context.TODO()`).Report(`consider to use well-defined context`)
 }
 
-func redundantLenCheck(m fluent.Matcher) {
+func redundantLenCheck(m dsl.Matcher) {
 	m.Match(`if len($xs) != 0 { for range $xs { $*_ } }`,
 		`if len($xs) != 0 { for $i := range $xs { $*_ } }`,
 		`if len($xs) != 0 { for _, $x := range $xs { $*_ } }`,

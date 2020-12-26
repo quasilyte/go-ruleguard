@@ -1,6 +1,7 @@
 # go-ruleguard
 
-[![Build Status](https://travis-ci.com/quasilyte/go-ruleguard.svg?branch=master)](https://travis-ci.com/quasilyte/go-ruleguard)
+![Build Status](https://github.com/quasilyte/go-ruleguard/workflows/Go/badge.svg)
+![Build Status](https://github.com/quasilyte/go-ruleguard/workflows/Merge/badge.svg)
 [![PkgGoDev](https://pkg.go.dev/badge/mod/github.com/quasilyte/go-ruleguard)](https://pkg.go.dev/mod/github.com/quasilyte/go-ruleguard)
 [![Go Report Card](https://goreportcard.com/badge/github.com/quasilyte/go-ruleguard)](https://goreportcard.com/report/github.com/quasilyte/go-ruleguard)
 
@@ -61,14 +62,16 @@ Create a test `example.rules.go` file:
 
 package gorules
 
-import "github.com/quasilyte/go-ruleguard/dsl/fluent"
+import "github.com/quasilyte/go-ruleguard/dsl"
 
-func _(m fluent.Matcher) {
+func dupSubExpr(m dsl.Matcher) {
 	m.Match(`$x || $x`,
 		`$x && $x`).
 		Where(m["x"].Pure).
 		Report(`suspicious identical LHS and RHS`)
+}
 
+func boolExprSimplify(m dsl.Matcher) {
 	m.Match(`!($x != $y)`).Suggest(`$x == $y`)
 	m.Match(`!($x == $y)`).Suggest(`$x != $y`)
 }
@@ -109,8 +112,10 @@ example.go:5:10: !(v1 != v2)
 
 It automatically inserts `Report("$$")` into the specified pattern.
 
-For named functions (rule groups) you can use `-debug-group <name>` flag to see explanations
+You can use `-debug-group <name>` flag to see explanations
 on why some rules rejected the match (e.g. which `Where()` condition failed).
+
+The `-e` generated rule will have `e` name, so it can be debugged as well.
 
 ## How does it work?
 
@@ -118,11 +123,11 @@ on why some rules rejected the match (e.g. which `Where()` condition failed).
 Loaded rules are then used to check the specified targets (Go files, packages).  
 The `rules.go` file itself is never compiled, nor executed.
 
-A `rules.go` file, as interpreted by a [`dsl/fluent`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent) API, is a set of functions that serve as a rule groups. Every function accepts a single [`fluent.Matcher`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher) argument that is then used to define and configure rules inside the group.
+A `rules.go` file, as interpreted by a [`dsl`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl) API, is a set of functions that serve as a rule groups. Every function accepts a single [`dsl.Matcher`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher) argument that is then used to define and configure rules inside the group.
 
-A rule definition always starts from a [`Match(patterns...)`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher.Match) method call and ends with a [`Report(message)`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher.Report) method call.
+A rule definition always starts from a [`Match(patterns...)`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Match) method call and ends with a [`Report(message)`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Report) method call.
 
-There can be additional calls in between these two. For example, a [`Where(cond)`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher.Where) call applies constraints to a match to decide whether its accepted or rejected. So even if there is a match for a pattern, it won't produce a report message unless it satisfies a `Where()` condition.
+There can be additional calls in between these two. For example, a [`Where(cond)`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Where) call applies constraints to a match to decide whether its accepted or rejected. So even if there is a match for a pattern, it won't produce a report message unless it satisfies a `Where()` condition.
 
 To learn more, check out the documentation and/or the source code.
 
@@ -132,7 +137,7 @@ To learn more, check out the documentation and/or the source code.
 * Example rule files: [rules.go](rules.go)
 * Another great example: [github.com/dgryski/semgrep-go/ruleguard.rules.go](https://github.com/dgryski/semgrep-go/blob/master/ruleguard.rules.go)
 * [gorules](docs/gorules.md) format documentation
-* [dsl/fluent package](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent) reference
+* [dsl package](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl) reference
 * [ruleguard package](https://godoc.org/github.com/quasilyte/go-ruleguard/ruleguard) reference
 * Introduction article: [EN](https://quasilyte.dev/blog/post/ruleguard/), [RU](https://habr.com/ru/post/481696/)
 

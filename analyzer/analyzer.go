@@ -30,7 +30,7 @@ var (
 func init() {
 	Analyzer.Flags.StringVar(&flagRules, "rules", "", "comma-separated list of gorule file paths")
 	Analyzer.Flags.StringVar(&flagE, "e", "", "execute a single rule from a given string")
-	Analyzer.Flags.StringVar(&flagDebug, "debug-group", "", "enable debug for the specified named rules group")
+	Analyzer.Flags.StringVar(&flagDebug, "debug-group", "", "enable debug for the specified function")
 }
 
 type parseRulesResult struct {
@@ -59,8 +59,9 @@ func runAnalyzer(pass *analysis.Pass) (interface{}, error) {
 		Sizes: pass.TypesSizes,
 		Fset:  pass.Fset,
 		Report: func(info ruleguard.GoRuleInfo, n ast.Node, msg string, s *ruleguard.Suggestion) {
+			msg = info.Group + ": " + msg
 			if multiFile {
-				msg += fmt.Sprintf(" (%s)", filepath.Base(info.Filename))
+				msg += fmt.Sprintf(" (%s:%d)", filepath.Base(info.Filename), info.Line)
 			}
 			diag := analysis.Diagnostic{
 				Pos:     n.Pos(),
@@ -99,6 +100,7 @@ func readRules() (*parseRulesResult, error) {
 	switch {
 	case flagRules != "":
 		filenames := strings.Split(flagRules, ",")
+		multifile := len(filenames) > 1
 		var ruleSets []*ruleguard.GoRuleSet
 		for _, filename := range filenames {
 			filename = strings.TrimSpace(filename)
@@ -110,16 +112,22 @@ func readRules() (*parseRulesResult, error) {
 			if err != nil {
 				return nil, fmt.Errorf("parse rules file: %v", err)
 			}
+			if len(rset.Imports) != 0 {
+				multifile = true
+			}
 			ruleSets = append(ruleSets, rset)
 		}
-		rset := ruleguard.MergeRuleSets(ruleSets)
-		return &parseRulesResult{rset: rset, multiFile: len(filenames) > 1}, nil
+		rset, err := ruleguard.MergeRuleSets(ruleSets)
+		if err != nil {
+			return nil, fmt.Errorf("merge rule files: %v", err)
+		}
+		return &parseRulesResult{rset: rset, multiFile: multifile}, nil
 
 	case flagE != "":
 		ruleText := fmt.Sprintf(`
 			package gorules
-			import "github.com/quasilyte/go-ruleguard/dsl/fluent"
-			func _(m fluent.Matcher) {
+			import "github.com/quasilyte/go-ruleguard/dsl"
+			func e(m dsl.Matcher) {
 				%s.Report("$$")
 			}`,
 			flagE)

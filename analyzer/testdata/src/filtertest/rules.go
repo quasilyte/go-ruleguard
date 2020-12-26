@@ -2,9 +2,9 @@
 
 package gorules
 
-import "github.com/quasilyte/go-ruleguard/dsl/fluent"
+import "github.com/quasilyte/go-ruleguard/dsl"
 
-func _(m fluent.Matcher) {
+func testRules(m dsl.Matcher) {
 	m.Import(`github.com/quasilyte/go-ruleguard/analyzer/testdata/src/filtertest/foolib`)
 
 	m.Match(`typeTest($x, "contains time.Time")`).

@@ -17,7 +17,6 @@ type goRule struct {
 	group      string
 	filename   string
 	line       int
-	severity   string
 	pat        *gogrep.Pattern
 	msg        string
 	location   string
@@ -25,40 +24,41 @@ type goRule struct {
 	filter     matchFilter
 }
 
+type matchFilterResult string
+
+func (s matchFilterResult) Matched() bool { return s == "" }
+
+func (s matchFilterResult) RejectReason() string { return string(s) }
+
+type filterFunc func(*filterParams) matchFilterResult
+
 type matchFilter struct {
-	fileFilters []fileFilter
-	subFilters  map[string][]nodeFilter
+	src string
+	fn  func(*filterParams) matchFilterResult
 }
 
-type fileFilter struct {
-	src  string
-	pred func(*fileFilterParams) bool
-}
-
-type fileFilterParams struct {
+type filterParams struct {
 	ctx      *Context
 	filename string
 	imports  map[string]struct{}
-}
 
-type nodeFilter struct {
-	src  string
-	pred func(*nodeFilterParams) bool
-}
-
-type nodeFilterParams struct {
-	ctx    *Context
-	n      ast.Expr
 	values map[string]ast.Node
 
 	nodeText func(n ast.Node) []byte
 }
 
-func (params *nodeFilterParams) nodeType() types.Type {
-	return params.typeofNode(params.n)
+func (params *filterParams) subExpr(name string) ast.Expr {
+	switch n := params.values[name].(type) {
+	case ast.Expr:
+		return n
+	case *ast.ExprStmt:
+		return n.X
+	default:
+		return nil
+	}
 }
 
-func (params *nodeFilterParams) typeofNode(n ast.Node) types.Type {
+func (params *filterParams) typeofNode(n ast.Node) types.Type {
 	if e, ok := n.(ast.Expr); ok {
 		if typ := params.ctx.Types.TypeOf(e); typ != nil {
 			return typ

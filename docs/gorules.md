@@ -21,14 +21,14 @@ Every `gorules` file is a valid Go file.
 We can describe a file structure like this:
 
 1. It has a package clause (package name should be `gorules`).
-2. An import clause (you need at least `github.com/quasilyte/go-ruleguard/dsl/fluent`).
+2. An import clause (you need at least `github.com/quasilyte/go-ruleguard/dsl`).
 3. Function declarations.
 
 Functions play a special role: they serve as a **rule groups**.
 
-Every function accepts exactly 1 argument, a [`fluent.Matcher`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher), and defines some **rules**.
+Every function accepts exactly 1 argument, a [`dsl.Matcher`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher), and defines some **rules**.
 
-Every **rule** definition starts with a [`Match`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher.Match) method call that specifies one or more [AST patterns](https://github.com/mvdan/gogrep) that should represent what kind of Go code rule supposed to match. Another mandatory method is [`Report`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher.Report) that describes a message template that is going to be printed when the rule match is accepted.
+Every **rule** definition starts with a [`Match`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Match) method call that specifies one or more [AST patterns](https://github.com/mvdan/gogrep) that should represent what kind of Go code rule supposed to match. Another mandatory method is [`Report`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Report) that describes a message template that is going to be printed when the rule match is accepted.
 
 Here is a small yet useful, example of `gorules` file:
 
@@ -37,17 +37,15 @@ Here is a small yet useful, example of `gorules` file:
 
 package gorules
 
-import "github.com/quasilyte/go-ruleguard/dsl/fluent"
+import "github.com/quasilyte/go-ruleguard/dsl"
 
-func _(m fluent.Matcher) {
+func regexpMust(m dsl.Matcher) {
 	m.Match(`regexp.Compile($pat)`,
 		`regexp.CompilePOSIX($pat)`).
 		Where(m["pat"].Const).
 		Report(`can use MustCompile for const patterns`)
 }
 ```
-
-A rule group that has `_` function name is called **anonymous**. You can have as much anonymous groups as you like.
 
 A `Report` argument string can use `$<varname>` notation to interpolate the named pattern submatches into the report message.
 There is a special case of `$$` which can be used to inject the entire pattern match into the message.
@@ -56,12 +54,12 @@ There is a special case of `$$` which can be used to inject the entire pattern m
 
 Apart from the rules, function can contain group statements.
 
-As everything else, statements are `Matcher` methods. [`Import()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher.Import) is one of these special methods.
+As everything else, statements are `Matcher` methods. [`Import()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Import) is one of these special methods.
 
 Rule group statements only affect the current rule group and last from the line they were defined until the end of a function block.
 
 ```go
-func _(m fluent.Matcher) {
+func testGroup(m dsl.Matcher) {
 	// <- Empty imports table.
 
 	m.Import(`github.com/some/pkg`)
@@ -77,7 +75,7 @@ func _(m fluent.Matcher) {
 
 ## Filters
 
-There are 2 types of filters that can be used in [`Where`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher.Where) call:
+There are 2 types of filters that can be used in [`Where`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Where) call:
 1. Submatch (named variable-based) filters
 2. Context filters (current file, etc)
 
@@ -94,7 +92,7 @@ Here are some examples of supported filters:
 * Submatch text matches provided regexp
 * Current files imports package `P`
 
-A match variable can be accessed with `fluent.Matcher` function argument indexing:
+A match variable can be accessed with `dsl.Matcher` function argument indexing:
 
 ```go
 Where(m["a"].Type.Is(`int`) && !m["b"].Type.AssignableTo(`[]string`))
@@ -111,7 +109,7 @@ Where(m.File().Imports("io/ioutil"))
 
 The filter concept is crucial to avoid false-positives in rules.
 
-Please refer to the godoc page of a [`dsl/fluent`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent) package to get an up-to-date list of supported filters.
+Please refer to the godoc page of a [`dsl`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl) package to get an up-to-date list of supported filters.
 
 ## Named types and import tables
 
@@ -123,7 +121,7 @@ In `gorules`, unqualified type name is hard to interpret right. We could use the
 
 Our resolution is to reject all the unqualified names. If you want a `Foo` type from `a/b/c` package, you need to:
 
-1. Do an [`Import("a/b/c")`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#Matcher.Import) call, so the package is loaded into the current imports table.
+1. Do an [`Import("a/b/c")`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Import) call, so the package is loaded into the current imports table.
 2. Use `c.Foo` type name.
 
 We need the `Import()` step to match `c` package name with its path, `a/b/c`.
@@ -137,7 +135,7 @@ m.Import(`html/template`)
 
 ## Type pattern matching
 
-Methods like [`ExprType.Is()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#ExprType.Is) accept a string argument that describes a Go type. It can be as simple as `"[]string"` that matches only a string slice, but it can also include a pattern-like variables:
+Methods like [`ExprType.Is()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#ExprType.Is) accept a string argument that describes a Go type. It can be as simple as `"[]string"` that matches only a string slice, but it can also include a pattern-like variables:
 
 * `[]$T` matches any slice.
 * `[$len]$T` matches any array.
@@ -149,7 +147,7 @@ Methods like [`ExprType.Is()`](https://godoc.org/github.com/quasilyte/go-rulegua
 * `struct{$*_; $x}` struct that has $x-typed last field.
 
 Note: when matching types, make sure to think whether you need to match a type or the **underlying type**.
-To match the underlying type, use [`ExprType.Underlying()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl/fluent#ExprType.Underlying) method.
+To match the underlying type, use [`ExprType.Underlying()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#ExprType.Underlying) method.
 
 You may recognize that it's the same pattern behavior as in AST patterns.
 

@@ -2,9 +2,9 @@
 
 package gorules
 
-import "github.com/quasilyte/go-ruleguard/dsl/fluent"
+import "github.com/quasilyte/go-ruleguard/dsl"
 
-func _(m fluent.Matcher) {
+func testRules(m dsl.Matcher) {
 	m.Match(`$x = $x`).Report(`suspicious self-assignment in $$`)
 
 	m.Match(`$tmp := $x; $x = $y; $y = $tmp`).
@@ -137,7 +137,7 @@ func _(m fluent.Matcher) {
 		Suggest(`&$x`)
 }
 
-func badCond(m fluent.Matcher) {
+func badCond(m dsl.Matcher) {
 	m.Match(`$x < $a && $x > $b`).
 		Where(m["a"].Value.Int() <= m["b"].Value.Int()).
 		Report("the condition is always false because $a <= $b")
@@ -147,7 +147,7 @@ func badCond(m fluent.Matcher) {
 		Report("the condition is always false because $a >= $b")
 }
 
-func appendAssign(m fluent.Matcher) {
+func appendAssign(m dsl.Matcher) {
 	m.Match(`$x = append($y, $_, $*_)`).
 		Where(m["x"].Text != m["y"].Text &&
 			m["x"].Text != "_" &&

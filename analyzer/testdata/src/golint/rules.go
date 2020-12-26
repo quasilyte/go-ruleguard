@@ -2,9 +2,9 @@
 
 package gorules
 
-import "github.com/quasilyte/go-ruleguard/dsl/fluent"
+import "github.com/quasilyte/go-ruleguard/dsl"
 
-func _(m fluent.Matcher) {
+func testRules(m dsl.Matcher) {
 	m.Match(`errors.New(fmt.Sprintf($*_))`).
 		Report(`should replace error.New(fmt.Sprintf(...)) with fmt.Errorf(...)`)
 	m.Match(`t.Error(fmt.Sprintf($*_))`).
