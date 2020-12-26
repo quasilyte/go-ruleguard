@@ -1,4 +1,4 @@
-package fluent
+package dsl
 
 // Bundle is a rules file export manifest.
 type Bundle struct {

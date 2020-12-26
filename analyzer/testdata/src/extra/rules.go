@@ -2,7 +2,7 @@
 
 package gorules
 
-import "github.com/quasilyte/go-ruleguard/dsl/fluent"
+import "github.com/quasilyte/go-ruleguard/dsl"
 
 func testRules(m fluent.Matcher) {
 	m.Import(`github.com/quasilyte/go-ruleguard/analyzer/testdata/src/extra/worker`)

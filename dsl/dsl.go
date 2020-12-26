@@ -1,4 +1,4 @@
-package fluent
+package dsl
 
 // Matcher is a main API group-level entry point.
 // It's used to define and configure the group rules.
@@ -157,7 +157,7 @@ type File struct {
 	Name String
 
 	// PkgPath is a file package path.
-	// Examples: "io/ioutil", "strings", "github.com/quasilyte/go-ruleguard/dsl/fluent".
+	// Examples: "io/ioutil", "strings", "github.com/quasilyte/go-ruleguard/dsl".
 	PkgPath String
 }
 
