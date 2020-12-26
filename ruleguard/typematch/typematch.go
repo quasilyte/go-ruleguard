@@ -8,8 +8,11 @@ import (
 	"go/types"
 	"strconv"
 	"strings"
+
+	"github.com/quasilyte/go-ruleguard/internal/xtypes"
 )
 
+//go:generate stringer -type=patternOp
 type patternOp int
 
 const (
@@ -38,6 +41,17 @@ type pattern struct {
 	value interface{}
 	op    patternOp
 	subs  []*pattern
+}
+
+func (pat pattern) String() string {
+	if len(pat.subs) == 0 {
+		return fmt.Sprintf("<%s %#v>", pat.op, pat.value)
+	}
+	parts := make([]string, len(pat.subs))
+	for i, sub := range pat.subs {
+		parts[i] = sub.String()
+	}
+	return fmt.Sprintf("<%s %#v (%s)>", pat.op, pat.value, strings.Join(parts, ", "))
 }
 
 type ImportsTab struct {
@@ -382,10 +396,10 @@ func (p *Pattern) matchIdentical(sub *pattern, typ types.Type) bool {
 		if y == nil {
 			return typ == nil
 		}
-		return types.Identical(typ, y)
+		return xtypes.Identical(typ, y)
 
 	case opBuiltinType:
-		return types.Identical(typ, sub.value.(types.Type))
+		return xtypes.Identical(typ, sub.value.(types.Type))
 
 	case opPointer:
 		typ, ok := typ.(*types.Pointer)
