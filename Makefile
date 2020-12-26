@@ -5,10 +5,14 @@ test:
 	go test -count 3 -race -v ./ruleguard/...
 	@echo "everything is OK"
 
+test-master:
+	cd test/install/gitclone && docker build --no-cache .
+	@echo "everything is OK"
+
 lint:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOPATH_DIR)/bin v1.30.0
 	$(GOPATH_DIR)/bin/golangci-lint run ./analyzer/...
 	$(GOPATH_DIR)/bin/golangci-lint run ./ruleguard/...
 	@echo "everything is OK"
 
-.PHONY: lint test
+.PHONY: lint test test-master

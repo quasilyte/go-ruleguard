@@ -1,6 +1,7 @@
 # go-ruleguard
 
-[![Build Status](https://travis-ci.com/quasilyte/go-ruleguard.svg?branch=master)](https://travis-ci.com/quasilyte/go-ruleguard)
+![Build Status](https://github.com/quasilyte/go-ruleguard/workflows/Go/badge.svg)
+![Build Status](https://github.com/quasilyte/go-ruleguard/workflows/Merge/badge.svg)
 [![PkgGoDev](https://pkg.go.dev/badge/mod/github.com/quasilyte/go-ruleguard)](https://pkg.go.dev/mod/github.com/quasilyte/go-ruleguard)
 [![Go Report Card](https://goreportcard.com/badge/github.com/quasilyte/go-ruleguard)](https://goreportcard.com/report/github.com/quasilyte/go-ruleguard)
 
