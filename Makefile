@@ -1,4 +1,5 @@
 GOPATH_DIR=`go env GOPATH`
+RELEASE=v0.2.1
 
 test:
 	go test -count 3 -coverprofile=coverage.txt -covermode=atomic -race -v ./analyzer/...
@@ -7,6 +8,11 @@ test:
 
 test-master:
 	cd test/install/gitclone && docker build --no-cache .
+	@echo "everything is OK"
+
+test-release:
+	cd test/install/binary_gopath && docker build --build-arg release=$(RELEASE) --no-cache .
+	cd test/install/binary_nogopath && docker build --build-arg release=$(RELEASE) --no-cache .
 	@echo "everything is OK"
 
 lint:
