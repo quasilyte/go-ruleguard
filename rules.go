@@ -190,6 +190,8 @@ func gocriticWrapperFunc(m dsl.Matcher) {
 func gocriticNilValReturn(m dsl.Matcher) {
 	m.Match(`if $*_; $v == nil { return $v }`).
 		Report(`returned expr is always nil; replace $v with nil`)
+	m.Match(`if $v == nil { return $v }`).
+		Suggest(`if $v == nil { return nil }`)
 }
 
 func gocriticBoolExprSimplify(m dsl.Matcher) {
