@@ -150,8 +150,8 @@ func TestDebug(t *testing.T) {
 				%s.Report("$$")
 			}`,
 			s)
-		fset := token.NewFileSet()
-		rset, err := ParseRules("rules.go", fset, strings.NewReader(file))
+		ctx := &ParseContext{Fset: token.NewFileSet()}
+		rset, err := ParseRules(ctx, "rules.go", strings.NewReader(file))
 		if err != nil {
 			t.Fatalf("parse %s: %v", s, err)
 		}
