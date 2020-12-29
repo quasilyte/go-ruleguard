@@ -5,7 +5,16 @@ import (
 	"go/token"
 	"go/types"
 	"io"
+
+	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
 )
+
+type ParseContext struct {
+	DebugImports bool
+	DebugPrint   func(string)
+
+	Fset *token.FileSet
+}
 
 type Context struct {
 	Debug      string
@@ -24,9 +33,14 @@ type Suggestion struct {
 	Replacement []byte
 }
 
-func ParseRules(filename string, fset *token.FileSet, r io.Reader) (*GoRuleSet, error) {
-	p := newRulesParser()
-	return p.ParseFile(filename, fset, r)
+func ParseRules(ctx *ParseContext, filename string, r io.Reader) (*GoRuleSet, error) {
+	config := rulesParserConfig{
+		ctx:      ctx,
+		itab:     typematch.NewImportsTab(stdlibPackages),
+		importer: newGoImporter(ctx),
+	}
+	p := newRulesParser(config)
+	return p.ParseFile(filename, r)
 }
 
 func RunRules(ctx *Context, f *ast.File, rules *GoRuleSet) error {
@@ -47,8 +61,13 @@ type GoRuleInfo struct {
 type GoRuleSet struct {
 	universal *scopedGoRuleSet
 	local     *scopedGoRuleSet
+
+	groups map[string]token.Position // To handle redefinitions
+
+	// Imports is a set of rule bundles that were imported.
+	Imports map[string]struct{}
 }
 
-func MergeRuleSets(toMerge []*GoRuleSet) *GoRuleSet {
+func MergeRuleSets(toMerge []*GoRuleSet) (*GoRuleSet, error) {
 	return mergeRuleSets(toMerge)
 }

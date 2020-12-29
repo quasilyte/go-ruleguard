@@ -1,10 +1,11 @@
 # go-ruleguard
 
-[![Build Status](https://travis-ci.com/quasilyte/go-ruleguard.svg?branch=master)](https://travis-ci.com/quasilyte/go-ruleguard)
+![Build Status](https://github.com/quasilyte/go-ruleguard/workflows/Go/badge.svg)
+![Build Status](https://github.com/quasilyte/go-ruleguard/workflows/Merge/badge.svg)
 [![PkgGoDev](https://pkg.go.dev/badge/mod/github.com/quasilyte/go-ruleguard)](https://pkg.go.dev/mod/github.com/quasilyte/go-ruleguard)
 [![Go Report Card](https://goreportcard.com/badge/github.com/quasilyte/go-ruleguard)](https://goreportcard.com/report/github.com/quasilyte/go-ruleguard)
 
-![Logo](docs/logo2.png)
+![Logo](_docs/logo2.png)
 
 ## Overview
 
@@ -18,8 +19,8 @@ You write the rules, `ruleguard` checks whether they are satisfied.
 
 * Custom linting rules without re-compilation and Go plugins.
 * Diagnostics are written in a declarative way.
-* [Quickfix](docs/gorules.md#suggestions-quickfix-support) actions support.
-* Powerful match filtering features, like expression [type pattern matching](docs/gorules.md#type-pattern-matching).
+* [Quickfix](_docs/gorules.md#suggestions-quickfix-support) actions support.
+* Powerful match filtering features, like expression [type pattern matching](_docs/gorules.md#type-pattern-matching).
 
 `ruleguard` comes with [rules.go](rules.go) file that can be used as a foundation to write your own rules file.
 
@@ -118,7 +119,7 @@ The `-e` generated rule will have `e` name, so it can be debugged as well.
 
 ## How does it work?
 
-`ruleguard` parses [gorules](docs/gorules.md) (e.g. `rules.go`) during the start to load the rule set.  
+`ruleguard` parses [gorules](_docs/gorules.md) (e.g. `rules.go`) during the start to load the rule set.  
 Loaded rules are then used to check the specified targets (Go files, packages).  
 The `rules.go` file itself is never compiled, nor executed.
 
@@ -135,7 +136,7 @@ To learn more, check out the documentation and/or the source code.
 * [Ruleguard by example](https://go-ruleguard.github.io/by-example/) tour
 * Example rule files: [rules.go](rules.go)
 * Another great example: [github.com/dgryski/semgrep-go/ruleguard.rules.go](https://github.com/dgryski/semgrep-go/blob/master/ruleguard.rules.go)
-* [gorules](docs/gorules.md) format documentation
+* [gorules](_docs/gorules.md) format documentation
 * [dsl package](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl) reference
 * [ruleguard package](https://godoc.org/github.com/quasilyte/go-ruleguard/ruleguard) reference
 * Introduction article: [EN](https://quasilyte.dev/blog/post/ruleguard/), [RU](https://habr.com/ru/post/481696/)

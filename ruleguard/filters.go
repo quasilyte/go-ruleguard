@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 
+	"github.com/quasilyte/go-ruleguard/internal/xtypes"
 	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
 )
 
@@ -109,7 +110,7 @@ func makeTypeImplementsFilter(src, varname string, iface *types.Interface, toPoi
 		if toPointer {
 			typ = types.NewPointer(typ)
 		}
-		if types.Implements(typ, iface) {
+		if xtypes.Implements(typ, iface) {
 			return filterSuccess
 		}
 		return filterFailure(src)

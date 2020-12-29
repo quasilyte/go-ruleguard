@@ -1,13 +1,14 @@
 package ruleguard
 
 import (
+	"bytes"
 	"fmt"
 	"go/ast"
-	"go/importer"
 	"go/parser"
 	"go/token"
 	"go/types"
 	"io"
+	"io/ioutil"
 	"path"
 	"regexp"
 	"strconv"
@@ -21,191 +22,84 @@ type parseError string
 func (e parseError) Error() string { return string(e) }
 
 type rulesParser struct {
+	ctx *ParseContext
+
+	prefix      string // For imported packages, a prefix that is added to a rule group name
+	importedPkg string // Package path; only for imported packages
+
 	filename string
 	group    string
 	fset     *token.FileSet
 	res      *GoRuleSet
 	types    *types.Info
 
-	itab        *typematch.ImportsTab
-	stdImporter types.Importer // TODO(quasilyte): share importer with gogrep?
-	srcImporter types.Importer
+	itab     *typematch.ImportsTab
+	importer *goImporter
+
+	imported []*GoRuleSet
+
+	dslPkgname string // The local name of the "ruleguard/dsl" package (usually its just "dsl")
 }
 
-func newRulesParser() *rulesParser {
-	var stdlib = map[string]string{
-		"adler32":         "hash/adler32",
-		"aes":             "crypto/aes",
-		"ascii85":         "encoding/ascii85",
-		"asn1":            "encoding/asn1",
-		"ast":             "go/ast",
-		"atomic":          "sync/atomic",
-		"base32":          "encoding/base32",
-		"base64":          "encoding/base64",
-		"big":             "math/big",
-		"binary":          "encoding/binary",
-		"bits":            "math/bits",
-		"bufio":           "bufio",
-		"build":           "go/build",
-		"bytes":           "bytes",
-		"bzip2":           "compress/bzip2",
-		"cgi":             "net/http/cgi",
-		"cgo":             "runtime/cgo",
-		"cipher":          "crypto/cipher",
-		"cmplx":           "math/cmplx",
-		"color":           "image/color",
-		"constant":        "go/constant",
-		"context":         "context",
-		"cookiejar":       "net/http/cookiejar",
-		"crc32":           "hash/crc32",
-		"crc64":           "hash/crc64",
-		"crypto":          "crypto",
-		"csv":             "encoding/csv",
-		"debug":           "runtime/debug",
-		"des":             "crypto/des",
-		"doc":             "go/doc",
-		"draw":            "image/draw",
-		"driver":          "database/sql/driver",
-		"dsa":             "crypto/dsa",
-		"dwarf":           "debug/dwarf",
-		"ecdsa":           "crypto/ecdsa",
-		"ed25519":         "crypto/ed25519",
-		"elf":             "debug/elf",
-		"elliptic":        "crypto/elliptic",
-		"encoding":        "encoding",
-		"errors":          "errors",
-		"exec":            "os/exec",
-		"expvar":          "expvar",
-		"fcgi":            "net/http/fcgi",
-		"filepath":        "path/filepath",
-		"flag":            "flag",
-		"flate":           "compress/flate",
-		"fmt":             "fmt",
-		"fnv":             "hash/fnv",
-		"format":          "go/format",
-		"gif":             "image/gif",
-		"gob":             "encoding/gob",
-		"gosym":           "debug/gosym",
-		"gzip":            "compress/gzip",
-		"hash":            "hash",
-		"heap":            "container/heap",
-		"hex":             "encoding/hex",
-		"hmac":            "crypto/hmac",
-		"html":            "html",
-		"http":            "net/http",
-		"httptest":        "net/http/httptest",
-		"httptrace":       "net/http/httptrace",
-		"httputil":        "net/http/httputil",
-		"image":           "image",
-		"importer":        "go/importer",
-		"io":              "io",
-		"iotest":          "testing/iotest",
-		"ioutil":          "io/ioutil",
-		"jpeg":            "image/jpeg",
-		"json":            "encoding/json",
-		"jsonrpc":         "net/rpc/jsonrpc",
-		"list":            "container/list",
-		"log":             "log",
-		"lzw":             "compress/lzw",
-		"macho":           "debug/macho",
-		"mail":            "net/mail",
-		"math":            "math",
-		"md5":             "crypto/md5",
-		"mime":            "mime",
-		"multipart":       "mime/multipart",
-		"net":             "net",
-		"os":              "os",
-		"palette":         "image/color/palette",
-		"parse":           "text/template/parse",
-		"parser":          "go/parser",
-		"path":            "path",
-		"pe":              "debug/pe",
-		"pem":             "encoding/pem",
-		"pkix":            "crypto/x509/pkix",
-		"plan9obj":        "debug/plan9obj",
-		"plugin":          "plugin",
-		"png":             "image/png",
-		"pprof":           "runtime/pprof",
-		"printer":         "go/printer",
-		"quick":           "testing/quick",
-		"quotedprintable": "mime/quotedprintable",
-		"race":            "runtime/race",
-		"rand":            "math/rand",
-		"rc4":             "crypto/rc4",
-		"reflect":         "reflect",
-		"regexp":          "regexp",
-		"ring":            "container/ring",
-		"rpc":             "net/rpc",
-		"rsa":             "crypto/rsa",
-		"runtime":         "runtime",
-		"scanner":         "text/scanner",
-		"sha1":            "crypto/sha1",
-		"sha256":          "crypto/sha256",
-		"sha512":          "crypto/sha512",
-		"signal":          "os/signal",
-		"smtp":            "net/smtp",
-		"sort":            "sort",
-		"sql":             "database/sql",
-		"strconv":         "strconv",
-		"strings":         "strings",
-		"subtle":          "crypto/subtle",
-		"suffixarray":     "index/suffixarray",
-		"sync":            "sync",
-		"syntax":          "regexp/syntax",
-		"syscall":         "syscall",
-		"syslog":          "log/syslog",
-		"tabwriter":       "text/tabwriter",
-		"tar":             "archive/tar",
-		"template":        "text/template",
-		"testing":         "testing",
-		"textproto":       "net/textproto",
-		"time":            "time",
-		"tls":             "crypto/tls",
-		"token":           "go/token",
-		"trace":           "runtime/trace",
-		"types":           "go/types",
-		"unicode":         "unicode",
-		"unsafe":          "unsafe",
-		"url":             "net/url",
-		"user":            "os/user",
-		"utf16":           "unicode/utf16",
-		"utf8":            "unicode/utf8",
-		"x509":            "crypto/x509",
-		"xml":             "encoding/xml",
-		"zip":             "archive/zip",
-		"zlib":            "compress/zlib",
-	}
+type rulesParserConfig struct {
+	ctx *ParseContext
 
-	// TODO(quasilyte): do we need to pass the fileset here?
-	fset := token.NewFileSet()
+	prefix      string
+	importedPkg string
+
+	itab     *typematch.ImportsTab
+	importer *goImporter
+}
+
+func newRulesParser(config rulesParserConfig) *rulesParser {
 	return &rulesParser{
-		itab:        typematch.NewImportsTab(stdlib),
-		stdImporter: importer.Default(),
-		srcImporter: importer.ForCompiler(fset, "source", nil),
+		ctx:         config.ctx,
+		prefix:      config.prefix,
+		importedPkg: config.importedPkg,
+		itab:        config.itab,
+		importer:    config.importer,
 	}
 }
 
-func (p *rulesParser) ParseFile(filename string, fset *token.FileSet, r io.Reader) (*GoRuleSet, error) {
+func (p *rulesParser) ParseFile(filename string, r io.Reader) (*GoRuleSet, error) {
+	p.dslPkgname = "dsl"
 	p.filename = filename
-	p.fset = fset
+	p.fset = p.ctx.Fset
 	p.res = &GoRuleSet{
 		local:     &scopedGoRuleSet{},
 		universal: &scopedGoRuleSet{},
+		groups:    make(map[string]token.Position),
+		Imports:   make(map[string]struct{}),
 	}
 
 	parserFlags := parser.Mode(0)
-	f, err := parser.ParseFile(fset, filename, r, parserFlags)
+	f, err := parser.ParseFile(p.ctx.Fset, filename, r, parserFlags)
 	if err != nil {
 		return nil, fmt.Errorf("parse file error: %v", err)
+	}
+
+	for _, imp := range f.Imports {
+		importPath, err := strconv.Unquote(imp.Path.Value)
+		if err != nil {
+			return nil, p.errorf(imp, "unquote %s import path: %v", imp.Path.Value, err)
+		}
+		if importPath == "github.com/quasilyte/go-ruleguard/dsl" {
+			if imp.Name != nil {
+				p.dslPkgname = imp.Name.Name
+			}
+		}
 	}
 
 	if f.Name.Name != "gorules" {
 		return nil, fmt.Errorf("expected a gorules package name, found %s", f.Name.Name)
 	}
 
-	typechecker := types.Config{Importer: p.srcImporter}
-	p.types = &types.Info{Types: map[ast.Expr]types.TypeAndValue{}}
-	_, err = typechecker.Check("gorules", fset, []*ast.File{f}, p.types)
+	typechecker := types.Config{Importer: p.importer}
+	p.types = &types.Info{
+		Types: map[ast.Expr]types.TypeAndValue{},
+		Uses:  map[*ast.Ident]types.Object{},
+	}
+	_, err = typechecker.Check("gorules", p.ctx.Fset, []*ast.File{f}, p.types)
 	if err != nil {
 		return nil, fmt.Errorf("typechecker error: %v", err)
 	}
@@ -215,12 +109,114 @@ func (p *rulesParser) ParseFile(filename string, fset *token.FileSet, r io.Reade
 		if !ok {
 			continue
 		}
+		if decl.Name.String() == "init" {
+			if err := p.parseInitFunc(decl); err != nil {
+				return nil, err
+			}
+			continue
+		}
 		if err := p.parseRuleGroup(decl); err != nil {
 			return nil, err
 		}
 	}
 
+	if len(p.imported) != 0 {
+		toMerge := []*GoRuleSet{p.res}
+		toMerge = append(toMerge, p.imported...)
+		merged, err := MergeRuleSets(toMerge)
+		if err != nil {
+			return nil, err
+		}
+		p.res = merged
+	}
+
 	return p.res, nil
+}
+
+func (p *rulesParser) parseInitFunc(f *ast.FuncDecl) error {
+	type bundleImport struct {
+		node    ast.Node
+		prefix  string
+		pkgPath string
+	}
+
+	var imported []bundleImport
+
+	for _, stmt := range f.Body.List {
+		exprStmt, ok := stmt.(*ast.ExprStmt)
+		if !ok {
+			return p.errorf(stmt, "unsupported statement")
+		}
+		call, ok := exprStmt.X.(*ast.CallExpr)
+		if !ok {
+			return p.errorf(stmt, "unsupported expr")
+		}
+		fn, ok := call.Fun.(*ast.SelectorExpr)
+		if !ok {
+			return p.errorf(stmt, "unsupported call")
+		}
+		pkg, ok := fn.X.(*ast.Ident)
+		if !ok || pkg.Name != p.dslPkgname {
+			return p.errorf(stmt, "unsupported call")
+		}
+
+		switch fn.Sel.Name {
+		case "ImportRules":
+			if p.importedPkg != "" {
+				return p.errorf(call, "imports from imported packages are not supported yet")
+			}
+			prefix := p.parseStringArg(call.Args[0])
+			bundleSelector, ok := call.Args[1].(*ast.SelectorExpr)
+			if !ok {
+				return p.errorf(call.Args[1], "expected a `pkgname.Bundle` argument")
+			}
+			bundleObj := p.types.ObjectOf(bundleSelector.Sel)
+			imported = append(imported, bundleImport{
+				node:    stmt,
+				prefix:  prefix,
+				pkgPath: bundleObj.Pkg().Path(),
+			})
+
+		default:
+			return p.errorf(stmt, "unsupported %s call", fn.Sel.Name)
+		}
+	}
+
+	for _, imp := range imported {
+		files, err := findBundleFiles(imp.pkgPath)
+		if err != nil {
+			return p.errorf(imp.node, "import lookup error: %v", err)
+		}
+		for _, filename := range files {
+			rset, err := p.importRules(imp.prefix, imp.pkgPath, filename)
+			if err != nil {
+				return p.errorf(imp.node, "import parsing error: %v", err)
+			}
+			p.imported = append(p.imported, rset)
+			p.res.Imports[imp.pkgPath] = struct{}{}
+		}
+	}
+
+	return nil
+}
+
+func (p *rulesParser) importRules(prefix, pkgPath, filename string) (*GoRuleSet, error) {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	config := rulesParserConfig{
+		ctx:         p.ctx,
+		prefix:      prefix,
+		importedPkg: pkgPath,
+		itab:        p.itab,
+		importer:    p.importer,
+	}
+	rset, err := newRulesParser(config).ParseFile(filename, bytes.NewReader(data))
+	if err != nil {
+		return nil, fmt.Errorf("%s: %v", p.importedPkg, err)
+	}
+	return rset, nil
 }
 
 func (p *rulesParser) parseRuleGroup(f *ast.FuncDecl) (err error) {
@@ -253,6 +249,17 @@ func (p *rulesParser) parseRuleGroup(f *ast.FuncDecl) (err error) {
 	matcher := params[0].Names[0].Name
 
 	p.group = f.Name.Name
+	if p.prefix != "" {
+		p.group = p.prefix + "/" + f.Name.Name
+	}
+
+	if _, ok := p.res.groups[p.group]; ok {
+		panic(fmt.Sprintf("duplicated function %s after the typecheck", p.group)) // Should never happen
+	}
+	p.res.groups[p.group] = token.Position{
+		Filename: p.filename,
+		Line:     p.fset.Position(f.Name.Pos()).Line,
+	}
 
 	p.itab.EnterScope()
 	defer p.itab.LeaveScope()
@@ -584,12 +591,9 @@ func (p *rulesParser) parseFilterExpr(e ast.Expr) matchFilter {
 			if !ok {
 				panic(p.errorf(n.X, "package %s is not imported", pkgName.Name))
 			}
-			pkg, err := p.stdImporter.Import(pkgPath)
+			pkg, err := p.importer.Import(pkgPath)
 			if err != nil {
-				pkg, err = p.srcImporter.Import(pkgPath)
-				if err != nil {
-					panic(p.errorf(n, "can't load %s: %v", pkgPath, err))
-				}
+				panic(p.errorf(n, "can't load %s: %v", pkgPath, err))
 			}
 			obj := pkg.Scope().Lookup(n.Sel.Name)
 			if obj == nil {
@@ -696,4 +700,147 @@ type filterOperand struct {
 	varName string
 	path    string
 	args    []ast.Expr
+}
+
+var stdlibPackages = map[string]string{
+	"adler32":         "hash/adler32",
+	"aes":             "crypto/aes",
+	"ascii85":         "encoding/ascii85",
+	"asn1":            "encoding/asn1",
+	"ast":             "go/ast",
+	"atomic":          "sync/atomic",
+	"base32":          "encoding/base32",
+	"base64":          "encoding/base64",
+	"big":             "math/big",
+	"binary":          "encoding/binary",
+	"bits":            "math/bits",
+	"bufio":           "bufio",
+	"build":           "go/build",
+	"bytes":           "bytes",
+	"bzip2":           "compress/bzip2",
+	"cgi":             "net/http/cgi",
+	"cgo":             "runtime/cgo",
+	"cipher":          "crypto/cipher",
+	"cmplx":           "math/cmplx",
+	"color":           "image/color",
+	"constant":        "go/constant",
+	"context":         "context",
+	"cookiejar":       "net/http/cookiejar",
+	"crc32":           "hash/crc32",
+	"crc64":           "hash/crc64",
+	"crypto":          "crypto",
+	"csv":             "encoding/csv",
+	"debug":           "runtime/debug",
+	"des":             "crypto/des",
+	"doc":             "go/doc",
+	"draw":            "image/draw",
+	"driver":          "database/sql/driver",
+	"dsa":             "crypto/dsa",
+	"dwarf":           "debug/dwarf",
+	"ecdsa":           "crypto/ecdsa",
+	"ed25519":         "crypto/ed25519",
+	"elf":             "debug/elf",
+	"elliptic":        "crypto/elliptic",
+	"encoding":        "encoding",
+	"errors":          "errors",
+	"exec":            "os/exec",
+	"expvar":          "expvar",
+	"fcgi":            "net/http/fcgi",
+	"filepath":        "path/filepath",
+	"flag":            "flag",
+	"flate":           "compress/flate",
+	"fmt":             "fmt",
+	"fnv":             "hash/fnv",
+	"format":          "go/format",
+	"gif":             "image/gif",
+	"gob":             "encoding/gob",
+	"gosym":           "debug/gosym",
+	"gzip":            "compress/gzip",
+	"hash":            "hash",
+	"heap":            "container/heap",
+	"hex":             "encoding/hex",
+	"hmac":            "crypto/hmac",
+	"html":            "html",
+	"http":            "net/http",
+	"httptest":        "net/http/httptest",
+	"httptrace":       "net/http/httptrace",
+	"httputil":        "net/http/httputil",
+	"image":           "image",
+	"importer":        "go/importer",
+	"io":              "io",
+	"iotest":          "testing/iotest",
+	"ioutil":          "io/ioutil",
+	"jpeg":            "image/jpeg",
+	"json":            "encoding/json",
+	"jsonrpc":         "net/rpc/jsonrpc",
+	"list":            "container/list",
+	"log":             "log",
+	"lzw":             "compress/lzw",
+	"macho":           "debug/macho",
+	"mail":            "net/mail",
+	"math":            "math",
+	"md5":             "crypto/md5",
+	"mime":            "mime",
+	"multipart":       "mime/multipart",
+	"net":             "net",
+	"os":              "os",
+	"palette":         "image/color/palette",
+	"parse":           "text/template/parse",
+	"parser":          "go/parser",
+	"path":            "path",
+	"pe":              "debug/pe",
+	"pem":             "encoding/pem",
+	"pkix":            "crypto/x509/pkix",
+	"plan9obj":        "debug/plan9obj",
+	"plugin":          "plugin",
+	"png":             "image/png",
+	"pprof":           "runtime/pprof",
+	"printer":         "go/printer",
+	"quick":           "testing/quick",
+	"quotedprintable": "mime/quotedprintable",
+	"race":            "runtime/race",
+	"rand":            "math/rand",
+	"rc4":             "crypto/rc4",
+	"reflect":         "reflect",
+	"regexp":          "regexp",
+	"ring":            "container/ring",
+	"rpc":             "net/rpc",
+	"rsa":             "crypto/rsa",
+	"runtime":         "runtime",
+	"scanner":         "text/scanner",
+	"sha1":            "crypto/sha1",
+	"sha256":          "crypto/sha256",
+	"sha512":          "crypto/sha512",
+	"signal":          "os/signal",
+	"smtp":            "net/smtp",
+	"sort":            "sort",
+	"sql":             "database/sql",
+	"strconv":         "strconv",
+	"strings":         "strings",
+	"subtle":          "crypto/subtle",
+	"suffixarray":     "index/suffixarray",
+	"sync":            "sync",
+	"syntax":          "regexp/syntax",
+	"syscall":         "syscall",
+	"syslog":          "log/syslog",
+	"tabwriter":       "text/tabwriter",
+	"tar":             "archive/tar",
+	"template":        "text/template",
+	"testing":         "testing",
+	"textproto":       "net/textproto",
+	"time":            "time",
+	"tls":             "crypto/tls",
+	"token":           "go/token",
+	"trace":           "runtime/trace",
+	"types":           "go/types",
+	"unicode":         "unicode",
+	"unsafe":          "unsafe",
+	"url":             "net/url",
+	"user":            "os/user",
+	"utf16":           "unicode/utf16",
+	"utf8":            "unicode/utf8",
+	"x509":            "crypto/x509",
+	"xml":             "encoding/xml",
+	"zip":             "archive/zip",
+	"zlib":            "compress/zlib",
 }

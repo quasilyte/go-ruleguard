@@ -1,0 +1,20 @@
+# This file adheres to the YAML5 style.
+{
+  name: "Merge",
+  on: {
+    push: {
+      branches: ["master"],
+    }
+  },
+  jobs: {
+    build: {
+      name: "Build",
+      "runs-on": "ubuntu-latest",
+      steps: [
+        {name: "Check out code into the Go module directory", uses: "actions/checkout@v1"},
+        {name: "Test master", run: "make test-master"},
+        {name: "Test release", run: "make test-release"},
+      ],
+    },
+  },
+}
