@@ -49,8 +49,8 @@ func TestParseRuleError(t *testing.T) {
 				%s
 			}`,
 			test.expr)
-		fset := token.NewFileSet()
-		_, err := ParseRules("rules.go", fset, strings.NewReader(file))
+		ctx := &ParseContext{Fset: token.NewFileSet()}
+		_, err := ParseRules(ctx, "rules.go", strings.NewReader(file))
 		if err == nil {
 			t.Errorf("parse %s: expected %s error, got none", test.expr, test.err)
 			continue
@@ -138,8 +138,8 @@ func TestParseFilterError(t *testing.T) {
 				m.Match("$x + $y[$key]").Where(%s).Report("$$")
 			}`,
 			test.expr)
-		fset := token.NewFileSet()
-		_, err := ParseRules("rules.go", fset, strings.NewReader(file))
+		ctx := &ParseContext{Fset: token.NewFileSet()}
+		_, err := ParseRules(ctx, "rules.go", strings.NewReader(file))
 		if err == nil {
 			t.Errorf("parse %s: expected %s error, got none", test.expr, test.err)
 			continue

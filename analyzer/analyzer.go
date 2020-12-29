@@ -22,20 +22,26 @@ var Analyzer = &analysis.Analyzer{
 }
 
 var (
-	flagRules string
-	flagE     string
-	flagDebug string
+	flagRules        string
+	flagE            string
+	flagDebug        string
+	flagDebugImports bool
 )
 
 func init() {
 	Analyzer.Flags.StringVar(&flagRules, "rules", "", "comma-separated list of gorule file paths")
 	Analyzer.Flags.StringVar(&flagE, "e", "", "execute a single rule from a given string")
 	Analyzer.Flags.StringVar(&flagDebug, "debug-group", "", "enable debug for the specified function")
+	Analyzer.Flags.BoolVar(&flagDebugImports, "debug-imports", false, "enable debug for rules compile-time package lookups")
 }
 
 type parseRulesResult struct {
 	rset      *ruleguard.GoRuleSet
 	multiFile bool
+}
+
+func debugPrint(s string) {
+	fmt.Fprintln(os.Stderr, s)
 }
 
 func runAnalyzer(pass *analysis.Pass) (interface{}, error) {
@@ -50,14 +56,12 @@ func runAnalyzer(pass *analysis.Pass) (interface{}, error) {
 	multiFile := parseResult.multiFile
 
 	ctx := &ruleguard.Context{
-		Debug: flagDebug,
-		DebugPrint: func(s string) {
-			fmt.Fprintln(os.Stderr, s)
-		},
-		Pkg:   pass.Pkg,
-		Types: pass.TypesInfo,
-		Sizes: pass.TypesSizes,
-		Fset:  pass.Fset,
+		Debug:      flagDebug,
+		DebugPrint: debugPrint,
+		Pkg:        pass.Pkg,
+		Types:      pass.TypesInfo,
+		Sizes:      pass.TypesSizes,
+		Fset:       pass.Fset,
 		Report: func(info ruleguard.GoRuleInfo, n ast.Node, msg string, s *ruleguard.Suggestion) {
 			msg = info.Group + ": " + msg
 			if multiFile {
@@ -97,6 +101,12 @@ func runAnalyzer(pass *analysis.Pass) (interface{}, error) {
 func readRules() (*parseRulesResult, error) {
 	fset := token.NewFileSet()
 
+	ctx := &ruleguard.ParseContext{
+		Fset:         fset,
+		DebugImports: flagDebugImports,
+		DebugPrint:   debugPrint,
+	}
+
 	switch {
 	case flagRules != "":
 		filenames := strings.Split(flagRules, ",")
@@ -108,7 +118,7 @@ func readRules() (*parseRulesResult, error) {
 			if err != nil {
 				return nil, fmt.Errorf("read rules file: %v", err)
 			}
-			rset, err := ruleguard.ParseRules(filename, fset, bytes.NewReader(data))
+			rset, err := ruleguard.ParseRules(ctx, filename, bytes.NewReader(data))
 			if err != nil {
 				return nil, fmt.Errorf("parse rules file: %v", err)
 			}
@@ -132,7 +142,7 @@ func readRules() (*parseRulesResult, error) {
 			}`,
 			flagE)
 		r := strings.NewReader(ruleText)
-		rset, err := ruleguard.ParseRules(flagRules, fset, r)
+		rset, err := ruleguard.ParseRules(ctx, flagRules, r)
 		return &parseRulesResult{rset: rset}, err
 
 	default:

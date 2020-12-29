@@ -9,6 +9,13 @@ import (
 	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
 )
 
+type ParseContext struct {
+	DebugImports bool
+	DebugPrint   func(string)
+
+	Fset *token.FileSet
+}
+
 type Context struct {
 	Debug      string
 	DebugPrint func(string)
@@ -26,13 +33,14 @@ type Suggestion struct {
 	Replacement []byte
 }
 
-func ParseRules(filename string, fset *token.FileSet, r io.Reader) (*GoRuleSet, error) {
+func ParseRules(ctx *ParseContext, filename string, r io.Reader) (*GoRuleSet, error) {
 	config := rulesParserConfig{
+		ctx:      ctx,
 		itab:     typematch.NewImportsTab(stdlibPackages),
-		importer: newGoImporter(fset),
+		importer: newGoImporter(ctx),
 	}
 	p := newRulesParser(config)
-	return p.ParseFile(filename, fset, r)
+	return p.ParseFile(filename, r)
 }
 
 func RunRules(ctx *Context, f *ast.File, rules *GoRuleSet) error {

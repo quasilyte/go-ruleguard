@@ -7,13 +7,13 @@ test:
 	@echo "everything is OK"
 
 test-master:
-	cd test/install/gitclone && docker build --no-cache .
-	cd test/regress/issue103 && docker build --no-cache .
+	cd _test/install/gitclone && docker build --no-cache .
+	cd _test/regress/issue103 && docker build --no-cache .
 	@echo "everything is OK"
 
 test-release:
-	cd test/install/binary_gopath && docker build --build-arg release=$(RELEASE) --no-cache .
-	cd test/install/binary_nogopath && docker build --build-arg release=$(RELEASE) --no-cache .
+	cd _test/install/binary_gopath && docker build --build-arg release=$(RELEASE) --no-cache .
+	cd _test/install/binary_nogopath && docker build --build-arg release=$(RELEASE) --no-cache .
 	@echo "everything is OK"
 
 lint:

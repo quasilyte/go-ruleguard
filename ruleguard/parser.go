@@ -22,6 +22,8 @@ type parseError string
 func (e parseError) Error() string { return string(e) }
 
 type rulesParser struct {
+	ctx *ParseContext
+
 	prefix      string // For imported packages, a prefix that is added to a rule group name
 	importedPkg string // Package path; only for imported packages
 
@@ -40,6 +42,8 @@ type rulesParser struct {
 }
 
 type rulesParserConfig struct {
+	ctx *ParseContext
+
 	prefix      string
 	importedPkg string
 
@@ -47,19 +51,20 @@ type rulesParserConfig struct {
 	importer *goImporter
 }
 
-func newRulesParser(cfg rulesParserConfig) *rulesParser {
+func newRulesParser(config rulesParserConfig) *rulesParser {
 	return &rulesParser{
-		prefix:      cfg.prefix,
-		importedPkg: cfg.importedPkg,
-		itab:        cfg.itab,
-		importer:    cfg.importer,
+		ctx:         config.ctx,
+		prefix:      config.prefix,
+		importedPkg: config.importedPkg,
+		itab:        config.itab,
+		importer:    config.importer,
 	}
 }
 
-func (p *rulesParser) ParseFile(filename string, fset *token.FileSet, r io.Reader) (*GoRuleSet, error) {
+func (p *rulesParser) ParseFile(filename string, r io.Reader) (*GoRuleSet, error) {
 	p.dslPkgname = "dsl"
 	p.filename = filename
-	p.fset = fset
+	p.fset = p.ctx.Fset
 	p.res = &GoRuleSet{
 		local:     &scopedGoRuleSet{},
 		universal: &scopedGoRuleSet{},
@@ -68,7 +73,7 @@ func (p *rulesParser) ParseFile(filename string, fset *token.FileSet, r io.Reade
 	}
 
 	parserFlags := parser.Mode(0)
-	f, err := parser.ParseFile(fset, filename, r, parserFlags)
+	f, err := parser.ParseFile(p.ctx.Fset, filename, r, parserFlags)
 	if err != nil {
 		return nil, fmt.Errorf("parse file error: %v", err)
 	}
@@ -94,7 +99,7 @@ func (p *rulesParser) ParseFile(filename string, fset *token.FileSet, r io.Reade
 		Types: map[ast.Expr]types.TypeAndValue{},
 		Uses:  map[*ast.Ident]types.Object{},
 	}
-	_, err = typechecker.Check("gorules", fset, []*ast.File{f}, p.types)
+	_, err = typechecker.Check("gorules", p.ctx.Fset, []*ast.File{f}, p.types)
 	if err != nil {
 		return nil, fmt.Errorf("typechecker error: %v", err)
 	}
@@ -201,12 +206,13 @@ func (p *rulesParser) importRules(prefix, pkgPath, filename string) (*GoRuleSet,
 		return nil, err
 	}
 	config := rulesParserConfig{
+		ctx:         p.ctx,
 		prefix:      prefix,
 		importedPkg: pkgPath,
 		itab:        p.itab,
 		importer:    p.importer,
 	}
-	rset, err := newRulesParser(config).ParseFile(filename, p.fset, bytes.NewReader(data))
+	rset, err := newRulesParser(config).ParseFile(filename, bytes.NewReader(data))
 	if err != nil {
 		return nil, fmt.Errorf("%s: %v", p.importedPkg, err)
 	}
