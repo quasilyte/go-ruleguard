@@ -129,15 +129,15 @@ func (ExprType) Implements(typ string) bool { return boolResult }
 // Is reports whether a type is identical to a given type.
 func (ExprType) Is(typ string) bool { return boolResult }
 
-// Pointer returns a pointer type for the receiver expression type.
-// If the receiver is type 'A', the return value is type '*A'.
+// Addr returns the address of the receiver expression type.
+// I.e. if the receiver is type 'A', the return value is type '*A'.
 //
 // For example, this can be used to match a struct initialization
 // that implements a specified interface:
 //   Match(`$x.MyStruct{$*_}`).
-//   Where(m[x].Type.Pointer.Implements(`mypkg.MyInterface`)
+//   Where(m[x].Type.Addr.Implements(`mypkg.MyInterface`)
 // See https://golang.org/pkg/go/types/#NewPointer.
-func (ExprType) Pointer() ExprType { return pointerToType }
+func (ExprType) Addr() ExprType { return pointerToType }
 
 // MatchedText represents a source text associated with a matched node.
 type MatchedText string

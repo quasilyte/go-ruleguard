@@ -164,11 +164,11 @@ func testRules(m dsl.Matcher) {
 		Report(`check on $xs is redundant, empty/nil slices and maps can be safely iterated`)
 
 	m.Match(`$x{$*_}`).
-		Where(m["x"].Type.Pointer().Implements("worker.TaskExecuter")).
+		Where(m["x"].Type.Addr().Implements("worker.TaskExecuter")).
 		Report("Replace struct initialization with call to NewWorker factory method")
 
 	m.Match(`new($x)`).
-		Where(m["x"].Type.Pointer().Implements("worker.TaskExecuter")).
+		Where(m["x"].Type.Addr().Implements("worker.TaskExecuter")).
 		Report("Replace struct initialization with call to NewWorker factory method")
 
 }

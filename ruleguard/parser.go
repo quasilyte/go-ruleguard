@@ -566,7 +566,7 @@ func (p *rulesParser) parseFilterExpr(e ast.Expr) matchFilter {
 		dstType := p.parseTypeStringArg(args[0])
 		result.fn = makeTypeAssignableToFilter(result.src, operand.varName, dstType)
 
-	case "Type.Implements", "Type.Pointer.Implements":
+	case "Type.Implements", "Type.Addr.Implements":
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
 			panic(p.errorf(args[0], "expected a string literal argument"))
@@ -606,8 +606,8 @@ func (p *rulesParser) parseFilterExpr(e ast.Expr) matchFilter {
 		default:
 			panic(p.errorf(args[0], "only qualified names (and `error`) are supported"))
 		}
-		toPointer := operand.path == "Type.Pointer.Implements"
-		result.fn = makeTypeImplementsFilter(result.src, operand.varName, iface, toPointer)
+		toAddr := operand.path == "Type.Addr.Implements"
+		result.fn = makeTypeImplementsFilter(result.src, operand.varName, iface, toAddr)
 	case "Text.Matches":
 		re := p.parseRegexpArg(args[0])
 		result.fn = makeTextMatchesFilter(result.src, operand.varName, re)
