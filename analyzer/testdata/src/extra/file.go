@@ -449,12 +449,33 @@ func invalidStructInitialization() {
 	t := worker.Task{} // want `Replace struct initialization with call to NewWorker factory method`
 	t.Run()
 
-	t2 := new(worker.Task) // want `Replace struct initialization with call to NewWorker factory method`
+	t2 := new(worker.Task) // want `Replace new with call to NewWorker factory method`
 	t2.Run()
 
-	j3 := worker.NewWorker("job", "foo")
+	j3 := worker.NewWorker("job", "foo") // worker is created through desired factory method.
 	j3.Run()
 
+	// 'worker.Other' does not implement the worker.TaskExecuter interface, therefore no issue should be raised.
 	other := worker.Other{}
 	other.String()
+}
+
+type myworker int
+
+func (p *myworker) Run() error {
+	return nil
+}
+
+type myworker2 int
+
+func (p myworker2) Run() error {
+	return nil
+}
+
+func invalidTypeInitialization() {
+	p := myworker(34) // want `Replace  with call to NewWorker factory method`
+	p.Run()
+
+	p2 := myworker2(34) // want `Replace  with call to NewWorker factory method`
+	p2.Run()
 }

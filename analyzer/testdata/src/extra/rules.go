@@ -169,6 +169,10 @@ func testRules(m dsl.Matcher) {
 
 	m.Match(`new($x)`).
 		Where(m["x"].Type.Addr().Implements("worker.TaskExecuter")).
-		Report("Replace struct initialization with call to NewWorker factory method")
+		Report("Replace new with call to NewWorker factory method")
+
+	m.Match(`$_ := $x($_)`).
+		Where(m["x"].Type.Addr().Implements("worker.TaskExecuter")).
+		Report("Replace  with call to NewWorker factory method")
 
 }
