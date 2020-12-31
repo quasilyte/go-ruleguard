@@ -4,6 +4,7 @@ RELEASE=v0.2.1
 test:
 	go test -count 3 -coverprofile=coverage.txt -covermode=atomic -race -v ./analyzer/...
 	go test -count 3 -race -v ./ruleguard/...
+	cd rules && go test -v .
 	@echo "everything is OK"
 
 test-master:
