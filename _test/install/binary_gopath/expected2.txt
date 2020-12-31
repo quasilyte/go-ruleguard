@@ -1,0 +1,2 @@
+/root/target.go:8:10: e: add((1), 2)
+/root/target.go:9:10: e: add(1, (2))
