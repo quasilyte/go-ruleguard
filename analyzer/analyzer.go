@@ -22,17 +22,24 @@ var Analyzer = &analysis.Analyzer{
 }
 
 var (
-	flagRules        string
-	flagE            string
-	flagDebug        string
-	flagDebugImports bool
+	flagRules   string
+	flagE       string
+	flagEnable  string
+	flagDisable string
+
+	flagDebug              string
+	flagDebugImports       bool
+	flagDebugEnableDisable bool
 )
 
 func init() {
 	Analyzer.Flags.StringVar(&flagRules, "rules", "", "comma-separated list of gorule file paths")
 	Analyzer.Flags.StringVar(&flagE, "e", "", "execute a single rule from a given string")
 	Analyzer.Flags.StringVar(&flagDebug, "debug-group", "", "enable debug for the specified function")
+	Analyzer.Flags.StringVar(&flagEnable, "enable", "<all>", "comma-separated list of enabled groups or '<all>' to enable everything")
+	Analyzer.Flags.StringVar(&flagDisable, "disable", "", "comma-separated list of groups to be disabled")
 	Analyzer.Flags.BoolVar(&flagDebugImports, "debug-imports", false, "enable debug for rules compile-time package lookups")
+	Analyzer.Flags.BoolVar(&flagDebugEnableDisable, "debug-enable-disable", false, "enable debug for -enable/-disable related info")
 }
 
 type parseRulesResult struct {
@@ -101,10 +108,41 @@ func runAnalyzer(pass *analysis.Pass) (interface{}, error) {
 func readRules() (*parseRulesResult, error) {
 	fset := token.NewFileSet()
 
+	disabledGroups := make(map[string]bool)
+	enabledGroups := make(map[string]bool)
+	for _, g := range strings.Split(flagDisable, ",") {
+		g = strings.TrimSpace(g)
+		disabledGroups[g] = true
+	}
+	if flagEnable != "<all>" {
+		for _, g := range strings.Split(flagEnable, ",") {
+			g = strings.TrimSpace(g)
+			enabledGroups[g] = true
+		}
+	}
+
 	ctx := &ruleguard.ParseContext{
 		Fset:         fset,
 		DebugImports: flagDebugImports,
 		DebugPrint:   debugPrint,
+		GroupFilter: func(g string) bool {
+			whyDisabled := ""
+			enabled := flagEnable == "<all>" || enabledGroups[g]
+			switch {
+			case !enabled:
+				whyDisabled = "not enabled by -enabled flag"
+			case disabledGroups[g]:
+				whyDisabled = "disabled by -disable flag"
+			}
+			if flagDebugEnableDisable {
+				if whyDisabled != "" {
+					debugPrint(fmt.Sprintf("(-) %s is %s", g, whyDisabled))
+				} else {
+					debugPrint(fmt.Sprintf("(+) %s is enabled", g))
+				}
+			}
+			return whyDisabled == ""
+		},
 	}
 
 	switch {

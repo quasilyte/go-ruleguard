@@ -13,6 +13,12 @@ type ParseContext struct {
 	DebugImports bool
 	DebugPrint   func(string)
 
+	// GroupFilter is called for every rule group being parsed.
+	// If function returns false, that group will not be included
+	// in the resulting rules set.
+	// Nil filter accepts all rule groups.
+	GroupFilter func(string) bool
+
 	Fset *token.FileSet
 }
 
