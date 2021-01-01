@@ -9,4 +9,4 @@ require (
 	golang.org/x/tools v0.0.0-20200812195022-5ae4c3c160a0
 )
 
-replace github.com/quasilyte/go-ruleguard/dsl v0.0.0-20201227095750-17ad251c41a9 => ./dsl
+replace github.com/quasilyte/go-ruleguard/dsl v0.0.0-20201222100711-8bb37f2dbd8a => ./dsl
