@@ -4,6 +4,7 @@ RELEASE=v0.2.1
 test:
 	go test -count 3 -coverprofile=coverage.txt -covermode=atomic -race -v ./analyzer/...
 	go test -count 3 -race -v ./ruleguard/...
+	cd rules && go test -v .
 	@echo "everything is OK"
 
 test-master:
@@ -20,6 +21,8 @@ lint:
 	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOPATH_DIR)/bin v1.30.0
 	$(GOPATH_DIR)/bin/golangci-lint run ./analyzer/...
 	$(GOPATH_DIR)/bin/golangci-lint run ./ruleguard/...
+	go build -o go-ruleguard ./cmd/ruleguard
+	./go-ruleguard -rules rules.go ./analyzer/... ./ruleguard/...
 	@echo "everything is OK"
 
 .PHONY: lint test test-master

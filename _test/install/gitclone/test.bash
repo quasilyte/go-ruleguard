@@ -16,4 +16,13 @@ go get -v -u github.com/quasilyte/ruleguard-rules-test
 ./go-ruleguard -rules /root/rules2.go /root/target.go &> actual.txt || true
 diff -u actual.txt /root/expected2.txt
 
+./go-ruleguard -disable 'testrules/boolExprSimplify' -rules /root/rules2.go /root/target.go &> actual.txt || true
+diff -u actual.txt /root/expected3.txt
+
+./go-ruleguard -enable 'testrules/boolExprSimplify' -rules /root/rules2.go /root/target.go &> actual.txt || true
+diff -u actual.txt /root/expected4.txt
+
+./go-ruleguard -e 'm.Match(`$f($*_, ($x), $*_)`)' /root/target.go &> actual.txt || true
+diff -u actual.txt /root/expected5.txt
+
 echo SUCCESS

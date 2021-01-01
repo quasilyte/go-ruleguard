@@ -22,8 +22,6 @@ You write the rules, `ruleguard` checks whether they are satisfied.
 * [Quickfix](_docs/gorules.md#suggestions-quickfix-support) actions support.
 * Powerful match filtering features, like expression [type pattern matching](_docs/gorules.md#type-pattern-matching).
 
-`ruleguard` comes with [rules.go](rules.go) file that can be used as a foundation to write your own rules file.
-
 It can also be easily embedded into other static analyzers. [go-critic](https://github.com/go-critic/go-critic) can be used as an example.
 
 ## Quick start
@@ -134,7 +132,7 @@ To learn more, check out the documentation and/or the source code.
 ## Documentation
 
 * [Ruleguard by example](https://go-ruleguard.github.io/by-example/) tour
-* Example rule files: [rules.go](rules.go)
+* Example rule files: [rules.go](_docs/rules.go)
 * Another great example: [github.com/dgryski/semgrep-go/ruleguard.rules.go](https://github.com/dgryski/semgrep-go/blob/master/ruleguard.rules.go)
 * [gorules](_docs/gorules.md) format documentation
 * [dsl package](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl) reference

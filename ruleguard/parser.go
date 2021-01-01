@@ -253,6 +253,9 @@ func (p *rulesParser) parseRuleGroup(f *ast.FuncDecl) (err error) {
 		p.group = p.prefix + "/" + f.Name.Name
 	}
 
+	if p.ctx.GroupFilter != nil && !p.ctx.GroupFilter(p.group) {
+		return nil // Skip this group
+	}
 	if _, ok := p.res.groups[p.group]; ok {
 		panic(fmt.Sprintf("duplicated function %s after the typecheck", p.group)) // Should never happen
 	}

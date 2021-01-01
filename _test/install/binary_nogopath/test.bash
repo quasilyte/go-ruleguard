@@ -23,4 +23,7 @@ go get -v -u github.com/quasilyte/ruleguard-rules-test@master
 ./ruleguard -rules rules.go /root/target.go &> actual.txt || true
 diff -u actual.txt /root/expected.txt
 
+./ruleguard -e 'm.Match(`$f($*_, ($x), $*_)`)' /root/target.go &> actual.txt || true
+diff -u actual.txt /root/expected2.txt
+
 echo SUCCESS

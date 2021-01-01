@@ -5,7 +5,6 @@ import (
 	"go/ast"
 	"go/importer"
 	"go/parser"
-	"go/token"
 	"go/types"
 	"path/filepath"
 	"runtime"
@@ -25,8 +24,6 @@ type goImporter struct {
 	// but since we use several importers, it's better to
 	// have our own, unified cache.
 	cache map[string]*types.Package
-
-	fset *token.FileSet
 
 	defaultImporter types.Importer
 	srcImporter     types.Importer
@@ -96,7 +93,7 @@ func (imp *goImporter) golistImport(path string) (*types.Package, error) {
 	files := make([]*ast.File, 0, len(golistPkg.GoFiles))
 	for _, filename := range golistPkg.GoFiles {
 		fullname := filepath.Join(golistPkg.Dir, filename)
-		f, err := parser.ParseFile(imp.fset, fullname, nil, 0)
+		f, err := parser.ParseFile(imp.ctx.Fset, fullname, nil, 0)
 		if err != nil {
 			return nil, err
 		}
@@ -107,5 +104,5 @@ func (imp *goImporter) golistImport(path string) (*types.Package, error) {
 	// Otherwise it won't be able to resolve imports.
 	var typecheker types.Config
 	var info types.Info
-	return typecheker.Check(path, imp.fset, files, &info)
+	return typecheker.Check(path, imp.ctx.Fset, files, &info)
 }
