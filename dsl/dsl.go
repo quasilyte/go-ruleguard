@@ -87,6 +87,8 @@ type Var struct {
 	Node MatchedNode
 }
 
+func (Var) Filter(pred func(*VarFilterContext) bool) bool { return boolResult }
+
 // MatchedNode represents an AST node associated with a named submatch.
 type MatchedNode struct{}
 
