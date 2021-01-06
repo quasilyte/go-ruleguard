@@ -16,9 +16,12 @@ type VarFilterContext struct {
 func (*VarFilterContext) SizeOf(x types.Type) int { return 0 }
 
 // GetType finds a type value by a given name.
+//
 // A name can be:
 //	- builtin type name, like `error` or `string`
 //	- fully-qualified type name, like `github.com/username/pkgname.TypeName`
+//
+// If a type can't be found (or a name is malformed), this function panics.
 func (*VarFilterContext) GetType(name string) types.Type { return nil }
 
 // GetInterface finds a type value that represents an interface by a given name.

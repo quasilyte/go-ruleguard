@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/quasilyte/go-ruleguard/ruleguard"
 	"golang.org/x/tools/go/analysis"
@@ -21,6 +22,16 @@ var Analyzer = &analysis.Analyzer{
 	Run:  runAnalyzer,
 }
 
+// ForceNewEngine disables engine cache optimization.
+// This should only be useful for analyzer testing.
+var ForceNewEngine = false
+
+var (
+	globalEngineMu      sync.Mutex
+	globalEngine        *ruleguard.Engine
+	globalEngineErrored bool
+)
+
 var (
 	flagRules   string
 	flagE       string
@@ -28,6 +39,7 @@ var (
 	flagDisable string
 
 	flagDebug              string
+	flagDebugFilter        string
 	flagDebugImports       bool
 	flagDebugEnableDisable bool
 )
@@ -35,16 +47,12 @@ var (
 func init() {
 	Analyzer.Flags.StringVar(&flagRules, "rules", "", "comma-separated list of gorule file paths")
 	Analyzer.Flags.StringVar(&flagE, "e", "", "execute a single rule from a given string")
-	Analyzer.Flags.StringVar(&flagDebug, "debug-group", "", "enable debug for the specified function")
+	Analyzer.Flags.StringVar(&flagDebug, "debug-group", "", "enable debug for the specified matcher function")
+	Analyzer.Flags.StringVar(&flagDebugFilter, "debug-filter", "", "enable debug for the specified filter function")
 	Analyzer.Flags.StringVar(&flagEnable, "enable", "<all>", "comma-separated list of enabled groups or '<all>' to enable everything")
 	Analyzer.Flags.StringVar(&flagDisable, "disable", "", "comma-separated list of groups to be disabled")
 	Analyzer.Flags.BoolVar(&flagDebugImports, "debug-imports", false, "enable debug for rules compile-time package lookups")
 	Analyzer.Flags.BoolVar(&flagDebugEnableDisable, "debug-enable-disable", false, "enable debug for -enable/-disable related info")
-}
-
-type parseRulesResult struct {
-	rset      *ruleguard.GoRuleSet
-	multiFile bool
 }
 
 func debugPrint(s string) {
@@ -52,31 +60,35 @@ func debugPrint(s string) {
 }
 
 func runAnalyzer(pass *analysis.Pass) (interface{}, error) {
-	// TODO(quasilyte): parse config under sync.Once and
-	// create rule sets from it.
-
-	parseResult, err := readRules()
+	engine, err := prepareEngine()
 	if err != nil {
 		return nil, fmt.Errorf("load rules: %v", err)
 	}
-	rset := parseResult.rset
-	multiFile := parseResult.multiFile
+	// This condition will trigger only if we failed to init
+	// the engine. Return without an error as other analysis
+	// pass probably reported init error by this moment.
+	if engine == nil {
+		return nil, nil
+	}
 
-	ctx := &ruleguard.Context{
-		Debug:      flagDebug,
-		DebugPrint: debugPrint,
-		Pkg:        pass.Pkg,
-		Types:      pass.TypesInfo,
-		Sizes:      pass.TypesSizes,
-		Fset:       pass.Fset,
+	printRuleLocation := flagE == ""
+
+	ctx := &ruleguard.RunContext{
+		Debug:        flagDebug,
+		DebugImports: flagDebugImports,
+		DebugPrint:   debugPrint,
+		Pkg:          pass.Pkg,
+		Types:        pass.TypesInfo,
+		Sizes:        pass.TypesSizes,
+		Fset:         pass.Fset,
 		Report: func(info ruleguard.GoRuleInfo, n ast.Node, msg string, s *ruleguard.Suggestion) {
-			msg = info.Group + ": " + msg
-			if multiFile {
-				msg += fmt.Sprintf(" (%s:%d)", filepath.Base(info.Filename), info.Line)
+			fullMessage := info.Group + ": " + msg
+			if printRuleLocation {
+				fullMessage += fmt.Sprintf(" (%s:%d)", filepath.Base(info.Filename), info.Line)
 			}
 			diag := analysis.Diagnostic{
 				Pos:     n.Pos(),
-				Message: msg,
+				Message: fullMessage,
 			}
 			if s != nil {
 				diag.SuggestedFixes = []analysis.SuggestedFix{
@@ -97,7 +109,7 @@ func runAnalyzer(pass *analysis.Pass) (interface{}, error) {
 	}
 
 	for _, f := range pass.Files {
-		if err := ruleguard.RunRules(ctx, f, rset); err != nil {
+		if err := engine.Run(ctx, f); err != nil {
 			return nil, err
 		}
 	}
@@ -105,7 +117,33 @@ func runAnalyzer(pass *analysis.Pass) (interface{}, error) {
 	return nil, nil
 }
 
-func readRules() (*parseRulesResult, error) {
+func prepareEngine() (*ruleguard.Engine, error) {
+	if ForceNewEngine {
+		return newEngine()
+	}
+
+	globalEngineMu.Lock()
+	defer globalEngineMu.Unlock()
+
+	if globalEngine != nil {
+		return globalEngine, nil
+	}
+	// If we already failed once, don't try again to avoid #167.
+	if globalEngineErrored {
+		return nil, nil
+	}
+
+	engine, err := newEngine()
+	if err != nil {
+		globalEngineErrored = true
+		return nil, err
+	}
+	globalEngine = engine
+	return engine, nil
+}
+
+func newEngine() (*ruleguard.Engine, error) {
+	e := ruleguard.NewEngine()
 	fset := token.NewFileSet()
 
 	disabledGroups := make(map[string]bool)
@@ -123,6 +161,7 @@ func readRules() (*parseRulesResult, error) {
 
 	ctx := &ruleguard.ParseContext{
 		Fset:         fset,
+		DebugFilter:  flagDebugFilter,
 		DebugImports: flagDebugImports,
 		DebugPrint:   debugPrint,
 		GroupFilter: func(g string) bool {
@@ -148,28 +187,17 @@ func readRules() (*parseRulesResult, error) {
 	switch {
 	case flagRules != "":
 		filenames := strings.Split(flagRules, ",")
-		multifile := len(filenames) > 1
-		var ruleSets []*ruleguard.GoRuleSet
 		for _, filename := range filenames {
 			filename = strings.TrimSpace(filename)
 			data, err := ioutil.ReadFile(filename)
 			if err != nil {
 				return nil, fmt.Errorf("read rules file: %v", err)
 			}
-			rset, err := ruleguard.ParseRules(ctx, filename, bytes.NewReader(data))
-			if err != nil {
+			if err := e.Load(ctx, filename, bytes.NewReader(data)); err != nil {
 				return nil, fmt.Errorf("parse rules file: %v", err)
 			}
-			if len(rset.Imports) != 0 {
-				multifile = true
-			}
-			ruleSets = append(ruleSets, rset)
 		}
-		rset, err := ruleguard.MergeRuleSets(ruleSets)
-		if err != nil {
-			return nil, fmt.Errorf("merge rule files: %v", err)
-		}
-		return &parseRulesResult{rset: rset, multiFile: multifile}, nil
+		return e, nil
 
 	case flagE != "":
 		ruleText := fmt.Sprintf(`
@@ -180,8 +208,11 @@ func readRules() (*parseRulesResult, error) {
 			}`,
 			flagE)
 		r := strings.NewReader(ruleText)
-		rset, err := ruleguard.ParseRules(ctx, flagRules, r)
-		return &parseRulesResult{rset: rset}, err
+		err := e.Load(ctx, "e", r)
+		if err != nil {
+			return nil, err
+		}
+		return e, nil
 
 	default:
 		return nil, fmt.Errorf("both -e and -rules flags are empty")

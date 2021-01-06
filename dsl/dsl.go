@@ -87,6 +87,11 @@ type Var struct {
 	Node MatchedNode
 }
 
+// Filter applies a custom predicate function on a submatch.
+//
+// The callback function should use VarFilterContext to access the
+// information that is usually accessed through Var.
+// For example, `VarFilterContext.Type` is mapped to `Var.Type`.
 func (Var) Filter(pred func(*VarFilterContext) bool) bool { return boolResult }
 
 // MatchedNode represents an AST node associated with a named submatch.

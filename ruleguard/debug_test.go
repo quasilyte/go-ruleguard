@@ -142,7 +142,7 @@ func TestDebug(t *testing.T) {
 		},
 	}
 
-	exprToRules := func(s string) *GoRuleSet {
+	loadRulesFromExpr := func(e *Engine, s string) {
 		file := fmt.Sprintf(`
 			package gorules
 			import "github.com/quasilyte/go-ruleguard/dsl"
@@ -150,22 +150,24 @@ func TestDebug(t *testing.T) {
 				%s.Report("$$")
 			}`,
 			s)
-		ctx := &ParseContext{Fset: token.NewFileSet()}
-		rset, err := ParseRules(ctx, "rules.go", strings.NewReader(file))
+		ctx := &ParseContext{
+			Fset: token.NewFileSet(),
+		}
+		err := e.Load(ctx, "rules.go", strings.NewReader(file))
 		if err != nil {
 			t.Fatalf("parse %s: %v", s, err)
 		}
-		return rset
 	}
 
 	for expr, testCases := range allTests {
-		rset := exprToRules(expr)
+		e := NewEngine()
+		loadRulesFromExpr(e, expr)
 		for input, lines := range testCases {
 			runner, err := newDebugTestRunner(input)
 			if err != nil {
 				t.Fatalf("init %s: %s: %v", expr, input, err)
 			}
-			if err := runner.Run(t, rset); err != nil {
+			if err := runner.Run(t, e); err != nil {
 				t.Fatalf("run %s: %s: %v", expr, input, err)
 			}
 			if diff := cmp.Diff(runner.out, lines); diff != "" {
@@ -176,13 +178,13 @@ func TestDebug(t *testing.T) {
 }
 
 type debugTestRunner struct {
-	ctx *Context
+	ctx *RunContext
 	f   *ast.File
 	out []string
 }
 
-func (r debugTestRunner) Run(t *testing.T, rset *GoRuleSet) error {
-	if err := RunRules(r.ctx, r.f, rset); err != nil {
+func (r debugTestRunner) Run(t *testing.T, e *Engine) error {
+	if err := e.Run(r.ctx, r.f); err != nil {
 		return err
 	}
 	return nil
@@ -211,7 +213,7 @@ func newDebugTestRunner(input string) (*debugTestRunner, error) {
 		return nil, err
 	}
 	runner := &debugTestRunner{f: f}
-	ctx := &Context{
+	ctx := &RunContext{
 		Debug: "testrule",
 		DebugPrint: func(s string) {
 			runner.out = append(runner.out, s)
