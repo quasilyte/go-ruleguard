@@ -18,4 +18,7 @@ diff -u actual.txt /root/expected.txt
 ./ruleguard -e 'm.Match(`$f($*_, ($x), $*_)`)' /root/target.go &> actual.txt || true
 diff -u actual.txt /root/expected2.txt
 
+CGO_ENABLED=0 ./ruleguard -rules /root/rules.go /usr/local/go/src/encoding/... &> actual.txt || true
+diff -u actual.txt /root/expected3.txt
+
 echo SUCCESS

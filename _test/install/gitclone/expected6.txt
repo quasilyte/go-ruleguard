@@ -1,0 +1,1 @@
+/usr/local/go/src/encoding/base32/base32_test.go:99:4: exprUnparen: the parentheses around p.encoded[len(p.encoded)-1] == '=' are superfluous (rules.go:17)
