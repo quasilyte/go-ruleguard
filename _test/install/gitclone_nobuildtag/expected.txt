@@ -1,0 +1,6 @@
+/root/src/target.go:10:10: exprUnparen: the parentheses around 1 are superfluous (rules.go:20)
+/root/src/target.go:11:10: exprUnparen: the parentheses around 2 are superfluous (rules.go:20)
+/root/src/target.go:13:10: testrules/boolComparison: omit bool literal in expression (rules1.go:8)
+/root/src/target.go:14:10: testrules/boolExprSimplify: suggestion: b (rules2.go:6)
+/root/src/target.go:20:10: sprintStringer: can use foo.String() directly (rules.go:26)
+/root/src/target.go:21:10: sprintStringer: can use fooptr.String() directly (rules.go:26)
