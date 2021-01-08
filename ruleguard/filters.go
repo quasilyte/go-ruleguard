@@ -9,6 +9,7 @@ import (
 	"regexp"
 
 	"github.com/quasilyte/go-ruleguard/internal/xtypes"
+	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
 	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
 )
 
@@ -98,6 +99,20 @@ func makeAddressableFilter(src, varname string) filterFunc {
 	return func(params *filterParams) matchFilterResult {
 		n := params.subExpr(varname)
 		if isAddressable(params.ctx.Types, n) {
+			return filterSuccess
+		}
+		return filterFailure(src)
+	}
+}
+
+func makeCustomVarFilter(src, varname string, fn *quasigo.Func) filterFunc {
+	return func(params *filterParams) matchFilterResult {
+		// TODO(quasilyte): what if bytecode function panics due to the programming error?
+		// We should probably catch the panic here, print trace and return "false"
+		// from the filter (or even propagate that panic to let it crash).
+		params.varname = varname
+		result := quasigo.Call(params.env, fn, params)
+		if result.(bool) {
 			return filterSuccess
 		}
 		return filterFailure(src)

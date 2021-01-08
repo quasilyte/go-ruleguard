@@ -1,2 +1,2 @@
-/root/target.go:8:10: exprUnparen: the parentheses around 1 are superfluous
-/root/target.go:9:10: exprUnparen: the parentheses around 2 are superfluous
+/root/target.go:8:10: exprUnparen: the parentheses around 1 are superfluous (rules.go:10)
+/root/target.go:9:10: exprUnparen: the parentheses around 2 are superfluous (rules.go:10)

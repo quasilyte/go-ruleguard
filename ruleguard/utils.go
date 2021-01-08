@@ -4,22 +4,24 @@ import (
 	"go/ast"
 	"go/constant"
 	"go/parser"
-	"go/printer"
 	"go/token"
 	"go/types"
 	"strconv"
 	"strings"
 )
 
-func sprintNode(fset *token.FileSet, n ast.Node) string {
-	if fset == nil {
-		fset = token.NewFileSet()
+func findDependency(pkg *types.Package, path string) *types.Package {
+	if pkg.Path() == path {
+		return pkg
 	}
-	var buf strings.Builder
-	if err := printer.Fprint(&buf, fset, n); err != nil {
-		return ""
+	// It looks like indirect dependencies are always incomplete?
+	// If it's true, then we don't have to recurse here.
+	for _, imported := range pkg.Imports() {
+		if dep := findDependency(imported, path); dep != nil && dep.Complete() {
+			return dep
+		}
 	}
-	return buf.String()
+	return nil
 }
 
 var basicTypeByName = map[string]types.Type{

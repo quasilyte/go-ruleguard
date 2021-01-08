@@ -12,11 +12,16 @@ import (
 	"strings"
 
 	"github.com/quasilyte/go-ruleguard/internal/mvdan.cc/gogrep"
+	"github.com/quasilyte/go-ruleguard/ruleguard/goutil"
 )
 
 type rulesRunner struct {
-	ctx   *Context
-	rules *GoRuleSet
+	state *engineState
+
+	ctx   *RunContext
+	rules *goRuleSet
+
+	importer *goImporter
 
 	filename string
 	src      []byte
@@ -27,12 +32,20 @@ type rulesRunner struct {
 	filterParams filterParams
 }
 
-func newRulesRunner(ctx *Context, rules *GoRuleSet) *rulesRunner {
+func newRulesRunner(ctx *RunContext, state *engineState, rules *goRuleSet) *rulesRunner {
+	importer := newGoImporter(state, goImporterConfig{
+		fset:         ctx.Fset,
+		debugImports: ctx.DebugImports,
+		debugPrint:   ctx.DebugPrint,
+	})
 	rr := &rulesRunner{
-		ctx:   ctx,
-		rules: rules,
+		ctx:      ctx,
+		importer: importer,
+		rules:    rules,
 		filterParams: filterParams{
-			ctx: ctx,
+			env:      state.env.GetEvalEnv(),
+			importer: importer,
+			ctx:      ctx,
 		},
 		sortScratch: make([]string, 0, 8),
 	}
@@ -143,7 +156,7 @@ func (rr *rulesRunner) reject(rule goRule, reason string, m gogrep.MatchData) {
 		if typ != nil {
 			typeString = typ.String()
 		}
-		s := strings.ReplaceAll(sprintNode(rr.ctx.Fset, expr), "\n", `\n`)
+		s := strings.ReplaceAll(goutil.SprintNode(rr.ctx.Fset, expr), "\n", `\n`)
 		rr.ctx.DebugPrint(fmt.Sprintf("  $%s %s: %s", name, typeString, s))
 	}
 }
