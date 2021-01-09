@@ -23,6 +23,8 @@ var opcodePrototypes = []opcodeProto{
 	{"PushConst", "op constid:u8", "() -> (const)"},
 
 	{"SetLocal", "op index:u8", "(value) -> ()"},
+	{"IncLocal", "op index:u8", stackUnchanged},
+	{"DecLocal", "op index:u8", stackUnchanged},
 
 	{"ReturnTop", "op", "(value) -> (value)"},
 	{"ReturnFalse", "op", stackUnchanged},

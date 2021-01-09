@@ -43,7 +43,7 @@ func disasm(env *Env, fn *Func) string {
 			index := int(code[pc+1])
 			arg = index
 			comment = dbg.paramNames[index]
-		case opSetLocal, opPushLocal:
+		case opSetLocal, opPushLocal, opIncLocal, opDecLocal:
 			index := int(code[pc+1])
 			arg = index
 			comment = dbg.localNames[index]
