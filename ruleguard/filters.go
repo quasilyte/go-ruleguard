@@ -112,7 +112,7 @@ func makeCustomVarFilter(src, varname string, fn *quasigo.Func) filterFunc {
 		// from the filter (or even propagate that panic to let it crash).
 		params.varname = varname
 		result := quasigo.Call(params.env, fn, params)
-		if result.(bool) {
+		if result.Value().(bool) {
 			return filterSuccess
 		}
 		return filterFailure(src)

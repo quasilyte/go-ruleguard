@@ -7,6 +7,16 @@ import (
 	"github.com/quasilyte/go-ruleguard/dsl/types"
 )
 
+func tooManyPointers(ctx *dsl.VarFilterContext) bool {
+	indir := 0
+	ptr := types.AsPointer(ctx.Type)
+	for ptr != nil {
+		indir++
+		ptr = types.AsPointer(ptr.Elem())
+	}
+	return indir >= 3
+}
+
 func stringUnderlying(ctx *dsl.VarFilterContext) bool {
 	// Test both Type.Underlying() and Type.String() methods.
 	return ctx.Type.Underlying().String() == `string`
@@ -106,5 +116,9 @@ func testRules(m dsl.Matcher) {
 
 	m.Match(`test($x, "pointer elem value size is smaller than uintptr")`).
 		Where(m["x"].Filter(ptrElemSmallerThanUintptr)).
+		Report(`true`)
+
+	m.Match(`test($x, "indirection of 3 or more pointers")`).
+		Where(m["x"].Filter(tooManyPointers)).
 		Report(`true`)
 }

@@ -70,6 +70,13 @@ func f() {
 	test(&stringerByPtr{}, "pointer elem value size is smaller than uintptr") // want `true`
 	test(new(uintptr), "pointer elem value size is smaller than uintptr")
 	test(true, "pointer elem value size is smaller than uintptr")
+
+	// Note that new(*int) returns **int.
+	test(new(***int), "indirection of 3 or more pointers") // want `true`
+	test(new(**int), "indirection of 3 or more pointers")  // want `true`
+	test(new(*int), "indirection of 3 or more pointers")
+	test(new(int), "indirection of 3 or more pointers")
+	test(true, "indirection of 3 or more pointers")
 }
 
 type myString string

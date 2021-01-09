@@ -34,7 +34,7 @@ type EvalEnv struct {
 	nativeFuncs []nativeFunc
 	userFuncs   []*Func
 
-	stack ValueStack
+	stack *ValueStack
 }
 
 // NewEnv creates a new empty environment.
@@ -47,7 +47,10 @@ func (env *Env) GetEvalEnv() *EvalEnv {
 	return &EvalEnv{
 		nativeFuncs: env.nativeFuncs,
 		userFuncs:   env.userFuncs,
-		stack:       make([]interface{}, 0, 32),
+		stack: &ValueStack{
+			objects: make([]interface{}, 0, 32),
+			ints:    make([]int, 0, 16),
+		},
 	}
 }
 
@@ -91,10 +94,26 @@ func Compile(ctx *CompileContext, fn *ast.FuncDecl) (compiled *Func, err error) 
 }
 
 // Call invokes a given function with provided arguments.
-func Call(env *EvalEnv, fn *Func, args ...interface{}) interface{} {
-	env.stack = env.stack[:0]
+func Call(env *EvalEnv, fn *Func, args ...interface{}) CallResult {
+	env.stack.objects = env.stack.objects[:0]
+	env.stack.ints = env.stack.ints[:0]
 	return eval(env, fn, args)
 }
+
+// CallResult is a return value of Call function.
+// For most functions, Value() should be called to get the actual result.
+// For int-typed functions, IntValue() should be used instead.
+type CallResult struct {
+	value       interface{}
+	scalarValue uint64
+}
+
+// Value unboxes an actual call return value.
+// For int results, use IntValue().
+func (res CallResult) Value() interface{} { return res.value }
+
+// IntValue unboxes an actual call return value.
+func (res CallResult) IntValue() int { return int(res.scalarValue) }
 
 // Disasm returns the compiled function disassembly text.
 // This output is not guaranteed to be stable between versions
@@ -107,42 +126,40 @@ func Disasm(env *Env, fn *Func) string {
 type Func struct {
 	code []byte
 
-	constants []interface{}
+	constants    []interface{}
+	intConstants []int
 }
 
 // ValueStack is used to manipulate runtime values during the evaluation.
 // Function arguments are pushed to the stack.
 // Function results are returned via stack as well.
-type ValueStack []interface{}
+//
+// For the sake of efficiency, it stores different types separately.
+// If int was pushed with PushInt(), it should be retrieved by PopInt().
+// It's a bad idea to do a Push() and then PopInt() and vice-versa.
+type ValueStack struct {
+	objects []interface{}
+	ints    []int
+}
 
 // Pop removes the top stack element and returns it.
+// Important: for int-typed values, use PopInt.
 func (s *ValueStack) Pop() interface{} {
-	x := (*s)[len(*s)-1]
-	*s = (*s)[:len(*s)-1]
+	x := s.objects[len(s.objects)-1]
+	s.objects = s.objects[:len(s.objects)-1]
 	return x
 }
 
-// Pop2 removes the two top stack elements and returns them.
-//
-// Note that it returns the popped elements in the reverse order
-// to make it easier to map the order in which they were pushed.
-func (s *ValueStack) Pop2() (second interface{}, top interface{}) {
-	x := (*s)[len(*s)-2]
-	y := (*s)[len(*s)-1]
-	*s = (*s)[:len(*s)-2]
-	return x, y
+// PopInt removes the top stack element and returns it.
+func (s *ValueStack) PopInt() int {
+	x := s.ints[len(s.ints)-1]
+	s.ints = s.ints[:len(s.ints)-1]
+	return x
 }
 
 // Push adds x to the stack.
-func (s *ValueStack) Push(x interface{}) { *s = append(*s, x) }
+// Important: for int-typed values, use PushInt.
+func (s *ValueStack) Push(x interface{}) { s.objects = append(s.objects, x) }
 
-// Top returns top of the stack without popping it.
-func (s *ValueStack) Top() interface{} { return (*s)[len(*s)-1] }
-
-// Dup copies the top stack element.
-// Identical to s.Push(s.Top()), but more concise.
-func (s *ValueStack) Dup() { *s = append(*s, (*s)[len(*s)-1]) }
-
-// Discard drops the top stack element.
-// Identical to s.Pop() without using the result.
-func (s *ValueStack) Discard() { *s = (*s)[:len(*s)-1] }
+// PushInt adds x to the stack.
+func (s *ValueStack) PushInt(x int) { s.ints = append(s.ints, x) }
