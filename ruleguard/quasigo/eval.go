@@ -77,14 +77,14 @@ func eval(env *EvalEnv, fn *Func, args []interface{}) interface{} {
 			pc += offset
 
 		case opJumpFalse:
-			if !stack.Top().(bool) {
+			if !stack.Pop().(bool) {
 				offset := decode16(code, pc+1)
 				pc += offset
 			} else {
 				pc += 3
 			}
 		case opJumpTrue:
-			if stack.Top().(bool) {
+			if stack.Pop().(bool) {
 				offset := decode16(code, pc+1)
 				pc += offset
 			} else {

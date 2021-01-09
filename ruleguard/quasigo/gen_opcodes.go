@@ -31,8 +31,8 @@ var opcodePrototypes = []opcodeProto{
 	{"ReturnTrue", "op", stackUnchanged},
 
 	{"Jump", "op offset:i16", stackUnchanged},
-	{"JumpFalse", "op offset:i16", "(cond:bool) -> (cond:bool)"},
-	{"JumpTrue", "op offset:i16", "(cond:bool) -> (cond:bool)"},
+	{"JumpFalse", "op offset:i16", "(cond:bool) -> ()"},
+	{"JumpTrue", "op offset:i16", "(cond:bool) -> ()"},
 
 	{"CallBuiltin", "op funcid:u16", "(args...) -> (results...)"},
 
