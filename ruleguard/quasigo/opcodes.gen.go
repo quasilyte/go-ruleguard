@@ -65,11 +65,11 @@ const (
 	opJump opcode = 14
 
 	// Encoding: 0x0f offset:i16 (width=3)
-	// Stack effect: (cond:bool) -> (cond:bool)
+	// Stack effect: (cond:bool) -> ()
 	opJumpFalse opcode = 15
 
 	// Encoding: 0x10 offset:i16 (width=3)
-	// Stack effect: (cond:bool) -> (cond:bool)
+	// Stack effect: (cond:bool) -> ()
 	opJumpTrue opcode = 16
 
 	// Encoding: 0x11 funcid:u16 (width=3)

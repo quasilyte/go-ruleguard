@@ -144,7 +144,6 @@ func (cl *compiler) compileIfStmt(stmt *ast.IfStmt) {
 		var labelEnd label
 		cl.compileExpr(stmt.Cond)
 		cl.emitJump(opJumpFalse, &labelEnd)
-		cl.emit(opPop)
 		cl.compileStmt(stmt.Body)
 		cl.bindLabel(labelEnd)
 		return
@@ -154,7 +153,6 @@ func (cl *compiler) compileIfStmt(stmt *ast.IfStmt) {
 	var labelElse label
 	cl.compileExpr(stmt.Cond)
 	cl.emitJump(opJumpFalse, &labelElse)
-	cl.emit(opPop)
 	cl.compileStmt(stmt.Body)
 	if !cl.isUncondJump(cl.lastOp) {
 		cl.emitJump(opJump, &labelEnd)
@@ -461,8 +459,8 @@ func (cl *compiler) compileBinaryOp(op opcode, e *ast.BinaryExpr) {
 func (cl *compiler) compileOr(e *ast.BinaryExpr) {
 	var labelEnd label
 	cl.compileExpr(e.X)
+	cl.emit(opDup)
 	cl.emitJump(opJumpTrue, &labelEnd)
-	cl.emit(opPop)
 	cl.compileExpr(e.Y)
 	cl.bindLabel(labelEnd)
 }
@@ -470,8 +468,8 @@ func (cl *compiler) compileOr(e *ast.BinaryExpr) {
 func (cl *compiler) compileAnd(e *ast.BinaryExpr) {
 	var labelEnd label
 	cl.compileExpr(e.X)
+	cl.emit(opDup)
 	cl.emitJump(opJumpFalse, &labelEnd)
-	cl.emit(opPop)
 	cl.compileExpr(e.Y)
 	cl.bindLabel(labelEnd)
 }
