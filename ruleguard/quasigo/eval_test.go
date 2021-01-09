@@ -112,6 +112,7 @@ func TestEval(t *testing.T) {
 		{`if !b { return 1 }; return 0`, 0},
 		{`if b { return 1 } else { return 0 }`, 1},
 		{`if !b { return 1 } else { return 0 }`, 0},
+
 		{`x := 2; if x == 2 { return "a" } else if x == 0 { return "b" }; return "c"`, "a"},
 		{`x := 2; if x == 0 { return "a" } else if x == 2 { return "b" }; return "c"`, "b"},
 		{`x := 2; if x == 0 { return "a" } else if x == 1 { return "b" }; return "c"`, "c"},
@@ -123,6 +124,11 @@ func TestEval(t *testing.T) {
 		{`x := 0; if b { x = 1 } else if x == 0 { x = 2 } else { x = 3 }; return x`, 1},
 		{`x := 0; if !b { x = 1 } else if x == 0 { x = 2 } else { x = 3 }; return x`, 2},
 		{`x := 0; if !b { x = 1 } else if x == 1 { x = 2 } else { x = 3 }; return x`, 3},
+
+		{`x := 0; x++; return x`, 1},
+		{`x := i; x++; return x`, 11},
+		{`x := 0; x--; return x`, -1},
+		{`x := i; x--; return x`, 9},
 	}
 
 	for _, test := range exprTests {

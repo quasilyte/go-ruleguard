@@ -30,6 +30,16 @@ func eval(env *EvalEnv, fn *Func, args []interface{}) interface{} {
 			locals[index] = stack.Pop()
 			pc += 2
 
+		case opIncLocal:
+			index := code[pc+1]
+			locals[index] = locals[index].(int) + 1
+			pc += 2
+
+		case opDecLocal:
+			index := code[pc+1]
+			locals[index] = locals[index].(int) - 1
+			pc += 2
+
 		case opPop:
 			stack.Discard()
 			pc++

@@ -71,6 +71,10 @@ func TestParseFilterFuncError(t *testing.T) {
 			`ctx.Type = nil; return true`,
 			`can assign only to simple variables`,
 		},
+		{
+			`i++; return true`,
+			`can't assign to i, params are readonly`,
+		},
 
 		// Unsupported type errors.
 		{
@@ -124,7 +128,7 @@ func TestParseFilterFuncError(t *testing.T) {
 	}
 
 	for _, test := range simpleTests {
-		test.src = `func f(ctx *dsl.VarFilterContext) bool { ` + test.src + ` }`
+		test.src = `func f(ctx *dsl.VarFilterContext, i int) bool { ` + test.src + ` }`
 		tests = append(tests, test)
 	}
 

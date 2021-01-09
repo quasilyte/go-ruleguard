@@ -216,6 +216,22 @@ func TestCompile(t *testing.T) {
 			`  LtEqInt`,
 			`  ReturnTop`,
 		},
+
+		`x := 0; x++; return x`: {
+			`  PushConst 0 # value=0`,
+			`  SetLocal 0 # x`,
+			`  IncLocal 0 # x`,
+			`  PushLocal 0 # x`,
+			`  ReturnTop`,
+		},
+
+		`x := 0; x--; return x`: {
+			`  PushConst 0 # value=0`,
+			`  SetLocal 0 # x`,
+			`  DecLocal 0 # x`,
+			`  PushLocal 0 # x`,
+			`  ReturnTop`,
+		},
 	}
 
 	makePackageSource := func(body string) string {

@@ -110,6 +110,9 @@ func (cl *compiler) compileStmt(stmt ast.Stmt) {
 	case *ast.AssignStmt:
 		cl.compileAssignStmt(stmt)
 
+	case *ast.IncDecStmt:
+		cl.compileIncDecStmt(stmt)
+
 	case *ast.IfStmt:
 		cl.compileIfStmt(stmt)
 
@@ -120,6 +123,19 @@ func (cl *compiler) compileStmt(stmt ast.Stmt) {
 
 	default:
 		panic(cl.errorf(stmt, "can't compile %T yet", stmt))
+	}
+}
+
+func (cl *compiler) compileIncDecStmt(stmt *ast.IncDecStmt) {
+	varname, ok := stmt.X.(*ast.Ident)
+	if !ok {
+		panic(cl.errorf(stmt.X, "can assign only to simple variables"))
+	}
+	id := cl.getLocal(varname, varname.String())
+	if stmt.Tok == token.INC {
+		cl.emit8(opIncLocal, id)
+	} else {
+		cl.emit8(opDecLocal, id)
 	}
 }
 
@@ -179,16 +195,20 @@ func (cl *compiler) compileAssignStmt(assign *ast.AssignStmt) {
 		cl.locals[varname.String()] = id
 		cl.emit8(opSetLocal, id)
 	} else {
-		id, ok := cl.locals[varname.String()]
-		if !ok {
-			if _, ok := cl.params[varname.String()]; ok {
-				panic(cl.errorf(lhs, "can't assign to %s, params are readonly", varname.String()))
-			} else {
-				panic(cl.errorf(lhs, "%s is not a writeable local variable", varname.String()))
-			}
-		}
+		id := cl.getLocal(varname, varname.String())
 		cl.emit8(opSetLocal, id)
 	}
+}
+
+func (cl *compiler) getLocal(v ast.Expr, varname string) int {
+	id, ok := cl.locals[varname]
+	if !ok {
+		if _, ok := cl.params[varname]; ok {
+			panic(cl.errorf(v, "can't assign to %s, params are readonly", varname))
+		}
+		panic(cl.errorf(v, "%s is not a writeable local variable", varname))
+	}
+	return id
 }
 
 func (cl *compiler) compileReturnStmt(ret *ast.ReturnStmt) {
