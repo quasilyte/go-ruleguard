@@ -34,10 +34,11 @@ func compileFunc(ctx *CompileContext, fn *ast.FuncDecl) *Func {
 	}
 
 	cl := compiler{
-		ctx:           ctx,
-		retType:       fnType.Results().At(0).Type(),
-		constantsPool: make(map[interface{}]int),
-		locals:        make(map[string]int),
+		ctx:              ctx,
+		retType:          fnType.Results().At(0).Type(),
+		constantsPool:    make(map[interface{}]int),
+		intConstantsPool: make(map[int]int),
+		locals:           make(map[string]int),
 	}
 	return cl.compileFunc(fnType, fn)
 }
@@ -49,17 +50,24 @@ type compiler struct {
 
 	lastOp opcode
 
-	locals        map[string]int
-	constantsPool map[interface{}]int
-	params        map[string]int
+	locals           map[string]int
+	constantsPool    map[interface{}]int
+	intConstantsPool map[int]int
+	params           map[string]int
 
-	code      []byte
-	constants []interface{}
+	code         []byte
+	constants    []interface{}
+	intConstants []int
+
+	breakTarget    *label
+	continueTarget *label
+
+	labels []*label
 }
 
 type label struct {
-	used    bool
-	jumpPos int
+	targetPos int
+	sources   []int
 }
 
 type compileError string
@@ -89,8 +97,9 @@ func (cl *compiler) compileFunc(fnType *types.Signature, fn *ast.FuncDecl) *Func
 
 	cl.compileStmt(fn.Body)
 	compiled := &Func{
-		code:      cl.code,
-		constants: cl.constants,
+		code:         cl.code,
+		constants:    cl.constants,
+		intConstants: cl.intConstants,
 	}
 	if len(cl.locals) != 0 {
 		dbg.localNames = make([]string, len(cl.locals))
@@ -99,6 +108,7 @@ func (cl *compiler) compileFunc(fnType *types.Signature, fn *ast.FuncDecl) *Func
 		}
 	}
 	cl.ctx.Env.debug.funcs[compiled] = dbg
+	cl.linkJumps()
 	return compiled
 }
 
@@ -115,6 +125,12 @@ func (cl *compiler) compileStmt(stmt ast.Stmt) {
 
 	case *ast.IfStmt:
 		cl.compileIfStmt(stmt)
+
+	case *ast.ForStmt:
+		cl.compileForStmt(stmt)
+
+	case *ast.BranchStmt:
+		cl.compileBranchStmt(stmt)
 
 	case *ast.BlockStmt:
 		for i := range stmt.List {
@@ -139,23 +155,72 @@ func (cl *compiler) compileIncDecStmt(stmt *ast.IncDecStmt) {
 	}
 }
 
+func (cl *compiler) compileBranchStmt(branch *ast.BranchStmt) {
+	if branch.Label != nil {
+		panic(cl.errorf(branch.Label, "can't compile %s with a label", branch.Tok))
+	}
+
+	switch branch.Tok {
+	case token.BREAK:
+		cl.emitJump(opJump, cl.breakTarget)
+	default:
+		panic(cl.errorf(branch, "can't compile %s yet", branch.Tok))
+	}
+}
+
+func (cl *compiler) compileForStmt(stmt *ast.ForStmt) {
+	labelBreak := cl.newLabel()
+	labelContinue := cl.newLabel()
+	prevBreakTarget := cl.breakTarget
+	prevContinueTarget := cl.continueTarget
+	cl.breakTarget = labelBreak
+	cl.continueTarget = labelContinue
+
+	switch {
+	case stmt.Cond != nil && stmt.Init != nil && stmt.Post != nil:
+		// Will be implemented later; probably when the max number of locals will be lifted.
+		panic(cl.errorf(stmt, "can't compile C-style for loops yet"))
+
+	case stmt.Cond != nil && stmt.Init == nil && stmt.Post == nil:
+		// `for <cond> { ... }`
+		labelBody := cl.newLabel()
+		cl.emitJump(opJump, labelContinue)
+		cl.bindLabel(labelBody)
+		cl.compileStmt(stmt.Body)
+		cl.bindLabel(labelContinue)
+		cl.compileExpr(stmt.Cond)
+		cl.emitJump(opJumpTrue, labelBody)
+		cl.bindLabel(labelBreak)
+
+	default:
+		// `for { ... }`
+		cl.bindLabel(labelContinue)
+		cl.compileStmt(stmt.Body)
+		cl.emitJump(opJump, labelContinue)
+		cl.bindLabel(labelBreak)
+	}
+
+	cl.breakTarget = prevBreakTarget
+	cl.continueTarget = prevContinueTarget
+}
+
 func (cl *compiler) compileIfStmt(stmt *ast.IfStmt) {
 	if stmt.Else == nil {
-		var labelEnd label
+		labelEnd := cl.newLabel()
 		cl.compileExpr(stmt.Cond)
-		cl.emitJump(opJumpFalse, &labelEnd)
+		cl.emitJump(opJumpFalse, labelEnd)
 		cl.compileStmt(stmt.Body)
 		cl.bindLabel(labelEnd)
 		return
 	}
 
-	var labelEnd label
-	var labelElse label
+	labelEnd := cl.newLabel()
+	labelElse := cl.newLabel()
 	cl.compileExpr(stmt.Cond)
-	cl.emitJump(opJumpFalse, &labelElse)
+	cl.emitJump(opJumpFalse, labelElse)
 	cl.compileStmt(stmt.Body)
 	if !cl.isUncondJump(cl.lastOp) {
-		cl.emitJump(opJump, &labelEnd)
+		cl.emitJump(opJump, labelEnd)
 	}
 	cl.bindLabel(labelElse)
 	cl.compileStmt(stmt.Else)
@@ -178,11 +243,11 @@ func (cl *compiler) compileAssignStmt(assign *ast.AssignStmt) {
 
 	cl.compileExpr(rhs)
 
+	typ := cl.ctx.Types.TypeOf(varname)
 	if assign.Tok == token.DEFINE {
 		if _, ok := cl.locals[varname.String()]; ok {
 			panic(cl.errorf(lhs, "%s variable shadowing is not allowed", varname))
 		}
-		typ := cl.ctx.Types.TypeOf(varname)
 		if !cl.isSupportedType(typ) {
 			panic(cl.errorUnsupportedType(varname, typ, varname.String()+" local variable"))
 		}
@@ -191,10 +256,10 @@ func (cl *compiler) compileAssignStmt(assign *ast.AssignStmt) {
 		}
 		id := len(cl.locals)
 		cl.locals[varname.String()] = id
-		cl.emit8(opSetLocal, id)
+		cl.emit8(pickOp(typeIsInt(typ), opSetIntLocal, opSetLocal), id)
 	} else {
 		id := cl.getLocal(varname, varname.String())
-		cl.emit8(opSetLocal, id)
+		cl.emit8(pickOp(typeIsInt(typ), opSetIntLocal, opSetLocal), id)
 	}
 }
 
@@ -221,7 +286,8 @@ func (cl *compiler) compileReturnStmt(ret *ast.ReturnStmt) {
 		cl.emit(opReturnFalse)
 	default:
 		cl.compileExpr(ret.Results[0])
-		cl.emit(opReturnTop)
+		typ := cl.ctx.Types.TypeOf(ret.Results[0])
+		cl.emit(pickOp(typeIsInt(typ), opReturnIntTop, opReturnTop))
 	}
 }
 
@@ -457,19 +523,19 @@ func (cl *compiler) compileBinaryOp(op opcode, e *ast.BinaryExpr) {
 }
 
 func (cl *compiler) compileOr(e *ast.BinaryExpr) {
-	var labelEnd label
+	labelEnd := cl.newLabel()
 	cl.compileExpr(e.X)
 	cl.emit(opDup)
-	cl.emitJump(opJumpTrue, &labelEnd)
+	cl.emitJump(opJumpTrue, labelEnd)
 	cl.compileExpr(e.Y)
 	cl.bindLabel(labelEnd)
 }
 
 func (cl *compiler) compileAnd(e *ast.BinaryExpr) {
-	var labelEnd label
+	labelEnd := cl.newLabel()
 	cl.compileExpr(e.X)
 	cl.emit(opDup)
-	cl.emitJump(opJumpFalse, &labelEnd)
+	cl.emitJump(opJumpFalse, labelEnd)
 	cl.compileExpr(e.Y)
 	cl.bindLabel(labelEnd)
 }
@@ -482,11 +548,11 @@ func (cl *compiler) compileIdent(ident *ast.Ident) {
 		return
 	}
 	if paramIndex, ok := cl.params[ident.String()]; ok {
-		cl.emit8(opPushParam, paramIndex)
+		cl.emit8(pickOp(typeIsInt(tv.Type), opPushIntParam, opPushParam), paramIndex)
 		return
 	}
 	if localIndex, ok := cl.locals[ident.String()]; ok {
-		cl.emit8(opPushLocal, localIndex)
+		cl.emit8(pickOp(typeIsInt(tv.Type), opPushIntLocal, opPushLocal), localIndex)
 		return
 	}
 
@@ -513,8 +579,8 @@ func (cl *compiler) compileConstantValue(source ast.Expr, cv constant.Value) {
 		if !exact {
 			panic(cl.errorf(source, "non-exact int value"))
 		}
-		id := cl.internConstant(int(v))
-		cl.emit8(opPushConst, id)
+		id := cl.internIntConstant(int(v))
+		cl.emit8(opPushIntConst, id)
 
 	case constant.Complex:
 		panic(cl.errorf(source, "can't compile complex number constants yet"))
@@ -527,7 +593,20 @@ func (cl *compiler) compileConstantValue(source ast.Expr, cv constant.Value) {
 	}
 }
 
+func (cl *compiler) internIntConstant(v int) int {
+	if id, ok := cl.intConstantsPool[v]; ok {
+		return id
+	}
+	id := len(cl.intConstants)
+	cl.intConstants = append(cl.intConstants, v)
+	cl.intConstantsPool[v] = id
+	return id
+}
+
 func (cl *compiler) internConstant(v interface{}) int {
+	if _, ok := v.(int); ok {
+		panic("compiler error: int constant interned as interface{}")
+	}
 	if id, ok := cl.constantsPool[v]; ok {
 		return id
 	}
@@ -537,13 +616,24 @@ func (cl *compiler) internConstant(v interface{}) int {
 	return id
 }
 
-func (cl *compiler) bindLabel(l label) {
-	if !l.used {
-		return
+func (cl *compiler) linkJumps() {
+	for _, l := range cl.labels {
+		for _, jumpPos := range l.sources {
+			offset := l.targetPos - jumpPos
+			patchPos := jumpPos + 1
+			put16(cl.code, patchPos, offset)
+		}
 	}
-	offset := len(cl.code) - l.jumpPos
-	patchPos := l.jumpPos + 1
-	put16(cl.code, patchPos, offset)
+}
+
+func (cl *compiler) newLabel() *label {
+	l := &label{}
+	cl.labels = append(cl.labels, l)
+	return l
+}
+
+func (cl *compiler) bindLabel(l *label) {
+	l.targetPos = len(cl.code)
 }
 
 func (cl *compiler) emit(op opcode) {
@@ -552,8 +642,7 @@ func (cl *compiler) emit(op opcode) {
 }
 
 func (cl *compiler) emitJump(op opcode, l *label) {
-	l.jumpPos = len(cl.code)
-	l.used = true
+	l.sources = append(l.sources, len(cl.code))
 	cl.emit(op)
 	cl.code = append(cl.code, 0, 0)
 }
@@ -582,7 +671,7 @@ func (cl *compiler) errorf(n ast.Node, format string, args ...interface{}) compi
 
 func (cl *compiler) isUncondJump(op opcode) bool {
 	switch op {
-	case opJump, opReturnFalse, opReturnTrue, opReturnTop:
+	case opJump, opReturnFalse, opReturnTrue, opReturnTop, opReturnIntTop:
 		return true
 	default:
 		return false

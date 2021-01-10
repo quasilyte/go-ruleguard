@@ -172,7 +172,7 @@ func (dslVarFilterContext) Type(stack *quasigo.ValueStack) {
 func (native dslVarFilterContext) SizeOf(stack *quasigo.ValueStack) {
 	typ := stack.Pop().(types.Type)
 	params := stack.Pop().(*filterParams)
-	stack.Push(int(params.ctx.Sizes.Sizeof(typ)))
+	stack.PushInt(int(params.ctx.Sizes.Sizeof(typ)))
 }
 
 func (native dslVarFilterContext) GetType(stack *quasigo.ValueStack) {

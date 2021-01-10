@@ -39,17 +39,20 @@ func disasm(env *Env, fn *Func) string {
 			id := decode16(code, pc+1)
 			arg = id
 			comment = env.nativeFuncs[id].name
-		case opPushParam:
+		case opPushParam, opPushIntParam:
 			index := int(code[pc+1])
 			arg = index
 			comment = dbg.paramNames[index]
-		case opSetLocal, opPushLocal, opIncLocal, opDecLocal:
+		case opSetLocal, opSetIntLocal, opPushLocal, opPushIntLocal, opIncLocal, opDecLocal:
 			index := int(code[pc+1])
 			arg = index
 			comment = dbg.localNames[index]
 		case opPushConst:
 			arg = int(code[pc+1])
 			comment = fmt.Sprintf("value=%#v", fn.constants[code[pc+1]])
+		case opPushIntConst:
+			arg = int(code[pc+1])
+			comment = fmt.Sprintf("value=%#v", fn.intConstants[code[pc+1]])
 		case opJumpTrue, opJumpFalse, opJump:
 			offset := decode16(code, pc+1)
 			targetPC := pc + offset

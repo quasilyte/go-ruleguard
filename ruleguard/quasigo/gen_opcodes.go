@@ -17,16 +17,21 @@ var opcodePrototypes = []opcodeProto{
 	{"Dup", "op", "(x) -> (x x)"},
 
 	{"PushParam", "op index:u8", "() -> (value)"},
+	{"PushIntParam", "op index:u8", "() -> (value:int)"},
 	{"PushLocal", "op index:u8", "() -> (value)"},
+	{"PushIntLocal", "op index:u8", "() -> (value:int)"},
 	{"PushFalse", "op", "() -> (false)"},
 	{"PushTrue", "op", "() -> (true)"},
 	{"PushConst", "op constid:u8", "() -> (const)"},
+	{"PushIntConst", "op constid:u8", "() -> (const:int)"},
 
 	{"SetLocal", "op index:u8", "(value) -> ()"},
+	{"SetIntLocal", "op index:u8", "(value:int) -> ()"},
 	{"IncLocal", "op index:u8", stackUnchanged},
 	{"DecLocal", "op index:u8", stackUnchanged},
 
 	{"ReturnTop", "op", "(value) -> (value)"},
+	{"ReturnIntTop", "op", "(value) -> (value)"},
 	{"ReturnFalse", "op", stackUnchanged},
 	{"ReturnTrue", "op", stackUnchanged},
 

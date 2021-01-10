@@ -6,12 +6,19 @@ import (
 	"go/types"
 )
 
+func pickOp(cond bool, ifTrue, otherwise opcode) opcode {
+	if cond {
+		return ifTrue
+	}
+	return otherwise
+}
+
 func put16(code []byte, pos, value int) {
 	binary.LittleEndian.PutUint16(code[pos:], uint16(value))
 }
 
 func decode16(code []byte, pos int) int {
-	return int(binary.LittleEndian.Uint16(code[pos:]))
+	return int(int16(binary.LittleEndian.Uint16(code[pos:])))
 }
 
 func typeIsInt(typ types.Type) bool {

@@ -129,6 +129,15 @@ func TestEval(t *testing.T) {
 		{`x := i; x++; return x`, 11},
 		{`x := 0; x--; return x`, -1},
 		{`x := i; x--; return x`, 9},
+
+		{`j := 0; for { j = j + 1; break; }; return j`, 1},
+		{`j := -5; for { if j > 0 { break }; j++; }; return j`, 1},
+		{`j := -5; for { if j >= 0 { break }; j++; }; return j`, 0},
+		{`j := 0; for j < 0 { j++; break; }; return j`, 0},
+		{`j := -5; for j < 0 { j++ }; return j`, 0},
+		{`j := -5; for j <= 0 { j++; }; return j`, 1},
+		{`j := 0; for j < 100 { k := 0; for { if k > 40 { break }; k++; j++; } }; return j`, 123},
+		{`j := 0; for j < 10000 { k := 0; for k < 10 { k++; j++; } }; return j`, 10000},
 	}
 
 	for _, test := range exprTests {
@@ -145,6 +154,8 @@ func TestEval(t *testing.T) {
 			returnType = "string"
 		case bool:
 			returnType = "bool"
+		default:
+			t.Fatalf("unexpected result type: %T", result)
 		}
 		return `
 		  package test
@@ -160,12 +171,12 @@ func TestEval(t *testing.T) {
 
 	env := NewEnv()
 	env.AddNativeFunc(testPackage, "imul", func(stack *ValueStack) {
-		x, y := stack.Pop2()
-		stack.Push(x.(int) * y.(int))
+		x, y := stack.popInt2()
+		stack.PushInt(x * y)
 	})
 	env.AddNativeFunc(testPackage, "idiv", func(stack *ValueStack) {
-		x, y := stack.Pop2()
-		stack.Push(x.(int) / y.(int))
+		x, y := stack.popInt2()
+		stack.PushInt(x / y)
 	})
 	env.AddNativeFunc(testPackage, "newFoo", func(stack *ValueStack) {
 		prefix := stack.Pop().(string)
@@ -175,9 +186,10 @@ func TestEval(t *testing.T) {
 	const evaltestPkgPath = `github.com/quasilyte/go-ruleguard/ruleguard/quasigo/internal/evaltest`
 	const evaltestFoo = `*` + evaltestPkgPath + `.Foo`
 	env.AddNativeMethod(evaltestFoo, "Method1", func(stack *ValueStack) {
-		obj, x := stack.Pop2()
+		x := stack.PopInt()
+		obj := stack.Pop()
 		foo := obj.(*evaltest.Foo)
-		stack.Push(foo.Prefix + fmt.Sprint(x.(int)))
+		stack.Push(foo.Prefix + fmt.Sprint(x))
 	})
 	env.AddNativeMethod(evaltestFoo, "Prefix", func(stack *ValueStack) {
 		foo := stack.Pop().(*evaltest.Foo)
@@ -198,8 +210,14 @@ func TestEval(t *testing.T) {
 		}
 		result := Call(env.GetEvalEnv(), compiled,
 			10, "foo", true, &evaltest.Foo{Prefix: "Hello"}, (*evaltest.Foo)(nil), nil)
-		if result != test.result {
-			t.Errorf("eval %s:\nhave: %#v\nwant: %#v", test.src, result, test.result)
+		var unboxedResult interface{}
+		if _, ok := test.result.(int); ok {
+			unboxedResult = result.IntValue()
+		} else {
+			unboxedResult = result.Value()
+		}
+		if unboxedResult != test.result {
+			t.Errorf("eval %s:\nhave: %#v\nwant: %#v", test.src, unboxedResult, test.result)
 		}
 	}
 }
