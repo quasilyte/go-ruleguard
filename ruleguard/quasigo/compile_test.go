@@ -64,7 +64,7 @@ func TestCompile(t *testing.T) {
 		`return imul(i, 5) == 10`: {
 			`  PushIntParam 0 # i`,
 			`  PushIntConst 0 # value=5`,
-			`  CallBuiltin 0 # testpkg.imul`,
+			`  CallNative 0 # testpkg.imul`,
 			`  PushIntConst 1 # value=10`,
 			`  EqInt`,
 			`  ReturnTop`,

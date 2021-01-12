@@ -30,7 +30,7 @@ func _() {
 	_ = x[opJump-19]
 	_ = x[opJumpFalse-20]
 	_ = x[opJumpTrue-21]
-	_ = x[opCallBuiltin-22]
+	_ = x[opCallNative-22]
 	_ = x[opIsNil-23]
 	_ = x[opIsNotNil-24]
 	_ = x[opNot-25]
@@ -51,9 +51,9 @@ func _() {
 	_ = x[opStringLen-40]
 }
 
-const _opcode_name = "InvalidPopDupPushParamPushIntParamPushLocalPushIntLocalPushFalsePushTruePushConstPushIntConstSetLocalSetIntLocalIncLocalDecLocalReturnTopReturnIntTopReturnFalseReturnTrueJumpJumpFalseJumpTrueCallBuiltinIsNilIsNotNilNotEqIntNotEqIntGtIntGtEqIntLtIntLtEqIntEqStringNotEqStringConcatAddSubStringSliceStringSliceFromStringSliceToStringLen"
+const _opcode_name = "InvalidPopDupPushParamPushIntParamPushLocalPushIntLocalPushFalsePushTruePushConstPushIntConstSetLocalSetIntLocalIncLocalDecLocalReturnTopReturnIntTopReturnFalseReturnTrueJumpJumpFalseJumpTrueCallNativeIsNilIsNotNilNotEqIntNotEqIntGtIntGtEqIntLtIntLtEqIntEqStringNotEqStringConcatAddSubStringSliceStringSliceFromStringSliceToStringLen"
 
-var _opcode_index = [...]uint16{0, 7, 10, 13, 22, 34, 43, 55, 64, 72, 81, 93, 101, 112, 120, 128, 137, 149, 160, 170, 174, 183, 191, 202, 207, 215, 218, 223, 231, 236, 243, 248, 255, 263, 274, 280, 283, 286, 297, 312, 325, 334}
+var _opcode_index = [...]uint16{0, 7, 10, 13, 22, 34, 43, 55, 64, 72, 81, 93, 101, 112, 120, 128, 137, 149, 160, 170, 174, 183, 191, 201, 206, 214, 217, 222, 230, 235, 242, 247, 254, 262, 273, 279, 282, 285, 296, 311, 324, 333}
 
 func (i opcode) String() string {
 	if i >= opcode(len(_opcode_index)-1) {

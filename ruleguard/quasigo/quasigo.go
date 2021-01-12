@@ -14,10 +14,10 @@ import (
 
 // Env is used to hold both compilation and evaluation data.
 type Env struct {
-	// TODO(quasilyte): store both builtin and user func ids in one map?
+	// TODO(quasilyte): store both native and user func ids in one map?
 
-	nativeFuncs         []nativeFunc
-	nameToBuiltinFuncID map[funcKey]uint16
+	nativeFuncs        []nativeFunc
+	nameToNativeFuncID map[funcKey]uint16
 
 	userFuncs    []*Func
 	nameToFuncID map[funcKey]uint16
