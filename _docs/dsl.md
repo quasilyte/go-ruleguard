@@ -39,13 +39,13 @@ package gorules
 
 import "github.com/quasilyte/go-ruleguard/dsl"
 
-func regexpMust(m dsl.Matcher) {                          //        - regexpMust matcher func
-	m.Match(`regexp.Compile($pat)`,                       // - rule  | (or "regexpMust rules group")
+func regexpMust(m dsl.Matcher) {                                  //        - regexpMust matcher func
+	m.Match(`regexp.Compile($pat)`,                           // - rule  | (or "regexpMust rules group")
 		`regexp.CompilePOSIX($pat)`).                     //  |      |
 		Where(m["pat"].Const).                            //  |      |
 		Report(`can use MustCompile for const patterns`). //  |      |
 		Suggest(`regexp.MustCompile($pat)`)               // -       |
-}                                                         //        -
+}                                                                 //        -
 ```
 
 A `Report()` argument string can use `$<varname>` notation to interpolate the named pattern submatches into the report message.
