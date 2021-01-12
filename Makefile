@@ -1,5 +1,14 @@
 GOPATH_DIR=`go env GOPATH`
 RELEASE=v0.2.1
+BUILD_COMMIT=`git rev-parse HEAD`
+
+build:
+	mkdir -p bin
+	go build -o bin/ruleguard -ldflags "-X 'github.com/quasilyte/go-ruleguard/analyzer.Version=$(BUILD_COMMIT)'" ./cmd/ruleguard
+
+build-release:
+	mkdir -p bin
+	go build -o bin/ruleguard -ldflags "-X 'github.com/quasilyte/go-ruleguard/analyzer.Version=$(RELEASE)'" ./cmd/ruleguard
 
 test:
 	go test -count 3 -coverprofile=coverage.txt -covermode=atomic -race -v ./analyzer/...
@@ -25,4 +34,4 @@ lint:
 	./go-ruleguard -rules rules.go ./analyzer/... ./ruleguard/...
 	@echo "everything is OK"
 
-.PHONY: lint test test-master
+.PHONY: lint test test-master build build-release

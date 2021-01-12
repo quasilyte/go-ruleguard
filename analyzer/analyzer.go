@@ -15,10 +15,23 @@ import (
 	"golang.org/x/tools/go/analysis"
 )
 
+// Version contains extra version info.
+// It's is initialized via ldflags -X when ruleguard is built with Make.
+// Can contain a git hash (dev builds) or a version tag (release builds).
+var Version string
+
+func docString() string {
+	doc := "execute dynamic gogrep-based rules"
+	if Version == "" {
+		return doc
+	}
+	return doc + " (" + Version + ")"
+}
+
 // Analyzer exports ruleguard as a analysis-compatible object.
 var Analyzer = &analysis.Analyzer{
 	Name: "ruleguard",
-	Doc:  "execute dynamic gogrep-based rules",
+	Doc:  docString(),
 	Run:  runAnalyzer,
 }
 
