@@ -58,14 +58,15 @@ var (
 )
 
 func init() {
+	Analyzer.Flags.StringVar(&flagDebugFilter, "debug-filter", "", "[experimental!] enable debug for the specified filter function")
+	Analyzer.Flags.StringVar(&flagDebug, "debug-group", "", "[experimental!] enable debug for the specified matcher function")
+	Analyzer.Flags.BoolVar(&flagDebugImports, "debug-imports", false, "[experimental!] enable debug for rules compile-time package lookups")
+	Analyzer.Flags.BoolVar(&flagDebugEnableDisable, "debug-enable-disable", false, "[experimental!] enable debug for -enable/-disable related info")
+
 	Analyzer.Flags.StringVar(&flagRules, "rules", "", "comma-separated list of ruleguard file paths")
 	Analyzer.Flags.StringVar(&flagE, "e", "", "execute a single rule from a given string")
-	Analyzer.Flags.StringVar(&flagDebug, "debug-group", "", "enable debug for the specified matcher function")
-	Analyzer.Flags.StringVar(&flagDebugFilter, "debug-filter", "", "enable debug for the specified filter function")
 	Analyzer.Flags.StringVar(&flagEnable, "enable", "<all>", "comma-separated list of enabled groups or '<all>' to enable everything")
 	Analyzer.Flags.StringVar(&flagDisable, "disable", "", "comma-separated list of groups to be disabled")
-	Analyzer.Flags.BoolVar(&flagDebugImports, "debug-imports", false, "enable debug for rules compile-time package lookups")
-	Analyzer.Flags.BoolVar(&flagDebugEnableDisable, "debug-enable-disable", false, "enable debug for -enable/-disable related info")
 }
 
 func debugPrint(s string) {
