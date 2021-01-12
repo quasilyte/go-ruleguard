@@ -133,13 +133,17 @@ There can be additional calls in between these two. For example, a [`Where(cond)
 ## Documentation
 
 * [Ruleguard by example](https://go-ruleguard.github.io/by-example/) tour
-* Example rule files: [rules.go](_docs/dsl.go)
-* Another great example: [github.com/dgryski/semgrep-go/ruleguard.rules.go](https://github.com/dgryski/semgrep-go/blob/master/ruleguard.rules.go)
-* [gorules](_docs/gorules.md) format documentation
+semgrep-go/blob/master/ruleguard.rules.go)
+* [Ruleguard files](_docs/dsl.md) format documentation
 * [dsl package](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl) reference
 * [ruleguard package](https://godoc.org/github.com/quasilyte/go-ruleguard/ruleguard) reference
 * Introduction article: [EN](https://quasilyte.dev/blog/post/ruleguard/), [RU](https://habr.com/ru/post/481696/)
 * [Using ruleguard from the golangci-lint](https://quasilyte.dev/blog/post/ruleguard/#using-from-the-golangci-lint)
+
+## Rule set examples
+
+* Basic rule set from the ruleguard: [go-ruleguard/rules](rules)
+* Damian Gryski rule set: [github.com/dgryski/semgrep-go/ruleguard.rules.go](https://github.com/dgryski/semgrep-go)
 
 ## Extra references
 
