@@ -13,26 +13,29 @@
 
 You write the rules, `ruleguard` checks whether they are satisfied.
 
-`ruleguard` has some similarities with [GitHub CodeQL](https://securitylab.github.com/tools/codeql), but only focuses on Go code queries.
+`ruleguard` has some similarities with [GitHub CodeQL](https://securitylab.github.com/tools/codeql), but it's dedicated to Go only.
 
 **Features:**
 
 * Custom linting rules without re-compilation and Go plugins.
 * Diagnostics are written in a declarative way.
-* [Quickfix](_docs/gorules.md#suggestions-quickfix-support) actions support.
-* Powerful match filtering features, like expression [type pattern matching](_docs/gorules.md#type-pattern-matching).
+* [Quickfix](_docs/dsl.md#suggestions-quickfix-support) actions support.
+* Powerful match filtering features, like expression [type pattern matching](_docs/dsl.md#type-pattern-matching).
+* Rules can be installed as [Go modules](https://quasilyte.dev/blog/post/ruleguard-modules/)
+* Integrated into [golangci-lint](https://github.com/golangci/golangci-lint)
 
 It can also be easily embedded into other static analyzers. [go-critic](https://github.com/go-critic/go-critic) can be used as an example.
 
 ## Quick start
 
-To install `ruleguard` binary under your `$(go env GOPATH)/bin`:
+It's advised that you get a binary from the latest release. But if you want to install ruleguard from source, it's as simple as:
 
 ```bash
-$ go get -v -u github.com/quasilyte/go-ruleguard/...
+# Installs a `ruleguard` binary under your `$(go env GOPATH)/bin`;
+# if `$GOPATH/bin` is under your system `$PATH`,
+# `ruleguard` command should be available after that.
+$ GO111MODULE=on go get -v -u github.com/quasilyte/go-ruleguard/...
 ```
-
-If `$GOPATH/bin` is under your system `$PATH`, `ruleguard` command should be available after that.<br>
 
 ```bash
 $ ruleguard -help
@@ -42,7 +45,7 @@ Usage: ruleguard [-flag] [package]
 
 Flags:
   -rules string
-    	path to a rules.go file
+    	comma-separated list of ruleguard file paths
   -e string
     	execute a single rule from a given string
   -fix
@@ -53,18 +56,18 @@ Flags:
     	emit JSON output
 ```
 
-Create a test `example.rules.go` file:
+Create a test `rules.go` file:
 
 ```go
-// +build ignore
-
 package gorules
 
 import "github.com/quasilyte/go-ruleguard/dsl"
 
 func dupSubExpr(m dsl.Matcher) {
 	m.Match(`$x || $x`,
-		`$x && $x`).
+		`$x && $x`,
+		`$x | $x`,
+		`$x & $x`).
 		Where(m["x"].Pure).
 		Report(`suspicious identical LHS and RHS`)
 }
@@ -101,7 +104,7 @@ example.go:7:5: error: suspicious identical LHS and RHS
 
 Since we ran `ruleguard` with `-fix` argument, both **suggested** changes are applied to `example.go`.
 
-There is also a `-e` mode that is useful during pattern debugging:
+There is also a `-e` mode that is useful during the pattern debugging:
 
 ```bash
 $ ruleguard -e 'm.Match(`!($x != $y)`)' example.go
@@ -117,27 +120,26 @@ The `-e` generated rule will have `e` name, so it can be debugged as well.
 
 ## How does it work?
 
-`ruleguard` parses [gorules](_docs/gorules.md) (e.g. `rules.go`) during the start to load the rule set.  
-Loaded rules are then used to check the specified targets (Go files, packages).  
-The `rules.go` file itself is never compiled, nor executed.
+First, it parses [ruleguard](_docs/dsl.md) files (e.g. `rules.go`) during the start to load the rule set.  
 
-A `rules.go` file, as interpreted by a [`dsl`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl) API, is a set of functions that serve as a rule groups. Every function accepts a single [`dsl.Matcher`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher) argument that is then used to define and configure rules inside the group.
+Loaded rules are then used to check the specified targets (Go files, packages).
 
-A rule definition always starts from a [`Match(patterns...)`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Match) method call and ends with a [`Report(message)`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Report) method call.
+The `rules.go` file is written in terms of [`dsl`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl) API. Ruleguard files contain a set of functions that serve as a rule groups. Every such function accepts a single [`dsl.Matcher`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher) argument that is then used to define and configure rules inside the group.
+
+A rule definition always starts with [`Match(patterns...)`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Match) method call and ends with [`Report(message)`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Report) method call.
 
 There can be additional calls in between these two. For example, a [`Where(cond)`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Where) call applies constraints to a match to decide whether its accepted or rejected. So even if there is a match for a pattern, it won't produce a report message unless it satisfies a `Where()` condition.
-
-To learn more, check out the documentation and/or the source code.
 
 ## Documentation
 
 * [Ruleguard by example](https://go-ruleguard.github.io/by-example/) tour
-* Example rule files: [rules.go](_docs/rules.go)
+* Example rule files: [rules.go](_docs/dsl.go)
 * Another great example: [github.com/dgryski/semgrep-go/ruleguard.rules.go](https://github.com/dgryski/semgrep-go/blob/master/ruleguard.rules.go)
 * [gorules](_docs/gorules.md) format documentation
 * [dsl package](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl) reference
 * [ruleguard package](https://godoc.org/github.com/quasilyte/go-ruleguard/ruleguard) reference
 * Introduction article: [EN](https://quasilyte.dev/blog/post/ruleguard/), [RU](https://habr.com/ru/post/481696/)
+* [Using ruleguard from the golangci-lint](https://quasilyte.dev/blog/post/ruleguard/#using-from-the-golangci-lint)
 
 ## Extra references
 

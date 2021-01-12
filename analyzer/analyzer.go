@@ -58,7 +58,7 @@ var (
 )
 
 func init() {
-	Analyzer.Flags.StringVar(&flagRules, "rules", "", "comma-separated list of gorule file paths")
+	Analyzer.Flags.StringVar(&flagRules, "rules", "", "comma-separated list of ruleguard file paths")
 	Analyzer.Flags.StringVar(&flagE, "e", "", "execute a single rule from a given string")
 	Analyzer.Flags.StringVar(&flagDebug, "debug-group", "", "enable debug for the specified matcher function")
 	Analyzer.Flags.StringVar(&flagDebugFilter, "debug-filter", "", "enable debug for the specified filter function")
