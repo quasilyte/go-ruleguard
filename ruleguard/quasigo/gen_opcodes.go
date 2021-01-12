@@ -39,7 +39,7 @@ var opcodePrototypes = []opcodeProto{
 	{"JumpFalse", "op offset:i16", "(cond:bool) -> ()"},
 	{"JumpTrue", "op offset:i16", "(cond:bool) -> ()"},
 
-	{"CallBuiltin", "op funcid:u16", "(args...) -> (results...)"},
+	{"CallNative", "op funcid:u16", "(args...) -> (results...)"},
 
 	{"IsNil", "op", "(value) -> (result:bool)"},
 	{"IsNotNil", "op", "(value) -> (result:bool)"},

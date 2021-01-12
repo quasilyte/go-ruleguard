@@ -337,10 +337,9 @@ func (cl *compiler) compileSelectorExpr(e *ast.SelectorExpr) {
 		qualifier: typ.String(),
 	}
 
-	builtinID, ok := cl.ctx.Env.nameToBuiltinFuncID[key]
-	if ok {
+	if funcID, ok := cl.ctx.Env.nameToNativeFuncID[key]; ok {
 		cl.compileExpr(e.X)
-		cl.emit16(opCallBuiltin, int(builtinID))
+		cl.emit16(opCallNative, int(funcID))
 		return
 	}
 
@@ -496,15 +495,14 @@ func (cl *compiler) compileCallExpr(call *ast.CallExpr) {
 		key.qualifier = fn.Pkg().Path()
 	}
 
-	builtinID, ok := cl.ctx.Env.nameToBuiltinFuncID[key]
-	if ok {
+	if funcID, ok := cl.ctx.Env.nameToNativeFuncID[key]; ok {
 		if expr != nil {
 			cl.compileExpr(expr)
 		}
 		for _, arg := range call.Args {
 			cl.compileExpr(arg)
 		}
-		cl.emit16(opCallBuiltin, int(builtinID))
+		cl.emit16(opCallNative, int(funcID))
 		return
 	}
 

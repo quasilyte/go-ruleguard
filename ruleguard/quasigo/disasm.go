@@ -35,7 +35,7 @@ func disasm(env *Env, fn *Func) string {
 		var arg interface{}
 		var comment string
 		switch op {
-		case opCallBuiltin:
+		case opCallNative:
 			id := decode16(code, pc+1)
 			arg = id
 			comment = env.nativeFuncs[id].name

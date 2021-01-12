@@ -94,7 +94,7 @@ const (
 
 	// Encoding: 0x16 funcid:u16 (width=3)
 	// Stack effect: (args...) -> (results...)
-	opCallBuiltin opcode = 22
+	opCallNative opcode = 22
 
 	// Encoding: 0x17 (width=1)
 	// Stack effect: (value) -> (result:bool)
@@ -197,7 +197,7 @@ var opcodeInfoTable = [256]opcodeInfo{
 	opJump:            {width: 3},
 	opJumpFalse:       {width: 3},
 	opJumpTrue:        {width: 3},
-	opCallBuiltin:     {width: 3},
+	opCallNative:      {width: 3},
 	opIsNil:           {width: 1},
 	opIsNotNil:        {width: 1},
 	opNot:             {width: 1},

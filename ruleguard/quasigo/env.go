@@ -19,8 +19,8 @@ type nativeFunc struct {
 
 func newEnv() *Env {
 	return &Env{
-		nameToBuiltinFuncID: make(map[funcKey]uint16),
-		nameToFuncID:        make(map[funcKey]uint16),
+		nameToNativeFuncID: make(map[funcKey]uint16),
+		nameToFuncID:       make(map[funcKey]uint16),
 
 		debug: newDebugInfo(),
 	}
@@ -32,7 +32,7 @@ func (env *Env) addNativeFunc(key funcKey, f func(*ValueStack)) {
 		mappedFunc: f,
 		name:       key.String(),
 	})
-	env.nameToBuiltinFuncID[key] = uint16(id)
+	env.nameToNativeFuncID[key] = uint16(id)
 }
 
 func (env *Env) addFunc(key funcKey, f *Func) {
