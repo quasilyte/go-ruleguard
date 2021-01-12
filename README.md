@@ -133,7 +133,6 @@ There can be additional calls in between these two. For example, a [`Where(cond)
 ## Documentation
 
 * [Ruleguard by example](https://go-ruleguard.github.io/by-example/) tour
-semgrep-go/blob/master/ruleguard.rules.go)
 * [Ruleguard files](_docs/dsl.md) format documentation
 * [dsl package](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl) reference
 * [ruleguard package](https://godoc.org/github.com/quasilyte/go-ruleguard/ruleguard) reference
