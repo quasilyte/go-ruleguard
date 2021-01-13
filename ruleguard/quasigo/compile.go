@@ -28,24 +28,20 @@ func compile(ctx *CompileContext, fn *ast.FuncDecl) (compiled *Func, err error) 
 }
 
 func compileFunc(ctx *CompileContext, fn *ast.FuncDecl) *Func {
-	fnType := ctx.Types.ObjectOf(fn.Name).Type().(*types.Signature)
-	if fnType.Results().Len() != 1 {
-		panic(compileError("only functions with a single non-void results are supported"))
-	}
-
 	cl := compiler{
 		ctx:              ctx,
-		retType:          fnType.Results().At(0).Type(),
+		fnType:           ctx.Types.ObjectOf(fn.Name).Type().(*types.Signature),
 		constantsPool:    make(map[interface{}]int),
 		intConstantsPool: make(map[int]int),
 		locals:           make(map[string]int),
 	}
-	return cl.compileFunc(fnType, fn)
+	return cl.compileFunc(fn)
 }
 
 type compiler struct {
 	ctx *CompileContext
 
+	fnType  *types.Signature
 	retType types.Type
 
 	lastOp opcode
@@ -74,18 +70,23 @@ type compileError string
 
 func (e compileError) Error() string { return string(e) }
 
-func (cl *compiler) compileFunc(fnType *types.Signature, fn *ast.FuncDecl) *Func {
+func (cl *compiler) compileFunc(fn *ast.FuncDecl) *Func {
+	if cl.fnType.Results().Len() != 1 {
+		panic(cl.errorf(fn.Name, "only functions with a single non-void results are supported"))
+	}
+	cl.retType = cl.fnType.Results().At(0).Type()
+
 	if !cl.isSupportedType(cl.retType) {
 		panic(cl.errorUnsupportedType(fn.Name, cl.retType, "function result"))
 	}
 
 	dbg := funcDebugInfo{
-		paramNames: make([]string, fnType.Params().Len()),
+		paramNames: make([]string, cl.fnType.Params().Len()),
 	}
 
-	cl.params = make(map[string]int, fnType.Params().Len())
-	for i := 0; i < fnType.Params().Len(); i++ {
-		p := fnType.Params().At(i)
+	cl.params = make(map[string]int, cl.fnType.Params().Len())
+	for i := 0; i < cl.fnType.Params().Len(); i++ {
+		p := cl.fnType.Params().At(i)
 		paramName := p.Name()
 		paramType := p.Type()
 		cl.params[paramName] = i
