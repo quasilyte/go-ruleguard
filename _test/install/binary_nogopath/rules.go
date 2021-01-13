@@ -6,10 +6,12 @@ import (
 	"github.com/quasilyte/go-ruleguard/dsl"
 	"github.com/quasilyte/go-ruleguard/dsl/types"
 	testrules "github.com/quasilyte/ruleguard-rules-test"
+	subtestrules "github.com/quasilyte/ruleguard-rules-test/sub2"
 )
 
 func init() {
 	dsl.ImportRules("", testrules.Bundle)
+	dsl.ImportRules("", subtestrules.Bundle)
 }
 
 func isInterface(ctx *dsl.VarFilterContext) bool {
