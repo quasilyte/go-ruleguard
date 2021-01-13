@@ -603,6 +603,7 @@ func (p *rulesParser) parseFilterExpr(e ast.Expr) matchFilter {
 		result.fn = makeCustomVarFilter(result.src, operand.varName, userFn)
 
 	case "Type.Is", "Type.Underlying.Is":
+		// TODO(quasilyte): add FQN support?
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
 			panic(p.errorf(args[0], "expected a string literal argument"))
@@ -624,45 +625,7 @@ func (p *rulesParser) parseFilterExpr(e ast.Expr) matchFilter {
 		result.fn = makeTypeAssignableToFilter(result.src, operand.varName, dstType)
 
 	case "Type.Implements":
-		typeString, ok := p.toStringValue(args[0])
-		if !ok {
-			panic(p.errorf(args[0], "expected a string literal argument"))
-		}
-		n, err := parser.ParseExpr(typeString)
-		if err != nil {
-			panic(p.errorf(args[0], "parse type expr: %v", err))
-		}
-		var iface *types.Interface
-		switch n := n.(type) {
-		case *ast.Ident:
-			if n.Name != `error` {
-				panic(p.errorf(n, "only `error` unqualified type is recognized"))
-			}
-			iface = types.Universe.Lookup("error").Type().Underlying().(*types.Interface)
-		case *ast.SelectorExpr:
-			pkgName, ok := n.X.(*ast.Ident)
-			if !ok {
-				panic(p.errorf(n.X, "invalid package name"))
-			}
-			pkgPath, ok := p.itab.Lookup(pkgName.Name)
-			if !ok {
-				panic(p.errorf(n.X, "package %s is not imported", pkgName.Name))
-			}
-			pkg, err := p.importer.Import(pkgPath)
-			if err != nil {
-				panic(p.errorf(n, "can't load %s: %v", pkgPath, err))
-			}
-			obj := pkg.Scope().Lookup(n.Sel.Name)
-			if obj == nil {
-				panic(p.errorf(n, "%s is not found in %s", n.Sel.Name, pkgPath))
-			}
-			iface, ok = obj.Type().Underlying().(*types.Interface)
-			if !ok {
-				panic(p.errorf(n, "%s is not an interface type", n.Sel.Name))
-			}
-		default:
-			panic(p.errorf(args[0], "only qualified names (and `error`) are supported"))
-		}
+		iface := p.toInterfaceValue(args[0])
 		result.fn = makeTypeImplementsFilter(result.src, operand.varName, iface)
 
 	case "Text.Matches":
@@ -685,6 +648,52 @@ func (p *rulesParser) parseFilterExpr(e ast.Expr) matchFilter {
 		panic("bug: nil func for the filter") // Should never happen
 	}
 	return result
+}
+
+func (p *rulesParser) toInterfaceValue(x ast.Node) *types.Interface {
+	typeString, ok := p.toStringValue(x)
+	if !ok {
+		panic(p.errorf(x, "expected a string literal argument"))
+	}
+
+	typ, err := p.state.FindType(p.importer, p.pkg, typeString)
+	if err == nil {
+		iface, ok := typ.Underlying().(*types.Interface)
+		if !ok {
+			panic(p.errorf(x, "%s is not an interface type", typeString))
+		}
+		return iface
+	}
+
+	n, err := parser.ParseExpr(typeString)
+	if err != nil {
+		panic(p.errorf(x, "parse type expr: %v", err))
+	}
+	qn, ok := n.(*ast.SelectorExpr)
+	if !ok {
+		panic(p.errorf(x, "can't resolve %s type; try a fully-qualified name", typeString))
+	}
+	pkgName, ok := qn.X.(*ast.Ident)
+	if !ok {
+		panic(p.errorf(qn.X, "invalid package name"))
+	}
+	pkgPath, ok := p.itab.Lookup(pkgName.Name)
+	if !ok {
+		panic(p.errorf(qn.X, "package %s is not imported", pkgName.Name))
+	}
+	pkg, err := p.importer.Import(pkgPath)
+	if err != nil {
+		panic(p.errorf(n, "can't load %s: %v", pkgPath, err))
+	}
+	obj := pkg.Scope().Lookup(qn.Sel.Name)
+	if obj == nil {
+		panic(p.errorf(n, "%s is not found in %s", qn.Sel.Name, pkgPath))
+	}
+	iface, ok := obj.Type().Underlying().(*types.Interface)
+	if !ok {
+		panic(p.errorf(n, "%s is not an interface type", qn.Sel.Name))
+	}
+	return iface
 }
 
 func (p *rulesParser) toStringValue(x ast.Node) (string, bool) {
