@@ -1,5 +1,7 @@
 package target
 
+import "fmt"
+
 func add(x, y int) int {
 	return x + y
 }
@@ -13,4 +15,15 @@ func test(b bool) {
 
 	var eface interface{}
 	println(&eface)
+
+	fooPtr := &Foo{}
+	foo := Foo{}
+	println(fmt.Sprint(foo))
+	println(fmt.Sprint(fooPtr))
+	println(fmt.Sprint(0))    // Not fmt.Stringer
+	println(fmt.Sprint(&foo)) // Not addressable
 }
+
+type Foo struct{}
+
+func (*Foo) String() string { return "Foo" }

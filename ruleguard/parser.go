@@ -247,6 +247,7 @@ func (p *rulesParser) importRules(prefix, pkgPath, filename string) (*goRuleSet,
 		return nil, err
 	}
 	config := rulesParserConfig{
+		state:       p.state,
 		ctx:         p.ctx,
 		importer:    p.importer,
 		prefix:      prefix,
