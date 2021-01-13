@@ -131,7 +131,7 @@ func (ExprType) ConvertibleTo(typ string) bool { return boolResult }
 
 // Implements reports whether a type implements a given interface.
 // See https://golang.org/pkg/go/types/#Implements.
-func (ExprType) Implements(typ string) bool { return boolResult }
+func (ExprType) Implements(typ typeName) bool { return boolResult }
 
 // Is reports whether a type is identical to a given type.
 func (ExprType) Is(typ string) bool { return boolResult }
@@ -160,3 +160,15 @@ type File struct {
 
 // Imports reports whether the current file imports the given path.
 func (File) Imports(path string) bool { return boolResult }
+
+// typeName is a helper type used to document function params better.
+//
+// A type name can be:
+//	- builtin type name: `error`, `string`, etc.
+//  - qualified name from a standard library: `io.Reader`, etc.
+//	- fully-qualified type name, like `github.com/username/pkgname.TypeName`
+//
+// typeName is also affected by a local import table, which can override
+// how qualified names are interpreted.
+// See `Matcher.Import` for more info.
+type typeName = string

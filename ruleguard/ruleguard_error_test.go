@@ -257,12 +257,15 @@ func TestParseFilterError(t *testing.T) {
 
 		{
 			`m["x"].Type.Implements("foo")`,
-			"only `error` unqualified type is recognized",
+			`can't resolve foo type; try a fully-qualified name`,
 		},
-
 		{
 			`m["x"].Type.Implements("func()")`,
-			"only qualified names (and `error`) are supported",
+			`can't resolve func() type; try a fully-qualified name`,
+		},
+		{
+			`m["x"].Type.Implements("bytes.Buffer")`,
+			`bytes.Buffer is not an interface type`,
 		},
 
 		{

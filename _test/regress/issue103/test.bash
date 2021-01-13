@@ -15,4 +15,7 @@ go get -v -u github.com/sirupsen/logrus
 ./ruleguard -c 0 -rules /root/rules.go /root/target.go &> actual.txt || true
 diff -u actual.txt /root/expected.txt
 
+./ruleguard -c 0 -rules /root/rules2.go /root/target.go &> actual.txt || true
+diff -u actual.txt /root/expected2.txt
+
 echo SUCCESS
