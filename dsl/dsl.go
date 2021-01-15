@@ -165,7 +165,7 @@ func (File) Imports(path string) bool { return boolResult }
 //
 // A type name can be:
 //	- builtin type name: `error`, `string`, etc.
-//  - qualified name from a standard library: `io.Reader`, etc.
+//	- qualified name from a standard library: `io.Reader`, etc.
 //	- fully-qualified type name, like `github.com/username/pkgname.TypeName`
 //
 // typeName is also affected by a local import table, which can override
