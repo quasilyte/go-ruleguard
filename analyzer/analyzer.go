@@ -96,9 +96,10 @@ func runAnalyzer(pass *analysis.Pass) (interface{}, error) {
 		Sizes:        pass.TypesSizes,
 		Fset:         pass.Fset,
 		Report: func(info ruleguard.GoRuleInfo, n ast.Node, msg string, s *ruleguard.Suggestion) {
-			fullMessage := info.Group + ": " + msg
+			fullMessage := msg
 			if printRuleLocation {
-				fullMessage += fmt.Sprintf(" (%s:%d)", filepath.Base(info.Filename), info.Line)
+				fullMessage = fmt.Sprintf("%s: %s (%s:%d)",
+					info.Group, msg, filepath.Base(info.Filename), info.Line)
 			}
 			diag := analysis.Diagnostic{
 				Pos:     n.Pos(),
