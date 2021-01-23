@@ -1,2 +1,2 @@
-/root/target.go:10:10: e: add((1), 2)
-/root/target.go:11:10: e: add(1, (2))
+/root/target.go:10:10: add((1), 2)
+/root/target.go:11:10: add(1, (2))
