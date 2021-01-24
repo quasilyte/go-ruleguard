@@ -28,8 +28,6 @@ It can also be easily embedded into other static analyzers. [go-critic](https://
 
 ## Quick start
 
-### Step 1/3: Getting the ruleguard binary
-
 It's advised that you get a binary from the [latest release](https://github.com/quasilyte/go-ruleguard/releases/tag/v0.3.0) {[linux/amd64](https://github.com/quasilyte/go-ruleguard/releases/download/v0.3.0/ruleguard-linux-amd64.zip), [linux/arm64](https://github.com/quasilyte/go-ruleguard/releases/download/v0.3.0/ruleguard-linux-arm64.zip), [darwin/amd64](https://github.com/quasilyte/go-ruleguard/releases/download/v0.3.0/ruleguard-darwin-amd64.zip), [windows/amd64](https://github.com/quasilyte/go-ruleguard/releases/download/v0.3.0/ruleguard-windows-amd64.zip)}.
 
 If you want to install the ruleguard from source, it's as simple as:
