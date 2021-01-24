@@ -28,14 +28,22 @@ It can also be easily embedded into other static analyzers. [go-critic](https://
 
 ## Quick start
 
+### Step 1/3: Getting the ruleguard binary
+
 It's advised that you get a binary from the [latest release](https://github.com/quasilyte/go-ruleguard/releases/tag/v0.3.0) {[linux/amd64](https://github.com/quasilyte/go-ruleguard/releases/download/v0.3.0/ruleguard-linux-amd64.zip), [linux/arm64](https://github.com/quasilyte/go-ruleguard/releases/download/v0.3.0/ruleguard-linux-arm64.zip), [darwin/amd64](https://github.com/quasilyte/go-ruleguard/releases/download/v0.3.0/ruleguard-darwin-amd64.zip), [windows/amd64](https://github.com/quasilyte/go-ruleguard/releases/download/v0.3.0/ruleguard-windows-amd64.zip)}.
 
 If you want to install the ruleguard from source, it's as simple as:
 
 ```bash
 # Installs a `ruleguard` binary under your `$(go env GOPATH)/bin`
-$ GO111MODULE=on go get -v -u github.com/quasilyte/go-ruleguard/...
+$ GO111MODULE=on go get -v -u github.com/quasilyte/go-ruleguard/cmd/ruleguard
+
+# Get the DSL package (needed to execute the ruleguard files)
+$ go get -v -u github.com/quasilyte/go-ruleguard/cmd/ruleguard/dsl
 ```
+
+> If inside a Go module, the `dsl` package will be installed for the current module,
+> otherwise it installs the package into the $GOPATH and it will be globally available.
 
 If `$GOPATH/bin` is under your system `$PATH`, `ruleguard` command should be available after that:
 
