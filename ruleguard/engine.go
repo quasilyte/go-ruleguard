@@ -118,8 +118,25 @@ func (state *engineState) GetCachedPackage(pkgPath string) *types.Package {
 
 func (state *engineState) AddCachedPackage(pkgPath string, pkg *types.Package) {
 	state.pkgCacheMu.Lock()
-	state.pkgCache[pkgPath] = pkg
+	state.addCachedPackage(pkgPath, pkg)
 	state.pkgCacheMu.Unlock()
+}
+
+func (state *engineState) addCachedPackage(pkgPath string, pkg *types.Package) {
+	state.pkgCache[pkgPath] = pkg
+
+	// Also add all complete packages that are dependencies of the pkg.
+	// This way we cache more and avoid duplicated package loading
+	// which can lead to typechecking issues.
+	//
+	// Note that it does not increase our memory consumption
+	// as these packages are reachable via pkg, so they'll
+	// not be freed by GC anyway.
+	for _, imported := range pkg.Imports() {
+		if imported.Complete() {
+			state.addCachedPackage(imported.Path(), imported)
+		}
+	}
 }
 
 func (state *engineState) FindType(importer *goImporter, currentPkg *types.Package, fqn string) (types.Type, error) {
