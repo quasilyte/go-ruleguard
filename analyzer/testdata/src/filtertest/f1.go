@@ -84,14 +84,14 @@ func detectType() {
 	var ss []string
 	typeTest(s1 + s2) // want `concat`
 	typeTest(i1 + i2) // want `addition`
-	typeTest(s1 > s2) // want `s1 !is\(int\)`
-	typeTest(i1 > i2) // want `i1 !is\(string\) && pure`
+	typeTest(s1 > s2) // want `\Qs1 !is(int)`
+	typeTest(i1 > i2) // want `\Qi1 !is(string) && pure`
 	typeTest(random() > i2)
-	typeTest(ss, ss) // want `ss is\(\[\]string\)`
+	typeTest(ss, ss) // want `\Qss is([]string)`
 	typeTest(ii, ii)
 	typeTest("2 type filters", i1)
 	typeTest("2 type filters", s1)
-	typeTest("2 type filters", ii) // want `ii !is\(string\) && !is\(int\)`
+	typeTest("2 type filters", ii) // want `\Qii !is(string) && !is(int)`
 
 	typeTest(implementsAll{}, "implements io.Reader") // want `YES`
 	typeTest(i1, "implements io.Reader")

@@ -9,7 +9,7 @@ import (
 
 func selfAssign(x int, ys []string) {
 	x = x         // want `suspicious self-assignment in x = x`
-	ys[0] = ys[0] // want `suspicious self-assignment in ys\[0\] = ys\[0\]`
+	ys[0] = ys[0] // want `\Qsuspicious self-assignment in ys[0] = ys[0]`
 }
 
 func valSwap1(x, y int) (int, int) {
@@ -21,19 +21,19 @@ func valSwap1(x, y int) (int, int) {
 
 func valSwap2(xs, ys []int) {
 	if len(xs) != 0 && len(ys) != 0 {
-		temp := ys[0] // want `can use parallel assignment like ys\[0\],xs\[0\]=xs\[0\],ys\[0\]`
+		temp := ys[0] // want `\Qcan use parallel assignment like ys[0],xs[0]=xs[0],ys[0]`
 		ys[0] = xs[0]
 		xs[0] = temp
 	}
 }
 
 func dupArgs(xs []int, rw io.ReadWriter) {
-	copy(xs, xs)    // want `suspicious duplicated args in copy\(xs, xs\)`
-	io.Copy(rw, rw) // want `suspicious duplicated args in io\.Copy\(rw, rw\)`
+	copy(xs, xs)    // want `\Qsuspicious duplicated args in copy(xs, xs)`
+	io.Copy(rw, rw) // want `\Qsuspicious duplicated args in io.Copy(rw, rw)`
 }
 
 func appendCombine1(xs []int, x, y int) []int {
-	xs = append(xs, x) // want `xs=append\(xs,x,y\) is faster`
+	xs = append(xs, x) // want `\Qxs=append(xs,x,y) is faster`
 	xs = append(xs, y)
 	return xs
 }
@@ -46,25 +46,25 @@ func appendCombine2(xs []int, aa []int, bb []int) []int {
 }
 
 func badCall(s string, xs []int) {
-	_ = strings.Replace(s, "a", "b", 0) // want `n=0 argument does nothing, maybe n=-1 is indended\?`
+	_ = strings.Replace(s, "a", "b", 0) // want `\Qn=0 argument does nothing, maybe n=-1 is indended?`
 	_ = append(xs)                      // want `append called with 1 argument does nothing`
 }
 
 func stringXbytes(s string, b []byte) {
-	copy(b, []byte(s)) // want `can write copy\(b, s\) without type conversion`
+	copy(b, []byte(s)) // want `\Qcan write copy(b, s) without type conversion`
 }
 
 func assignOp(x, y int) {
-	x = x + 3 // want `can simplify to x\+=3`
-	x = x - 4 // want `can simplify to x\-=4`
-	x = x * 5 // want `can simplify to x\*=5`
-	y = y + 1 // want `can simplify to y\+\+`
+	x = x + 3 // want `\Qcan simplify to x+=3`
+	x = x - 4 // want `\Qcan simplify to x-=4`
+	x = x * 5 // want `\Qcan simplify to x*=5`
+	y = y + 1 // want `\Qcan simplify to y++`
 }
 
 func boolExprSimplify(a, b bool, i1, i2 int) {
 	_ = !!a         // want `can simplify !!a to a`
-	_ = !(i1 != i2) // want `can simplify !\(i1!=i2\) to i1==i2`
-	_ = !(i1 == i2) // want `can simplify !\(i1==i2\) to i1!=i2`
+	_ = !(i1 != i2) // want `\Qcan simplify !(i1!=i2) to i1==i2`
+	_ = !(i1 == i2) // want `\Qcan simplify !(i1==i2) to i1!=i2`
 }
 
 func dupSubExprBad(i1, i2 int) {
@@ -113,7 +113,7 @@ func underef() {
 
 func unslice() {
 	var s string
-	_ = s[:] // want `can simplify s\[:\] to s`
+	_ = s[:] // want `\Qcan simplify s[:] to s`
 	_ = s[1:]
 	_ = s[:1]
 	_ = s
@@ -122,13 +122,13 @@ func unslice() {
 		var xs []byte
 		var ys []byte
 		copy(
-			xs[:], // want `can simplify xs\[:\] to xs`
-			ys[:], // want `can simplify ys\[:\] to ys`
+			xs[:], // want `\Qcan simplify xs[:] to xs`
+			ys[:], // want `\Qcan simplify ys[:] to ys`
 		)
 	}
 	{
 		var xs [][]int
-		_ = xs[0][:] // want `can simplify xs\[0\]\[:\] to xs\[0\]`
+		_ = xs[0][:] // want `\Qcan simplify xs[0][:] to xs[0]`
 	}
 
 	{
@@ -221,25 +221,25 @@ func switchTrue(b bool) {
 func sloppyLen() {
 	a := []int{}
 
-	_ = len(a) >= 0 // want `len\(a\) >= 0 is always true`
-	_ = len(a) < 0  // want `len\(a\) < 0 is always false`
-	_ = len(a) <= 0 // want `len\(a\) <= 0 is never negative, can rewrite as len\(a\)==0`
+	_ = len(a) >= 0 // want `\Qlen(a) >= 0 is always true`
+	_ = len(a) < 0  // want `\Qlen(a) < 0 is always false`
+	_ = len(a) <= 0 // want `\Qlen(a) <= 0 is never negative, can rewrite as len(a)==0`
 }
 
 func newDeref() {
-	_ = *new(bool)   // want `replace \*new\(bool\) with false`
-	_ = *new(string) // want `replace \*new\(string\) with ""`
-	_ = *new(int)    // want `replace \*new\(int\) with 0`
+	_ = *new(bool)   // want `\Qreplace *new(bool) with false`
+	_ = *new(string) // want `\Qreplace *new(string) with ""`
+	_ = *new(int)    // want `\Qreplace *new(int) with 0`
 }
 
 func emptyStringTest(s string) {
 	sptr := &s
 
-	_ = len(s) == 0 // want `replace len\(s\) == 0 with len\(s\) == ""`
-	_ = len(s) != 0 // want `replace len\(s\) != 0 with len\(s\) != ""`
+	_ = len(s) == 0 // want `\Qreplace len(s) == 0 with len(s) == ""`
+	_ = len(s) != 0 // want `\Qreplace len(s) != 0 with len(s) != ""`
 
-	_ = len(*sptr) == 0 // want `replace len\(\*sptr\) == 0 with len\(\*sptr\) == ""`
-	_ = len(*sptr) != 0 // want `replace len\(\*sptr\) != 0 with len\(\*sptr\) != ""`
+	_ = len(*sptr) == 0 // want `\Qreplace len(*sptr) == 0 with len(*sptr) == ""`
+	_ = len(*sptr) != 0 // want `\Qreplace len(*sptr) != 0 with len(*sptr) != ""`
 
 	_ = s == ""
 	_ = s != ""
@@ -253,8 +253,8 @@ func emptyStringTest(s string) {
 }
 
 func offBy1(xs []int, ys []string) {
-	_ = xs[len(xs)] // want `index expr always panics; maybe you wanted xs\[len\(xs\)-1\]\?`
-	_ = ys[len(ys)] // want `index expr always panics; maybe you wanted ys\[len\(ys\)-1\]\?`
+	_ = xs[len(xs)] // want `\Qindex expr always panics; maybe you wanted xs[len(xs)-1]?`
+	_ = ys[len(ys)] // want `\Qindex expr always panics; maybe you wanted ys[len(ys)-1]?`
 
 	_ = xs[len(xs)-1]
 	_ = ys[len(ys)-1]
@@ -277,14 +277,14 @@ func wrapperFunc(s string) {
 }
 
 func flagDeref() {
-	_ = *flag.Bool("b", false, "")  // want `immediate deref in \*flag\.Bool\("b", false, ""\) is most likely an error`
-	_ = *flag.Duration("d", 0, "")  // want `immediate deref in \*flag\.Duration\("d", 0, ""\) is most likely an error`
-	_ = *flag.Float64("f64", 0, "") // want `immediate deref in \*flag\.Float64\("f64", 0, ""\) is most likely an error`
-	_ = *flag.Int("i", 0, "")       // want `immediate deref in \*flag\.Int\("i", 0, ""\) is most likely an error`
-	_ = *flag.Int64("i64", 0, "")   // want `immediate deref in \*flag\.Int64\("i64", 0, ""\) is most likely an error`
-	_ = *flag.String("s", "", "")   // want `immediate deref in \*flag\.String\("s", "", ""\) is most likely an error`
-	_ = *flag.Uint("u", 0, "")      // want `immediate deref in \*flag\.Uint\("u", 0, ""\) is most likely an error`
-	_ = *flag.Uint64("u64", 0, "")  // want `immediate deref in \*flag\.Uint64\("u64", 0, ""\) is most likely an error`
+	_ = *flag.Bool("b", false, "")  // want `\Qimmediate deref in *flag.Bool("b", false, "") is most likely an error`
+	_ = *flag.Duration("d", 0, "")  // want `\Qimmediate deref in *flag.Duration("d", 0, "") is most likely an error`
+	_ = *flag.Float64("f64", 0, "") // want `\Qimmediate deref in *flag.Float64("f64", 0, "") is most likely an error`
+	_ = *flag.Int("i", 0, "")       // want `\Qimmediate deref in *flag.Int("i", 0, "") is most likely an error`
+	_ = *flag.Int64("i64", 0, "")   // want `\Qimmediate deref in *flag.Int64("i64", 0, "") is most likely an error`
+	_ = *flag.String("s", "", "")   // want `\Qimmediate deref in *flag.String("s", "", "") is most likely an error`
+	_ = *flag.Uint("u", 0, "")      // want `\Qimmediate deref in *flag.Uint("u", 0, "") is most likely an error`
+	_ = *flag.Uint64("u64", 0, "")  // want `\Qimmediate deref in *flag.Uint64("u64", 0, "") is most likely an error`
 }
 
 type object struct {
@@ -314,7 +314,7 @@ func suspiciousReturns() {
 	}
 
 	_ = func(pointers [][][]map[string]*int) *int {
-		if pointers[0][1][2]["ptr"] == nil { // want `returned expr is always nil; replace pointers\[0\]\[1\]\[2\]\["ptr"\] with nil`
+		if pointers[0][1][2]["ptr"] == nil { // want `\Qreturned expr is always nil; replace pointers[0][1][2]["ptr"] with nil`
 			return pointers[0][1][2]["ptr"]
 		}
 		if ptr := pointers[0][1][2]["ptr"]; ptr == nil { // want `returned expr is always nil; replace ptr with nil`
@@ -430,14 +430,14 @@ func rangeExprCopy() {
 		var foo struct {
 			arr [768]byte
 		}
-		for _, x := range foo.arr { // want `foo\.arr copy can be avoided with &foo\.arr`
+		for _, x := range foo.arr { // want `\Qfoo.arr copy can be avoided with &foo.arr`
 			_ = x
 		}
 	}
 
 	{
 		xsList := make([][512]byte, 1)
-		for _, x := range xsList[0] { // want `xsList\[0\] copy can be avoided with &xsList\[0\]`
+		for _, x := range xsList[0] { // want `\QxsList[0] copy can be avoided with &xsList[0]`
 			_ = x
 		}
 	}
