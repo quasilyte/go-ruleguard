@@ -10,7 +10,6 @@ import (
 	"go/parser"
 	"go/scanner"
 	"go/token"
-	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
@@ -30,10 +29,6 @@ func (m *matcher) transformSource(expr string) (string, []posOffset, error) {
 			atCol:  lbuf.col,
 			offset: length,
 		})
-	}
-	if len(toks) > 0 && toks[0].tok == tokAggressive {
-		toks = toks[1:]
-		m.aggressive = true
 	}
 	lastLit := false
 	for _, t := range toks {
@@ -233,11 +228,6 @@ func subPosOffsets(err error, offs ...posOffset) error {
 	return list
 }
 
-const (
-	_ token.Token = -iota
-	tokAggressive
-)
-
 type fullToken struct {
 	pos token.Position
 	tok token.Token
@@ -282,9 +272,6 @@ func (m *matcher) tokenize(src []byte) ([]fullToken, error) {
 	for t := next(); t.tok != token.EOF; t = next() {
 		switch t.lit {
 		case "$": // continues below
-		case "~":
-			toks = append(toks, fullToken{t.pos, tokAggressive, ""})
-			continue
 		case "switch", "select", "case":
 			if t.lit == "case" {
 				caseStat = caseNone
@@ -332,105 +319,6 @@ func (m *matcher) wildcard(pos token.Position, next func() fullToken) (fullToken
 	info.name = t.lit
 	m.vars = append(m.vars, info)
 	return wt, nil
-}
-
-type typeCheck struct {
-	op   string // "type", "asgn", "conv"
-	expr ast.Expr
-}
-
-type attribute interface{}
-
-type typProperty string
-
-type typUnderlying string
-
-func (m *matcher) parseAttrs(src string) (attribute, error) {
-	toks, err := m.tokenize([]byte(src))
-	if err != nil {
-		return nil, err
-	}
-	i := -1
-	var t fullToken
-	next := func() fullToken {
-		if i++; i < len(toks) {
-			return toks[i]
-		}
-		return fullToken{tok: token.EOF, pos: t.pos}
-	}
-	t = next()
-	op := t.lit
-	switch op { // the ones that don't take args
-	case "comp", "addr":
-		if t = next(); t.tok != token.SEMICOLON {
-			return nil, fmt.Errorf("%v: wanted EOF, got %v", t.pos, t.tok)
-		}
-		return typProperty(op), nil
-	}
-	opPos := t.pos
-	if t = next(); t.tok != token.LPAREN {
-		return nil, fmt.Errorf("%v: wanted (", t.pos)
-	}
-	var attr attribute
-	switch op {
-	case "rx":
-		t = next()
-		rxStr, err := strconv.Unquote(t.lit)
-		if err != nil {
-			return nil, fmt.Errorf("%v: %v", t.pos, err)
-		}
-		if !strings.HasPrefix(rxStr, "^") {
-			rxStr = "^" + rxStr
-		}
-		if !strings.HasSuffix(rxStr, "$") {
-			rxStr = rxStr + "$"
-		}
-		rx, err := regexp.Compile(rxStr)
-		if err != nil {
-			return nil, fmt.Errorf("%v: %v", t.pos, err)
-		}
-		attr = rx
-	case "type", "asgn", "conv":
-		t = next()
-		start := t.pos.Offset
-		for open := 1; open > 0; t = next() {
-			switch t.tok {
-			case token.LPAREN:
-				open++
-			case token.RPAREN:
-				open--
-			case token.EOF:
-				return nil, fmt.Errorf("%v: expected ) to close (", t.pos)
-			}
-		}
-		end := t.pos.Offset - 1
-		typeStr := strings.TrimSpace(string(src[start:end]))
-		fset := token.NewFileSet()
-		typeExpr, _, err := parseType(fset, typeStr)
-		if err != nil {
-			return nil, err
-		}
-		attr = typeCheck{op, typeExpr}
-		i -= 2 // since we went past RPAREN above
-	case "is":
-		switch t = next(); t.lit {
-		case "basic", "array", "slice", "struct", "interface",
-			"pointer", "func", "map", "chan":
-		default:
-			return nil, fmt.Errorf("%v: unknown type: %q", t.pos,
-				t.lit)
-		}
-		attr = typUnderlying(t.lit)
-	default:
-		return nil, fmt.Errorf("%v: unknown op %q", opPos, op)
-	}
-	if t = next(); t.tok != token.RPAREN {
-		return nil, fmt.Errorf("%v: wanted ), got %v", t.pos, t.tok)
-	}
-	if t = next(); t.tok != token.SEMICOLON {
-		return nil, fmt.Errorf("%v: wanted EOF, got %v", t.pos, t.tok)
-	}
-	return attr, nil
 }
 
 // using a prefix is good enough for now

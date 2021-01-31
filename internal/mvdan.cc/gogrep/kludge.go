@@ -56,8 +56,7 @@ func (p *Pattern) MatchNode(n ast.Node, cb func(MatchData)) {
 
 // Match calls cb for any pattern match found in n.
 func (p *Pattern) Match(n ast.Node, cb func(MatchData)) {
-	cmd := exprCmd{name: "x", value: p.Expr}
-	matches := p.m.cmdRange(cmd, []submatch{{
+	matches := p.m.cmdRange(p.Expr, []submatch{{
 		values: map[string]ast.Node{},
 		node:   n,
 	}})
