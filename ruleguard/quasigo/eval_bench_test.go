@@ -52,12 +52,21 @@ func TestNoAllocs(t *testing.T) {
 		env, compiled := compileBenchFunc(t, test.src)
 		evalEnv := env.GetEvalEnv()
 
-		var before, after runtime.MemStats
-		runtime.ReadMemStats(&before)
-		Call(evalEnv, compiled)
-		runtime.ReadMemStats(&after)
-
-		if allocated := after.Alloc - before.Alloc; allocated != 0 {
+		const numTests = 5
+		failures := 0
+		allocated := uint64(0)
+		for i := 0; i < numTests; i++ {
+			var before, after runtime.MemStats
+			runtime.GC()
+			runtime.ReadMemStats(&before)
+			Call(evalEnv, compiled)
+			runtime.ReadMemStats(&after)
+			allocated = after.Alloc - before.Alloc
+			if allocated != 0 {
+				failures++
+			}
+		}
+		if failures == numTests {
 			t.Errorf("%s does allocate (%d bytes)", test.name, allocated)
 		}
 	}
