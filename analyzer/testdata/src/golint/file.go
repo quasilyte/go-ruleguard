@@ -8,7 +8,7 @@ import (
 
 func f(x int) error {
 	if x > 10 {
-		return errors.New(fmt.Sprintf("something %d", x)) // want `should replace error\.New\(fmt\.Sprintf\(\.\.\.\)\) with fmt\.Errorf\(\.\.\.\)`
+		return errors.New(fmt.Sprintf("something %d", x)) // want `\Qshould replace error.New(fmt.Sprintf(...)) with fmt.Errorf(...)`
 	}
 	if x > 5 {
 		return errors.New(g("blah")) // ok
@@ -22,7 +22,7 @@ func f(x int) error {
 func TestF(t *testing.T) error {
 	x := 1
 	if x > 10 {
-		t.Error(fmt.Sprintf("something %d", x)) // want `should replace t\.Error\(fmt\.Sprintf\(\.\.\.\)\) with t\.Errorf\(\.\.\.\)`
+		t.Error(fmt.Sprintf("something %d", x)) // want `\Qshould replace t.Error(fmt.Sprintf(...)) with t.Errorf(...)`
 	}
 	if x > 5 {
 		t.Error(g("blah")) // ok
