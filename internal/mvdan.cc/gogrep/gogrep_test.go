@@ -2,9 +2,132 @@ package gogrep
 
 import (
 	"fmt"
+	"go/ast"
+	"go/printer"
 	"go/token"
+	"io"
+	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
+
+func printNode(w io.Writer, fset *token.FileSet, node ast.Node) {
+	switch x := node.(type) {
+	case exprList:
+		if len(x) == 0 {
+			return
+		}
+		printNode(w, fset, x[0])
+		for _, n := range x[1:] {
+			fmt.Fprintf(w, ", ")
+			printNode(w, fset, n)
+		}
+	case stmtList:
+		if len(x) == 0 {
+			return
+		}
+		printNode(w, fset, x[0])
+		for _, n := range x[1:] {
+			fmt.Fprintf(w, "; ")
+			printNode(w, fset, n)
+		}
+	default:
+		err := printer.Fprint(w, fset, node)
+		if err != nil && strings.Contains(err.Error(), "go/printer: unsupported node type") {
+			// Should never happen, but make it obvious when it does.
+			panic(fmt.Errorf("cannot print node %T: %v", node, err))
+		}
+	}
+}
+
+func TestCapture(t *testing.T) {
+	type vars = map[string]string
+
+	tests := []struct {
+		pat     string
+		input   string
+		capture map[string]string
+	}{
+		{
+			`$x + $y`,
+			`1 + 2`,
+			vars{"x": "1", "y": "2"},
+		},
+
+		{
+			`f($*args)`,
+			`f(1, 2, 3)`,
+			vars{"args": "1, 2, 3"},
+		},
+
+		{
+			`f($x, $*tail)`,
+			`f(1)`,
+			vars{"tail": "", "x": "1"},
+		},
+		{
+			`f($x, $*tail)`,
+			`f(1, 2)`,
+			vars{"tail": "2", "x": "1"},
+		},
+		{
+			`f($x, $*tail)`,
+			`f(1, 2, 3)`,
+			vars{"tail": "2, 3", "x": "1"},
+		},
+
+		{
+			`f($*butlast, $x)`,
+			`f(1)`,
+			vars{"butlast": "", "x": "1"},
+		},
+		// TODO: #192
+		// {
+		// 	`f($*butlast, $x)`,
+		// 	`f(1, 2, 3)`,
+		// 	vars{"butlast": "1, 2", "x": "3"},
+		// },
+		// {
+		// 	`f($first, $*butlast, $x)`,
+		// 	`f(1, 2, 3)`,
+		// 	vars{"first": "1", "butlast": "2", "x": "2"},
+		// },
+	}
+
+	emptyFset := token.NewFileSet()
+	sprintNode := func(n ast.Node) string {
+		var buf strings.Builder
+		printNode(&buf, emptyFset, n)
+		return buf.String()
+	}
+
+	for i := range tests {
+		test := tests[i]
+		t.Run(fmt.Sprintf("test%d", i), func(t *testing.T) {
+			fset := token.NewFileSet()
+			pat, err := Parse(fset, test.pat)
+			if err != nil {
+				t.Errorf("parse `%s`: %v", test.pat, err)
+				return
+			}
+			target, _, err := parseDetectingNode(fset, test.input)
+			if err != nil {
+				t.Errorf("parse target `%s`: %v", test.input, err)
+				return
+			}
+			capture := vars{}
+			pat.MatchNode(target, func(m MatchData) {
+				for k, n := range m.Values {
+					capture[k] = sprintNode(n)
+				}
+			})
+			if diff := cmp.Diff(capture, test.capture); diff != "" {
+				t.Errorf("test `%s`:\ntarget: `%s`(+want -have)\n%s", test.pat, test.input, diff)
+			}
+		})
+	}
+}
 
 func TestMatch(t *testing.T) {
 	tests := []struct {
@@ -369,7 +492,7 @@ func TestMatch(t *testing.T) {
 
 	for i := range tests {
 		test := tests[i]
-		t.Run(fmt.Sprintf("match%d", i), func(t *testing.T) {
+		t.Run(fmt.Sprintf("test%d", i), func(t *testing.T) {
 			fset := token.NewFileSet()
 			pat, err := Parse(fset, test.pat)
 			if err != nil {
