@@ -78,6 +78,44 @@ func TestCapture(t *testing.T) {
 		},
 
 		{
+			`f($left, $*mid, $right)`,
+			`f(1, 2)`,
+			vars{"left": "1", "mid": "", "right": "2"},
+		},
+		// TODO: #192
+		// {
+		// 	`f($left, $*mid, $right)`,
+		// 	`f(1, 2, 3)`,
+		// 	vars{"left": "1", "mid": "2", "right": "3"},
+		// },
+		// {
+		// 	`f($left, $*mid, $right)`,
+		// 	`f(1, 2, 3, 4)`,
+		// 	vars{"left": "1", "mid": "2, 3", "right": "4"},
+		// },
+
+		{
+			`f($*butlast, "last")`,
+			`f("last")`,
+			vars{"butlast": ""},
+		},
+		{
+			`f($*butlast, "last")`,
+			`f(1, "last")`,
+			vars{"butlast": "1"},
+		},
+		{
+			`f($*butlast, "last")`,
+			`f(1, 2, "last")`,
+			vars{"butlast": "1, 2"},
+		},
+		{
+			`f($*v, "x", "y")`,
+			`f(1, 2, "x", "y")`,
+			vars{"v": "1, 2"},
+		},
+
+		{
 			`f($*butlast, $x)`,
 			`f(1)`,
 			vars{"butlast": "", "x": "1"},
