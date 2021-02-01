@@ -430,7 +430,7 @@ func (m *matcher) node(expr, node ast.Node) bool {
 			m.optNode(x.Post, y.Post) && m.node(x.Body, y.Body)
 	case *ast.RangeStmt:
 		y, ok := node.(*ast.RangeStmt)
-		return ok && m.node(x.Key, y.Key) && m.node(x.Value, y.Value) &&
+		return ok && x.Tok == y.Tok && m.node(x.Key, y.Key) && m.node(x.Value, y.Value) &&
 			m.node(x.X, y.X) && m.node(x.Body, y.Body)
 
 	case *ast.TypeSpec:
@@ -676,10 +676,14 @@ func (m *matcher) specs(specs1, specs2 []ast.Spec) bool {
 }
 
 func (m *matcher) fields(fields1, fields2 *ast.FieldList) bool {
-	if fields1 == nil || fields2 == nil {
-		return fields1 == fields2
+	var list1, list2 fieldList
+	if fields1 != nil {
+		list1 = fields1.List
 	}
-	return m.nodesMatch(fieldList(fields1.List), fieldList(fields2.List))
+	if fields2 != nil {
+		list2 = fields2.List
+	}
+	return m.nodesMatch(list1, list2)
 }
 
 func fromWildNode(node ast.Node) int {
@@ -694,6 +698,8 @@ func fromWildNode(node ast.Node) int {
 		if len(node.Names) == 0 && node.Tag == nil {
 			return fromWildNode(node.Type)
 		}
+	case *ast.KeyValueExpr:
+		return fromWildNode(node.Value)
 	}
 	return -1
 }
