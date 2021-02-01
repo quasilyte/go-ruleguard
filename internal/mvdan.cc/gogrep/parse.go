@@ -89,6 +89,9 @@ func (l *lineColBuffer) WriteString(s string) (n int, err error) {
 var tmplDecl = template.Must(template.New("").Parse(`` +
 	`package p; {{ . }}`))
 
+var tmplBlock = template.Must(template.New("").Parse(`` +
+	`package p; func _() { if true {{ . }} else {} }`))
+
 var tmplExprs = template.Must(template.New("").Parse(`` +
 	`package p; var _ = []interface{}{ {{ . }}, }`))
 
@@ -160,6 +163,17 @@ func parseDetectingNode(fset *token.FileSet, src string) (ast.Node, *ast.File, e
 			return f.Decls[0], f, nil
 		}
 		return f, f, nil
+	}
+
+	// then as a block; otherwise blocks might be mistaken for composite
+	// literals further below
+	asBlock := execTmpl(tmplBlock, src)
+	if f, err := parser.ParseFile(fset, "", asBlock, 0); err == nil && noBadNodes(f) {
+		bl := f.Decls[0].(*ast.FuncDecl).Body
+		if len(bl.List) == 1 {
+			ifs := bl.List[0].(*ast.IfStmt)
+			return ifs.Body, f, nil
+		}
 	}
 
 	// then as value expressions
