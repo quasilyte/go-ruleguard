@@ -581,7 +581,7 @@ func (m *matcher) nodes(ns1, ns2 nodeList, partial bool) ast.Node {
 			break // let "b; c" match "b; c; d"
 		}
 		// mismatch, try to restart
-		if 0 < next2 && next2 <= ns2len && (i1 != next1 || i2 != next2) {
+		if next2 > 0 && next2 <= ns2len && (i1 != next1 || i2 != next2) {
 			pop()
 			continue
 		}
