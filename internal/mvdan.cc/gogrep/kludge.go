@@ -3,7 +3,6 @@ package gogrep
 import (
 	"go/ast"
 	"go/token"
-	"go/types"
 )
 
 // This is an ugly way to use gogrep as a library.
@@ -11,10 +10,7 @@ import (
 
 // Parse creates a gogrep pattern out of a given string expression.
 func Parse(fset *token.FileSet, expr string) (*Pattern, error) {
-	m := matcher{
-		fset: fset,
-		Info: &types.Info{},
-	}
+	m := matcher{fset: fset}
 	node, err := m.parseExpr(expr)
 	if err != nil {
 		return nil, err
