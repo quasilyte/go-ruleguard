@@ -13,10 +13,6 @@ import (
 type matcher struct {
 	fset *token.FileSet
 
-	// information about variables (wildcards), by id (which is an
-	// integer starting at 0)
-	vars []varInfo
-
 	// node values recorded by name, excluding "_" (used only by the
 	// actual matching phase)
 	values map[string]ast.Node
@@ -25,15 +21,8 @@ type matcher struct {
 }
 
 type varInfo struct {
-	name string
-	any  bool
-}
-
-func (m *matcher) info(id int) varInfo {
-	if id < 0 {
-		return varInfo{}
-	}
-	return m.vars[id]
+	Name string
+	Any  bool
 }
 
 // inspect is like ast.Inspect, but it supports our extra nodeList Node
@@ -192,19 +181,18 @@ func (m *matcher) node(expr, node ast.Node) bool {
 		if _, ok := node.(ast.Node); !ok {
 			return false // to not include our extra node types
 		}
-		id := fromWildName(x.Name)
-		info := m.info(id)
-		if info.any {
+		info := decodeWildName(x.Name)
+		if info.Any {
 			return false
 		}
-		if info.name == "_" {
+		if info.Name == "_" {
 			// values are discarded, matches anything
 			return true
 		}
-		prev, ok := m.values[info.name]
+		prev, ok := m.values[info.Name]
 		if !ok {
 			// first occurrence, record value
-			m.values[info.name] = node
+			m.values[info.Name] = node
 			return true
 		}
 		// multiple uses must match
@@ -453,7 +441,7 @@ func (m *matcher) wildAnyIdent(node ast.Node) *ast.Ident {
 		if !isWildName(x.Name) {
 			return nil
 		}
-		if !m.info(fromWildName(x.Name)).any {
+		if !decodeWildName(x.Name).Any {
 			return nil
 		}
 		return x
@@ -545,16 +533,15 @@ func (m *matcher) nodes(ns1, ns2 nodeList, partial bool) ast.Node {
 	for i1 < ns1len || i2 < ns2len {
 		if i1 < ns1len {
 			n1 := ns1.at(i1)
-			id := fromWildNode(n1)
-			info := m.info(id)
-			if info.any {
+			info := decodeWildNode(n1)
+			if info.Any {
 				// keep track of where this wildcard
 				// started (if info.name == wildName,
 				// we're trying the same wildcard
 				// matching one more node)
-				if info.name != wildName {
+				if info.Name != wildName {
 					wildStart = i2
-					wildName = info.name
+					wildName = info.Name
 				}
 				// try to match zero or more at i2,
 				// restarting at i2+1 if it fails
@@ -684,24 +671,6 @@ func (m *matcher) fields(fields1, fields2 *ast.FieldList) bool {
 		list2 = fields2.List
 	}
 	return m.nodesMatch(list1, list2)
-}
-
-func fromWildNode(node ast.Node) int {
-	switch node := node.(type) {
-	case *ast.Ident:
-		return fromWildName(node.Name)
-	case *ast.ExprStmt:
-		return fromWildNode(node.X)
-	case *ast.Field:
-		// Allow $var to represent an entire field; the lone identifier
-		// gets picked up as an anonymous field.
-		if len(node.Names) == 0 && node.Tag == nil {
-			return fromWildNode(node.Type)
-		}
-	case *ast.KeyValueExpr:
-		return fromWildNode(node.Value)
-	}
-	return -1
 }
 
 func nodeLists(n ast.Node) []nodeList {

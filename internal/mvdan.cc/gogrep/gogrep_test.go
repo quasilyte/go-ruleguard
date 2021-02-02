@@ -13,6 +13,27 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+func TestWildNameEncDec(t *testing.T) {
+	tests := []string{
+		"_",
+		"x",
+		"foo",
+		"Foo_Bar",
+	}
+
+	for _, any := range []bool{true, false} {
+		for _, name := range tests {
+			want := varInfo{Name: name, Any: any}
+			enc := encodeWildName(name, any)
+			dec := decodeWildName(enc)
+			if diff := cmp.Diff(dec, want); diff != "" {
+				t.Errorf("decode diff (+want -have):\n%s", diff)
+				continue
+			}
+		}
+	}
+}
+
 func TestCapture(t *testing.T) {
 	type vars = map[string]string
 
