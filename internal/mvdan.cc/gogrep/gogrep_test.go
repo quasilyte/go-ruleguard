@@ -186,13 +186,19 @@ func TestMatch(t *testing.T) {
 
 		// many value expressions
 		{`$x, $y`, 1, `foo(1, 2)`},
+		{`2, 3`, 1, `foo(1, 2, 3)`},
+		{`$x, $x, $x`, 1, `foo(1, 1, 1)`},
+		{`$x, $x, $x`, 1, `foo(2, 1, 1, 1)`},
+		{`$x, $x, $x`, 1, `foo(1, 1, 1, 2)`},
+		{`$x, $x, $x`, 1, `foo(2, 1, 1, 1, 2)`},
+		{`$x, $x, $x`, 1, `[]int{1, 1, 1, 2}`},
+		{`$x, $x, $x`, 1, `[]int{2, 1, 1, 1}`},
+		{`$x, $x, $x`, 1, `[]int{2, 1, 1, 1, 2}`},
 		{`$x, $y`, 0, `1`},
 		{`$x`, 6, `[]string{a, b}`},
 
-		// unlike statements, expressions don't automatically
-		// imply partial matches
-		{`b, c`, 0, `[]int{a, b, c, d}`},
-		{`b, c`, 0, `foo(a, b, c, d)`},
+		{`b, c`, 1, `[]int{a, b, c, d}`},
+		{`b, c`, 1, `foo(a, b, c, d)`},
 		{`print($*_, $x)`, 1, `print(a, b, c)`},
 
 		// any number of expressions
