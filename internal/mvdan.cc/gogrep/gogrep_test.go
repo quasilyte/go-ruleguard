@@ -326,6 +326,8 @@ func TestMatch(t *testing.T) {
 		{`const $x = $y`, 0, "const (a = b\nc = d)"},
 		{`var $x int`, 1, `var a int`},
 		{`var $x int`, 0, `var a int = 3`},
+		{`var ()`, 1, `var()`},
+		{`var ()`, 0, `var(x int)`},
 
 		// func declarations
 		{
@@ -511,6 +513,10 @@ func TestMatch(t *testing.T) {
 		{`switch x := y.(z); x {}`, 1, `switch x := y.(z); x {}`},
 		{`switch x := y.(z); x {}`, 0, `switch y := y.(z); x {}`},
 		{`switch x := y.(z); x {}`, 0, `switch y := y.(z); x {}`},
+		{`switch x := $x.(type) {}`, 1, `switch x := y.(type) {}`},
+		{`switch x := $x.(type) {}`, 1, `switch x := xs[0].(type) {}`},
+		{`switch x := $x.(type) {}`, 0, `{}`},
+		{`switch $x.(type) {}`, 1, `switch v.(type) {}`},
 		// TODO more switch variations.
 
 		// TODO select statement
