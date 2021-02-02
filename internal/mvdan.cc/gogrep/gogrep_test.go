@@ -178,7 +178,7 @@ func TestMatch(t *testing.T) {
 		{`$x`, 3, `a + b`},
 		{`$x + $x`, 0, `foo(a) + foo(b)`},
 		{`$x + $x`, 1, `foo(a) + foo(a)`},
-		{`$x`, 4, `var a int`},
+		{`$x`, 5, `var a int`},
 		{`go foo()`, 1, `go foo()`},
 
 		{`$x; $y`, 1, `{1; 2}`},
@@ -195,14 +195,17 @@ func TestMatch(t *testing.T) {
 		{`$x, $x, $x`, 1, `[]int{2, 1, 1, 1}`},
 		{`$x, $x, $x`, 1, `[]int{2, 1, 1, 1, 2}`},
 		{`$x, $y`, 0, `1`},
-		{`$x`, 6, `[]string{a, b}`},
+		{`$x`, 5, `[]string{a, b}`},
+		{`$x, $x`, 1, `return 1, 1`},
+		{`$x, $x`, 1, `return 0, 1, 0, 1, 1`},
+		{`$x, $x`, 1, `return 0, 1, 1, 0`},
 
 		{`b, c`, 1, `[]int{a, b, c, d}`},
 		{`b, c`, 1, `foo(a, b, c, d)`},
 		{`print($*_, $x)`, 1, `print(a, b, c)`},
 
 		// any number of expressions
-		{`$*x`, 1, `f(a, b)`},
+		// {`$*x`, 1, `f(a, b)`},
 		{`print($*x)`, 1, `print()`},
 		{`print($*x)`, 1, `print(a, b)`},
 		{`print($*x, $y, $*z)`, 0, `print()`},
@@ -293,7 +296,7 @@ func TestMatch(t *testing.T) {
 		// many statements
 		{`$x(); $y()`, 1, `{ a(); b() }`},
 		{`$x(); $y()`, 0, `{ a() }`},
-		{`$x`, 4, `{a; b}`},
+		{`$x`, 5, `{a; b}`},
 		{`b; c`, 0, `{b}`},
 		{`b; c`, 1, `{b; c}`},
 		{`b; c`, 0, `{b; x; c}`},
@@ -313,7 +316,7 @@ func TestMatch(t *testing.T) {
 		{`$x; $y`, 0, `f(1, 2)`},
 
 		// any number of statements
-		{`$*x`, 1, `{ a; b }`},
+		// {`$*x`, 1, `{ a; b }`},
 		{`$*x; b; $*y`, 1, `{ a; b; c }`},
 		{`$*x; b; $*x`, 0, `{ a; b; c }`},
 
@@ -545,7 +548,7 @@ func TestMatch(t *testing.T) {
 				return
 			}
 			matches := 0
-			pat.Match(target, func(m MatchData) {
+			testAllMatches(pat, target, func(m MatchData) {
 				matches++
 			})
 			if matches != test.numMatches {
@@ -554,6 +557,36 @@ func TestMatch(t *testing.T) {
 			}
 		})
 	}
+}
+
+func testAllMatches(p *Pattern, target ast.Node, cb func(MatchData)) {
+	ast.Inspect(target, func(n ast.Node) bool {
+		if n == nil {
+			return false
+		}
+		if _, ok := p.Expr.(stmtList); ok {
+			switch n := n.(type) {
+			case *ast.BlockStmt:
+				p.MatchStmtList(n.List, cb)
+			case *ast.CaseClause:
+				p.MatchStmtList(n.Body, cb)
+			case *ast.CommClause:
+				p.MatchStmtList(n.Body, cb)
+			}
+		}
+		if _, ok := p.Expr.(exprList); ok {
+			switch n := n.(type) {
+			case *ast.CallExpr:
+				p.MatchExprList(n.Args, cb)
+			case *ast.CompositeLit:
+				p.MatchExprList(n.Elts, cb)
+			case *ast.ReturnStmt:
+				p.MatchExprList(n.Results, cb)
+			}
+		}
+		p.MatchNode(n, cb)
+		return true
+	})
 }
 
 func testParseNode(t *testing.T, s string) ast.Node {

@@ -457,11 +457,10 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 		rule.pat = pat
 		cat := categorizeNode(pat.Expr)
 		if cat == nodeUnknown {
-			dst.uncategorized = append(dst.uncategorized, rule)
-		} else {
-			dst.categorizedNum++
-			dst.rulesByCategory[cat] = append(dst.rulesByCategory[cat], rule)
+			return p.errorf((*matchArgs)[i], "can't categorize %T node", pat.Expr)
 		}
+		dst.categorizedNum++
+		dst.rulesByCategory[cat] = append(dst.rulesByCategory[cat], rule)
 	}
 
 	return nil
