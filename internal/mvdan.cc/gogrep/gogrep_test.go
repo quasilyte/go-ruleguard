@@ -3,6 +3,7 @@ package gogrep
 import (
 	"fmt"
 	"go/ast"
+	"go/parser"
 	"go/printer"
 	"go/token"
 	"io"
@@ -11,35 +12,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 )
-
-func printNode(w io.Writer, fset *token.FileSet, node ast.Node) {
-	switch x := node.(type) {
-	case exprList:
-		if len(x) == 0 {
-			return
-		}
-		printNode(w, fset, x[0])
-		for _, n := range x[1:] {
-			fmt.Fprintf(w, ", ")
-			printNode(w, fset, n)
-		}
-	case stmtList:
-		if len(x) == 0 {
-			return
-		}
-		printNode(w, fset, x[0])
-		for _, n := range x[1:] {
-			fmt.Fprintf(w, "; ")
-			printNode(w, fset, n)
-		}
-	default:
-		err := printer.Fprint(w, fset, node)
-		if err != nil && strings.Contains(err.Error(), "go/printer: unsupported node type") {
-			// Should never happen, but make it obvious when it does.
-			panic(fmt.Errorf("cannot print node %T: %v", node, err))
-		}
-	}
-}
 
 func TestCapture(t *testing.T) {
 	type vars = map[string]string
@@ -136,7 +108,7 @@ func TestCapture(t *testing.T) {
 	emptyFset := token.NewFileSet()
 	sprintNode := func(n ast.Node) string {
 		var buf strings.Builder
-		printNode(&buf, emptyFset, n)
+		testPrintNode(&buf, emptyFset, n)
 		return buf.String()
 	}
 
@@ -149,7 +121,7 @@ func TestCapture(t *testing.T) {
 				t.Errorf("parse `%s`: %v", test.pat, err)
 				return
 			}
-			target, _, err := parseDetectingNode(fset, test.input)
+			target := testParseNode(t, test.input)
 			if err != nil {
 				t.Errorf("parse target `%s`: %v", test.input, err)
 				return
@@ -161,7 +133,7 @@ func TestCapture(t *testing.T) {
 				}
 			})
 			if diff := cmp.Diff(capture, test.capture); diff != "" {
-				t.Errorf("test `%s`:\ntarget: `%s`(+want -have)\n%s", test.pat, test.input, diff)
+				t.Errorf("test `%s`:\ntarget: `%s`\ndiff (+want -have)\n%s", test.pat, test.input, diff)
 			}
 		})
 	}
@@ -188,22 +160,22 @@ func TestMatch(t *testing.T) {
 		{`$x`, 4, `var a int`},
 		{`go foo()`, 1, `go foo()`},
 
-		{`$x; $y`, 1, `1; 2`},
-		{`go foo()`, 1, `a(); go foo(); a()`},
+		{`$x; $y`, 1, `{1; 2}`},
+		{`go foo()`, 1, `for { a(); go foo(); a() }`},
 
 		// many value expressions
 		{`$x, $y`, 1, `foo(1, 2)`},
 		{`$x, $y`, 0, `1`},
-		{`$x`, 3, `a, b`},
+		{`$x`, 6, `[]string{a, b}`},
 
 		// unlike statements, expressions don't automatically
 		// imply partial matches
-		{`b, c`, 0, `a, b, c, d`},
+		{`b, c`, 0, `[]int{a, b, c, d}`},
 		{`b, c`, 0, `foo(a, b, c, d)`},
 		{`print($*_, $x)`, 1, `print(a, b, c)`},
 
 		// any number of expressions
-		{`$*x`, 1, `a, b`},
+		{`$*x`, 1, `f(a, b)`},
 		{`print($*x)`, 1, `print()`},
 		{`print($*x)`, 1, `print(a, b)`},
 		{`print($*x, $y, $*z)`, 0, `print()`},
@@ -211,13 +183,13 @@ func TestMatch(t *testing.T) {
 		{`print($*x, $y, $*z)`, 1, `print(a, b, c)`},
 		{`{ $*_; return nil }`, 1, `{ return nil }`},
 		{`{ $*_; return nil }`, 1, `{ a(); b(); return nil }`},
-		{`c($*x); c($*x)`, 1, `c(); c()`},
-		{`c($*x); c()`, 1, `c(); c()`},
-		{`c($*x); c($*x)`, 0, `c(x); c(y)`},
-		{`c($*x); c($*x)`, 0, `c(x, y); c(z)`},
-		{`c($*x); c($*x)`, 1, `c(x, y); c(x, y)`},
-		{`c($*x, y); c($*x, y)`, 1, `c(x, y); c(x, y)`},
-		{`c($*x, $*y); c($*x, $*y)`, 1, `c(x, y); c(x, y)`},
+		{`c($*x); c($*x)`, 1, `{ c(); c() }`},
+		{`c($*x); c()`, 1, `{ c(); c() }`},
+		{`c($*x); c($*x)`, 0, `if cond { c(x); c(y) }`},
+		{`c($*x); c($*x)`, 0, `if cond { c(x, y); c(z) }`},
+		{`c($*x); c($*x)`, 1, `if cond { c(x, y); c(x, y) }`},
+		{`c($*x, y); c($*x, y)`, 1, `if cond { c(x, y); c(x, y) }`},
+		{`c($*x, $*y); c($*x, $*y)`, 1, `{ c(x, y); c(x, y) }`},
 
 		// composite lits
 		{`[]float64{$x}`, 1, `[]float64{3}`},
@@ -230,15 +202,15 @@ func TestMatch(t *testing.T) {
 		{`func($x ...$t) {}`, 1, `func(a ...int) {}`},
 
 		// type exprs
-		{`[8]$x`, 1, `[8]int`},
-		{`struct{field $t}`, 1, `struct{field int}`},
-		{`struct{field $t}`, 1, `struct{field int}`},
-		{`struct{field $t}`, 0, `struct{other int}`},
-		{`struct{field $t}`, 0, `struct{f1, f2 int}`},
-		{`interface{$x() int}`, 1, `interface{i() int}`},
-		{`chan $x`, 1, `chan bool`},
-		{`<-chan $x`, 0, `chan bool`},
-		{`chan $x`, 0, `chan<- bool`},
+		{`[8]$x`, 1, `[8]int{4: 1}`},
+		{`struct{field $t}`, 1, `struct{field int}{}`},
+		{`struct{field $t}`, 1, `struct{field int}{}`},
+		{`struct{field $t}`, 0, `struct{other int}{}`},
+		{`struct{field $t}`, 0, `(struct{f1, f2 int}{})`},
+		{`interface{$x() int}`, 1, `(interface{i() int})(nil)`},
+		{`chan $x`, 1, `new(chan bool)`},
+		{`<-chan $x`, 0, `make(chan bool)`},
+		{`chan $x`, 0, `(chan<- bool)(nil)`},
 
 		// parens
 		{`($x)`, 1, `(a + b)`},
@@ -279,41 +251,44 @@ func TestMatch(t *testing.T) {
 		// type asserts
 		{`$x.(string)`, 1, `a.(string)`},
 
+		// key-value expression
+		{`"a": 1`, 1, `map[string]int{"a": 1}`},
+
 		// elipsis
 		{`append($x, $y...)`, 1, `append(a, bs...)`},
 		{`foo($x...)`, 0, `foo(a)`},
 		{`foo($x...)`, 0, `foo(a, b)`},
 
 		// forcing node to be a statement
-		{`append($*_);`, 0, `f(); x = append(x, a)`},
-		{`append($*_);`, 1, `f(); append(x, a)`},
+		{`append($*_);`, 0, `{ f(); x = append(x, a) }`},
+		{`append($*_);`, 1, `{ f(); append(x, a) }`},
 
 		// many statements
-		{`$x(); $y()`, 1, `a(); b()`},
-		{`$x(); $y()`, 0, `a()`},
-		{`$x`, 3, `a; b`},
-		{`b; c`, 0, `b`},
-		{`b; c`, 1, `b; c`},
-		{`b; c`, 0, `b; x; c`},
-		{`b; c`, 1, `a; b; c; d`},
+		{`$x(); $y()`, 1, `{ a(); b() }`},
+		{`$x(); $y()`, 0, `{ a() }`},
+		{`$x`, 4, `{a; b}`},
+		{`b; c`, 0, `{b}`},
+		{`b; c`, 1, `{b; c}`},
+		{`b; c`, 0, `{b; x; c}`},
+		{`b; c`, 1, `{ a; b; c; d }`},
 		{`b; c`, 1, `{b; c; d}`},
 		{`b; c`, 1, `{a; b; c}`},
 		{`b; c`, 1, `{b; b; c; c}`},
-		{`$x++; $x--`, 1, `n; a++; b++; b--`},
+		{`$x++; $x--`, 1, `{ n; a++; b++; b-- }`},
 		{`$*_; b; $*_`, 1, `{a; b; c; d}`},
 		{`{$*_; $x}`, 1, `{a; b; c}`},
 		{`{b; c}`, 0, `{a; b; c}`},
-		{`$x := $_; $x = $_`, 1, `a := n; b := n; b = m`},
-		{`$x := $_; $*_; $x = $_`, 1, `a := n; b := n; b = m`},
+		{`$x := $_; $x = $_`, 1, `{ a := n; b := n; b = m }`},
+		{`$x := $_; $*_; $x = $_`, 1, `{ a := n; b := n; b = m }`},
 
 		// mixing lists
-		{`$x, $y`, 0, `1; 2`},
-		{`$x; $y`, 0, `1, 2`},
+		{`$x, $y`, 0, `{ 1; 2 }`},
+		{`$x; $y`, 0, `f(1, 2)`},
 
 		// any number of statements
-		{`$*x`, 1, `a; b`},
-		{`$*x; b; $*y`, 1, `a; b; c`},
-		{`$*x; b; $*x`, 0, `a; b; c`},
+		{`$*x`, 1, `{ a; b }`},
+		{`$*x; b; $*y`, 1, `{ a; b; c }`},
+		{`$*x; b; $*x`, 0, `{ a; b; c }`},
 
 		// const/var declarations
 		{`const $x = $y`, 1, `const a = b`},
@@ -326,19 +301,19 @@ func TestMatch(t *testing.T) {
 		{
 			`func $_($x $y) $y { return $x }`,
 			1,
-			`func a(i int) int { return i }`,
+			`package p; func a(i int) int { return i }`,
 		},
-		{`func $x(i int)`, 1, `func a(i int)`},
-		{`func $x(i int) {}`, 0, `func a(i int)`},
+		{`func $x(i int)`, 1, `package p; func a(i int)`},
+		{`func $x(i int) {}`, 0, `package p; func a(i int)`},
 		{
 			`func $_() $*_ { $*_ }`,
 			1,
-			`func f() {}`,
+			`package p; func f() {}`,
 		},
 		{
 			`func $_() $*_ { $*_ }`,
 			1,
-			`func f() (int, error) { return 3, nil }`,
+			`package p; func f() (int, error) { return 3, nil }`,
 		},
 
 		// type declarations
@@ -372,7 +347,7 @@ func TestMatch(t *testing.T) {
 		// blocks
 		{`{ $x }`, 1, `{ a() }`},
 		{`{ $x }`, 0, `{ a(); b() }`},
-		{`{}`, 1, `func f() {}`},
+		{`{}`, 1, `package p; func f() {}`},
 
 		// assigns
 		{`$x = $y`, 1, `a = b`},
@@ -392,9 +367,9 @@ func TestMatch(t *testing.T) {
 
 		// $*_ matching stmt+expr combos (ifs)
 		{`if $*x {}`, 1, `if a {}`},
-		{`if $*x {}`, 1, `if a(); b {}`},
-		{`if $*x {}; if $*x {}`, 1, `if a(); b {}; if a(); b {}`},
-		{`if $*x {}; if $*x {}`, 0, `if a(); b {}; if b {}`},
+		{`if $*x {}`, 1, `for { if a(); b {} }`},
+		{`if $*x {}; if $*x {}`, 1, `for cond() { if a(); b {}; if a(); b {} }`},
+		{`if $*x {}; if $*x {}`, 0, `for cond() { if a(); b {}; if b {} }`},
 		{`if $*_ {} else {}`, 0, `if a(); b {}`},
 		{`if $*_ {} else {}`, 1, `if a(); b {} else {}`},
 		{`if a(); $*_ {}`, 0, `if b {}`},
@@ -403,21 +378,21 @@ func TestMatch(t *testing.T) {
 		{`for $*x {}`, 1, `for {}`},
 		{`for $*x {}`, 1, `for a {}`},
 		{`for $*x {}`, 1, `for i(); a; p() {}`},
-		{`for $*x {}; for $*x {}`, 1, `for i(); a; p() {}; for i(); a; p() {}`},
-		{`for $*x {}; for $*x {}`, 0, `for i(); a; p() {}; for i(); b; p() {}`},
+		{`for $*x {}; for $*x {}`, 1, `if ok { for i(); a; p() {}; for i(); a; p() {} }`},
+		{`for $*x {}; for $*x {}`, 0, `if ok { for i(); a; p() {}; for i(); b; p() {} }`},
 		{`for a(); $*_; {}`, 0, `for b {}`},
 		{`for ; $*_; c() {}`, 0, `for b {}`},
 
 		// $*_ matching stmt+expr combos (switches)
 		{`switch $*x {}`, 1, `switch a {}`},
 		{`switch $*x {}`, 1, `switch a(); b {}`},
-		{`switch $*x {}; switch $*x {}`, 1, `switch a(); b {}; switch a(); b {}`},
-		{`switch $*x {}; switch $*x {}`, 0, `switch a(); b {}; switch b {}`},
+		{`switch $*x {}; switch $*x {}`, 1, `{ switch a(); b {}; switch a(); b {} }`},
+		{`switch $*x {}; switch $*x {}`, 0, `{ switch a(); b {}; switch b {} }`},
 		{`switch a(); $*_ {}`, 0, `for b {}`},
 
 		// $*_ matching stmt+expr combos (node type mixing)
-		{`if $*x {}; for $*x {}`, 1, `if a(); b {}; for a(); b; {}`},
-		{`if $*x {}; for $*x {}`, 0, `if a(); b {}; for a(); b; c() {}`},
+		{`if $*x {}; for $*x {}`, 1, `{ if a(); b {}; for a(); b; {} }`},
+		{`if $*x {}; for $*x {}`, 0, `{ if a(); b {}; for a(); b; c() {} }`},
 
 		// for $*_ {} matching a range for
 		{`for $_ {}`, 0, `for range x {}`},
@@ -463,8 +438,8 @@ func TestMatch(t *testing.T) {
 		{`;`, 1, `;`},
 
 		// labeled statement
-		{`foo: a`, 1, `foo: a`},
-		{`foo: a`, 0, `foo: b`},
+		{`foo: if x {}`, 1, `foo: if x {}`},
+		{`foo: if x {}`, 0, `foo: if y {}`},
 
 		// send statement
 		{`x <- 1`, 1, `x <- 1`},
@@ -537,7 +512,7 @@ func TestMatch(t *testing.T) {
 				t.Errorf("parse `%s`: %v", test.pat, err)
 				return
 			}
-			target, _, err := parseDetectingNode(fset, test.input)
+			target := testParseNode(t, test.input)
 			if err != nil {
 				t.Errorf("parse target `%s`: %v", test.input, err)
 				return
@@ -551,5 +526,55 @@ func TestMatch(t *testing.T) {
 					test.pat, test.input, matches, test.numMatches)
 			}
 		})
+	}
+}
+
+func testParseNode(t *testing.T, s string) ast.Node {
+	if strings.HasPrefix(s, "package ") {
+		file, err := parser.ParseFile(token.NewFileSet(), "string", s, 0)
+		if err != nil {
+			t.Fatalf("parse `%s`: %v", s, err)
+		}
+		return file
+	}
+	source := `package p; func _() { ` + s + ` }`
+	file, err := parser.ParseFile(token.NewFileSet(), "string", source, 0)
+	if err != nil {
+		t.Fatalf("parse `%s`: %v", s, err)
+	}
+	fn := file.Decls[0].(*ast.FuncDecl)
+	n := fn.Body.List[0]
+	if e, ok := n.(*ast.ExprStmt); ok {
+		return e.X
+	}
+	return n
+}
+
+func testPrintNode(w io.Writer, fset *token.FileSet, node ast.Node) {
+	switch x := node.(type) {
+	case exprList:
+		if len(x) == 0 {
+			return
+		}
+		testPrintNode(w, fset, x[0])
+		for _, n := range x[1:] {
+			fmt.Fprintf(w, ", ")
+			testPrintNode(w, fset, n)
+		}
+	case stmtList:
+		if len(x) == 0 {
+			return
+		}
+		testPrintNode(w, fset, x[0])
+		for _, n := range x[1:] {
+			fmt.Fprintf(w, "; ")
+			testPrintNode(w, fset, n)
+		}
+	default:
+		err := printer.Fprint(w, fset, node)
+		if err != nil && strings.Contains(err.Error(), "go/printer: unsupported node type") {
+			// Should never happen, but make it obvious when it does.
+			panic(fmt.Errorf("cannot print node %T: %v", node, err))
+		}
 	}
 }
