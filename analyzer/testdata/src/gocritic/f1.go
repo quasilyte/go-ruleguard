@@ -25,6 +25,16 @@ func valSwap2(xs, ys []int) {
 		ys[0] = xs[0]
 		xs[0] = temp
 	}
+
+	{
+		temp := ys[0] // want `\Qcan use parallel assignment like ys[0],xs[0]=xs[0],ys[0]`
+		ys[0] = xs[0]
+		xs[0] = temp
+
+		temp2 := ys[0] // want `\Qcan use parallel assignment like ys[0],xs[0]=xs[0],ys[0]`
+		ys[0] = xs[0]
+		xs[0] = temp2
+	}
 }
 
 func dupArgs(xs []int, rw io.ReadWriter) {

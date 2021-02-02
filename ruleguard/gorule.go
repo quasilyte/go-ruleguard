@@ -17,7 +17,6 @@ type goRuleSet struct {
 }
 
 type scopedGoRuleSet struct {
-	uncategorized   []goRule
 	categorizedNum  int
 	rulesByCategory [nodeCategoriesCount][]goRule
 }
@@ -113,7 +112,6 @@ func mergeRuleSets(toMerge []*goRuleSet) (*goRuleSet, error) {
 }
 
 func appendScopedRuleSet(dst, src *scopedGoRuleSet) *scopedGoRuleSet {
-	dst.uncategorized = append(dst.uncategorized, cloneRuleSlice(src.uncategorized)...)
 	for cat, rules := range src.rulesByCategory {
 		dst.rulesByCategory[cat] = append(dst.rulesByCategory[cat], cloneRuleSlice(rules)...)
 		dst.categorizedNum += len(rules)

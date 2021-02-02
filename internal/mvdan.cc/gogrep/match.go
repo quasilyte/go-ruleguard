@@ -22,107 +22,12 @@ type varInfo struct {
 	Any  bool
 }
 
-// inspect is like ast.Inspect, but it supports our extra nodeList Node
-// type (only at the top level).
-func inspect(node ast.Node, fn func(ast.Node) bool) {
-	// ast.Walk barfs on ast.Node types it doesn't know, so
-	// do the first level manually here
-	list, ok := node.(nodeList)
-	if !ok {
-		ast.Inspect(node, fn)
-		return
-	}
-	if !fn(list) {
-		return
-	}
-	for i := 0; i < list.len(); i++ {
-		ast.Inspect(list.at(i), fn)
-	}
-	fn(nil)
-}
-
-// nodePosHash is an ast.Node that can always be used as a key in maps,
-// even for nodes that are slices like nodeList.
-type nodePosHash struct {
-	pos, end token.Pos
-}
-
-func (n nodePosHash) Pos() token.Pos { return n.pos }
-func (n nodePosHash) End() token.Pos { return n.end }
-
-func posHash(node ast.Node) nodePosHash {
-	return nodePosHash{pos: node.Pos(), end: node.End()}
-}
-
-type submatch struct {
-	node   ast.Node
-	values map[string]ast.Node
-}
-
 func valsCopy(values map[string]ast.Node) map[string]ast.Node {
 	v2 := make(map[string]ast.Node, len(values))
 	for k, v := range values {
 		v2[k] = v
 	}
 	return v2
-}
-
-func (m *matcher) cmdRange(pattern ast.Node, subs []submatch) []submatch {
-	var matches []submatch
-	seen := map[nodePosHash]bool{}
-
-	// The values context for each new submatch must be a new copy
-	// from its parent submatch. If we don't do this copy, all the
-	// submatches would share the same map and have side effects.
-	var startValues map[string]ast.Node
-
-	match := func(exprNode, node ast.Node) {
-		if node == nil {
-			return
-		}
-		m.values = valsCopy(startValues)
-		found := m.topNode(exprNode, node)
-		if found == nil {
-			return
-		}
-		hash := posHash(found)
-		if !seen[hash] {
-			matches = append(matches, submatch{
-				node:   found,
-				values: m.values,
-			})
-			seen[hash] = true
-		}
-	}
-	for _, sub := range subs {
-		startValues = valsCopy(sub.values)
-		m.walkWithLists(pattern, sub.node, match)
-	}
-	return matches
-}
-
-func (m *matcher) walkWithLists(exprNode, node ast.Node, fn func(exprNode, node ast.Node)) {
-	visit := func(node ast.Node) bool {
-		fn(exprNode, node)
-		for _, list := range nodeLists(node) {
-			fn(exprNode, list)
-			if id := wildAnyIdent(exprNode); id != nil {
-				// so that "$*a" will match "a, b"
-				fn(exprList([]ast.Expr{id}), list)
-				// so that "$*a" will match "a; b"
-				fn(toStmtList(id), list)
-			}
-		}
-		return true
-	}
-	inspect(node, visit)
-}
-
-func (m *matcher) topNode(exprNode, node ast.Node) ast.Node {
-	if m.node(exprNode, node) {
-		return node
-	}
-	return nil
 }
 
 // optNode is like node, but for those nodes that can be nil and are not
@@ -460,11 +365,15 @@ type nodeList interface {
 
 // nodes matches two lists of nodes. It uses a common algorithm to match
 // wildcard patterns with any number of nodes without recursion.
-func (m *matcher) nodes(ns1, ns2 nodeList) bool {
+func (m *matcher) nodes(ns1, ns2 nodeList, partial bool) (ast.Node, int) {
 	ns1len, ns2len := ns1.len(), ns2.len()
 	if ns1len == 0 {
-		return ns2len == 0
+		if ns2len == 0 {
+			return ns2, 0
+		}
+		return nil, -1
 	}
+	partialStart, partialEnd := 0, ns2len
 	i1, i2 := 0, 0
 	next1, next2 := 0, 0
 
@@ -536,6 +445,12 @@ func (m *matcher) nodes(ns1, ns2 nodeList) bool {
 				i1++
 				continue
 			}
+			if partial && i1 == 0 {
+				// let "b; c" match "a; b; c"
+				// (simulates a $*_ at the beginning)
+				partialStart = i2
+				push(i1, i2+1)
+			}
 			if i2 < ns2len && wouldMatch() && m.node(n1, ns2.at(i2)) {
 				wildName = ""
 				// ordinary match
@@ -544,22 +459,34 @@ func (m *matcher) nodes(ns1, ns2 nodeList) bool {
 				continue
 			}
 		}
+		if partial && i1 == ns1len && wildName == "" {
+			partialEnd = i2
+			break // let "b; c" match "b; c; d"
+		}
 		// mismatch, try to restart
-		if next2 > 0 && next2 <= ns2len && (i1 != next1 || i2 != next2) {
+		if 0 < next2 && next2 <= ns2len && (i1 != next1 || i2 != next2) {
 			pop()
 			continue
 		}
-		return false
+		return nil, -1
 	}
-	return wouldMatch()
+	if !wouldMatch() {
+		return nil, -1
+	}
+	return ns2.slice(partialStart, partialEnd), partialEnd + 1
+}
+
+func (m *matcher) nodesMatch(list1, list2 nodeList) bool {
+	matched, _ := m.nodes(list1, list2, false)
+	return matched != nil
 }
 
 func (m *matcher) exprs(exprs1, exprs2 []ast.Expr) bool {
-	return m.nodes(exprList(exprs1), exprList(exprs2))
+	return m.nodesMatch(exprList(exprs1), exprList(exprs2))
 }
 
 func (m *matcher) idents(ids1, ids2 []*ast.Ident) bool {
-	return m.nodes(identList(ids1), identList(ids2))
+	return m.nodesMatch(identList(ids1), identList(ids2))
 }
 
 func toStmtList(nodes ...ast.Node) stmtList {
@@ -621,15 +548,15 @@ func (m *matcher) cases(stmts1, stmts2 []ast.Stmt) bool {
 		}
 		left = append(left, id)
 	}
-	return m.nodes(identList(left), stmtList(stmts2))
+	return m.nodesMatch(identList(left), stmtList(stmts2))
 }
 
 func (m *matcher) stmts(stmts1, stmts2 []ast.Stmt) bool {
-	return m.nodes(stmtList(stmts1), stmtList(stmts2))
+	return m.nodesMatch(stmtList(stmts1), stmtList(stmts2))
 }
 
 func (m *matcher) specs(specs1, specs2 []ast.Spec) bool {
-	return m.nodes(specList(specs1), specList(specs2))
+	return m.nodesMatch(specList(specs1), specList(specs2))
 }
 
 func (m *matcher) fields(fields1, fields2 *ast.FieldList) bool {
@@ -640,39 +567,7 @@ func (m *matcher) fields(fields1, fields2 *ast.FieldList) bool {
 	if fields2 != nil {
 		list2 = fields2.List
 	}
-	return m.nodes(list1, list2)
-}
-
-func nodeLists(n ast.Node) []nodeList {
-	var lists []nodeList
-	addList := func(list nodeList) {
-		if list.len() > 0 {
-			lists = append(lists, list)
-		}
-	}
-	switch x := n.(type) {
-	case nodeList:
-		addList(x)
-	case *ast.CompositeLit:
-		addList(exprList(x.Elts))
-	case *ast.CallExpr:
-		addList(exprList(x.Args))
-	case *ast.AssignStmt:
-		addList(exprList(x.Lhs))
-		addList(exprList(x.Rhs))
-	case *ast.ReturnStmt:
-		addList(exprList(x.Results))
-	case *ast.ValueSpec:
-		addList(exprList(x.Values))
-	case *ast.BlockStmt:
-		addList(stmtList(x.List))
-	case *ast.CaseClause:
-		addList(exprList(x.List))
-		addList(stmtList(x.Body))
-	case *ast.CommClause:
-		addList(stmtList(x.Body))
-	}
-	return lists
+	return m.nodesMatch(list1, list2)
 }
 
 type exprList []ast.Expr

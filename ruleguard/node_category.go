@@ -2,6 +2,8 @@ package ruleguard
 
 import (
 	"go/ast"
+
+	"github.com/quasilyte/go-ruleguard/internal/mvdan.cc/gogrep"
 )
 
 type nodeCategory int
@@ -55,6 +57,8 @@ const (
 	nodeTypeSwitchStmt
 	nodeUnaryExpr
 	nodeValueSpec
+	nodeStmtList
+	nodeExprList
 
 	nodeCategoriesCount
 
@@ -68,6 +72,11 @@ const (
 
 func categorizeNode(n ast.Node) nodeCategory {
 	switch n.(type) {
+	case gogrep.StmtList:
+		return nodeStmtList
+	case gogrep.ExprList:
+		return nodeExprList
+
 	case *ast.ArrayType:
 		return nodeArrayType
 	case *ast.AssignStmt:

@@ -21,6 +21,8 @@ func TestAnalyzer(t *testing.T) {
 		"regression",
 		"testvendored",
 		"quasigo",
+		"matching",
+		"dgryski",
 	}
 
 	analyzer.ForceNewEngine = true

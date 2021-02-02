@@ -92,29 +92,70 @@ func (rr *rulesRunner) run(f *ast.File) error {
 	rr.filterParams.filename = rr.filename
 	rr.collectImports(f)
 
-	for _, rule := range rr.rules.universal.uncategorized {
-		rule.pat.Match(f, func(m gogrep.MatchData) {
-			rr.handleMatch(rule, m)
-		})
-	}
-
 	if rr.rules.universal.categorizedNum != 0 {
 		ast.Inspect(f, func(n ast.Node) bool {
-			cat := categorizeNode(n)
-			for _, rule := range rr.rules.universal.rulesByCategory[cat] {
-				matched := false
-				rule.pat.MatchNode(n, func(m gogrep.MatchData) {
-					matched = rr.handleMatch(rule, m)
-				})
-				if matched {
-					break
-				}
+			if n == nil {
+				return false
 			}
+			rr.runRules(n)
 			return true
 		})
 	}
 
 	return nil
+}
+
+func (rr *rulesRunner) runRules(n ast.Node) {
+	switch n := n.(type) {
+	case *ast.BlockStmt:
+		rr.runStmtListRules(n.List)
+	case *ast.CaseClause:
+		rr.runStmtListRules(n.Body)
+	case *ast.CommClause:
+		rr.runStmtListRules(n.Body)
+
+	case *ast.CallExpr:
+		rr.runExprListRules(n.Args)
+	case *ast.CompositeLit:
+		rr.runExprListRules(n.Elts)
+	case *ast.ReturnStmt:
+		rr.runExprListRules(n.Results)
+	}
+
+	cat := categorizeNode(n)
+	for _, rule := range rr.rules.universal.rulesByCategory[cat] {
+		matched := false
+		rule.pat.MatchNode(n, func(m gogrep.MatchData) {
+			matched = rr.handleMatch(rule, m)
+		})
+		if matched {
+			break
+		}
+	}
+}
+
+func (rr *rulesRunner) runExprListRules(list []ast.Expr) {
+	for _, rule := range rr.rules.universal.rulesByCategory[nodeExprList] {
+		matched := false
+		rule.pat.MatchExprList(list, func(m gogrep.MatchData) {
+			matched = rr.handleMatch(rule, m)
+		})
+		if matched {
+			break
+		}
+	}
+}
+
+func (rr *rulesRunner) runStmtListRules(list []ast.Stmt) {
+	for _, rule := range rr.rules.universal.rulesByCategory[nodeStmtList] {
+		matched := false
+		rule.pat.MatchStmtList(list, func(m gogrep.MatchData) {
+			matched = rr.handleMatch(rule, m)
+		})
+		if matched {
+			break
+		}
+	}
 }
 
 func (rr *rulesRunner) reject(rule goRule, reason string, m gogrep.MatchData) {

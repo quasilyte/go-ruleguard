@@ -5,8 +5,8 @@ import (
 	"go/token"
 )
 
-// This is an ugly way to use gogrep as a library.
-// It can go away when there will be another option.
+type StmtList = stmtList
+type ExprList = exprList
 
 // Parse creates a gogrep pattern out of a given string expression.
 func Parse(fset *token.FileSet, expr string) (*Pattern, error) {
@@ -50,16 +50,30 @@ func (p *Pattern) MatchNode(n ast.Node, cb func(MatchData)) {
 	}
 }
 
-// Match calls cb for any pattern match found in n.
-func (p *Pattern) Match(n ast.Node, cb func(MatchData)) {
-	matches := p.m.cmdRange(p.Expr, []submatch{{
-		values: map[string]ast.Node{},
-		node:   n,
-	}})
-	for _, match := range matches {
+func (p *Pattern) MatchStmtList(stmts []ast.Stmt, cb func(MatchData)) {
+	p.matchNodeList(p.Expr.(stmtList), stmtList(stmts), cb)
+}
+
+func (p *Pattern) MatchExprList(exprs []ast.Expr, cb func(MatchData)) {
+	p.matchNodeList(p.Expr.(exprList), exprList(exprs), cb)
+}
+
+func (p *Pattern) matchNodeList(pattern, list nodeList, cb func(MatchData)) {
+	listLen := list.len()
+	from := 0
+	for {
+		p.m.values = map[string]ast.Node{}
+		matched, offset := p.m.nodes(pattern, list.slice(from, listLen), true)
+		if matched == nil {
+			break
+		}
 		cb(MatchData{
-			Values: match.values,
-			Node:   match.node,
+			Values: p.m.values,
+			Node:   matched,
 		})
+		from += offset - 1
+		if from >= listLen {
+			break
+		}
 	}
 }
