@@ -109,7 +109,7 @@ func (m *matcher) walkWithLists(exprNode, node ast.Node, fn func(exprNode, node 
 		fn(exprNode, node)
 		for _, list := range nodeLists(node) {
 			fn(exprNode, list)
-			if id := m.wildAnyIdent(exprNode); id != nil {
+			if id := wildAnyIdent(exprNode); id != nil {
 				// so that "$*a" will match "a, b"
 				fn(exprList([]ast.Expr{id}), list)
 				// so that "$*a" will match "a; b"
@@ -122,12 +122,6 @@ func (m *matcher) walkWithLists(exprNode, node ast.Node, fn func(exprNode, node 
 }
 
 func (m *matcher) topNode(exprNode, node ast.Node) ast.Node {
-	sts1, ok1 := exprNode.(stmtList)
-	sts2, ok2 := node.(stmtList)
-	if ok1 && ok2 {
-		// allow a partial match at the top level
-		return m.nodes(sts1, sts2, true)
-	}
 	if m.node(exprNode, node) {
 		return node
 	}
@@ -137,7 +131,7 @@ func (m *matcher) topNode(exprNode, node ast.Node) ast.Node {
 // optNode is like node, but for those nodes that can be nil and are not
 // part of a list. For example, init and post statements in a for loop.
 func (m *matcher) optNode(expr, node ast.Node) bool {
-	if ident := m.wildAnyIdent(expr); ident != nil {
+	if ident := wildAnyIdent(expr); ident != nil {
 		if m.node(toStmtList(ident), toStmtList(node)) {
 			return true
 		}
@@ -359,7 +353,7 @@ func (m *matcher) node(expr, node ast.Node) bool {
 		if !ok {
 			return false
 		}
-		condAny := m.wildAnyIdent(x.Cond)
+		condAny := wildAnyIdent(x.Cond)
 		if condAny != nil && x.Init == nil {
 			// if $*x { ... } on the left
 			left := toStmtList(condAny)
@@ -376,7 +370,7 @@ func (m *matcher) node(expr, node ast.Node) bool {
 		if !ok {
 			return false
 		}
-		tagAny := m.wildAnyIdent(x.Tag)
+		tagAny := wildAnyIdent(x.Tag)
 		if tagAny != nil && x.Init == nil {
 			// switch $*x { ... } on the left
 			left := toStmtList(tagAny)
@@ -394,7 +388,7 @@ func (m *matcher) node(expr, node ast.Node) bool {
 		y, ok := node.(*ast.SelectStmt)
 		return ok && m.node(x.Body, y.Body)
 	case *ast.ForStmt:
-		condIdent := m.wildAnyIdent(x.Cond)
+		condIdent := wildAnyIdent(x.Cond)
 		if condIdent != nil && x.Init == nil && x.Post == nil {
 			// "for $*x { ... }" on the left
 			left := toStmtList(condIdent)
@@ -433,10 +427,10 @@ func (m *matcher) node(expr, node ast.Node) bool {
 	}
 }
 
-func (m *matcher) wildAnyIdent(node ast.Node) *ast.Ident {
+func wildAnyIdent(node ast.Node) *ast.Ident {
 	switch x := node.(type) {
 	case *ast.ExprStmt:
-		return m.wildAnyIdent(x.X)
+		return wildAnyIdent(x.X)
 	case *ast.Ident:
 		if !isWildName(x.Name) {
 			return nil
@@ -469,15 +463,11 @@ type nodeList interface {
 
 // nodes matches two lists of nodes. It uses a common algorithm to match
 // wildcard patterns with any number of nodes without recursion.
-func (m *matcher) nodes(ns1, ns2 nodeList, partial bool) ast.Node {
+func (m *matcher) nodes(ns1, ns2 nodeList) bool {
 	ns1len, ns2len := ns1.len(), ns2.len()
 	if ns1len == 0 {
-		if ns2len == 0 {
-			return ns2
-		}
-		return nil
+		return ns2len == 0
 	}
-	partialStart, partialEnd := 0, ns2len
 	i1, i2 := 0, 0
 	next1, next2 := 0, 0
 
@@ -549,12 +539,6 @@ func (m *matcher) nodes(ns1, ns2 nodeList, partial bool) ast.Node {
 				i1++
 				continue
 			}
-			if partial && i1 == 0 {
-				// let "b; c" match "a; b; c"
-				// (simulates a $*_ at the beginning)
-				partialStart = i2
-				push(i1, i2+1)
-			}
 			if i2 < ns2len && wouldMatch() && m.node(n1, ns2.at(i2)) {
 				wildName = ""
 				// ordinary match
@@ -563,33 +547,22 @@ func (m *matcher) nodes(ns1, ns2 nodeList, partial bool) ast.Node {
 				continue
 			}
 		}
-		if partial && i1 == ns1len && wildName == "" {
-			partialEnd = i2
-			break // let "b; c" match "b; c; d"
-		}
 		// mismatch, try to restart
 		if next2 > 0 && next2 <= ns2len && (i1 != next1 || i2 != next2) {
 			pop()
 			continue
 		}
-		return nil
+		return false
 	}
-	if !wouldMatch() {
-		return nil
-	}
-	return ns2.slice(partialStart, partialEnd)
-}
-
-func (m *matcher) nodesMatch(list1, list2 nodeList) bool {
-	return m.nodes(list1, list2, false) != nil
+	return wouldMatch()
 }
 
 func (m *matcher) exprs(exprs1, exprs2 []ast.Expr) bool {
-	return m.nodesMatch(exprList(exprs1), exprList(exprs2))
+	return m.nodes(exprList(exprs1), exprList(exprs2))
 }
 
 func (m *matcher) idents(ids1, ids2 []*ast.Ident) bool {
-	return m.nodesMatch(identList(ids1), identList(ids2))
+	return m.nodes(identList(ids1), identList(ids2))
 }
 
 func toStmtList(nodes ...ast.Node) stmtList {
@@ -651,15 +624,15 @@ func (m *matcher) cases(stmts1, stmts2 []ast.Stmt) bool {
 		}
 		left = append(left, id)
 	}
-	return m.nodesMatch(identList(left), stmtList(stmts2))
+	return m.nodes(identList(left), stmtList(stmts2))
 }
 
 func (m *matcher) stmts(stmts1, stmts2 []ast.Stmt) bool {
-	return m.nodesMatch(stmtList(stmts1), stmtList(stmts2))
+	return m.nodes(stmtList(stmts1), stmtList(stmts2))
 }
 
 func (m *matcher) specs(specs1, specs2 []ast.Spec) bool {
-	return m.nodesMatch(specList(specs1), specList(specs2))
+	return m.nodes(specList(specs1), specList(specs2))
 }
 
 func (m *matcher) fields(fields1, fields2 *ast.FieldList) bool {
@@ -670,7 +643,7 @@ func (m *matcher) fields(fields1, fields2 *ast.FieldList) bool {
 	if fields2 != nil {
 		list2 = fields2.List
 	}
-	return m.nodesMatch(list1, list2)
+	return m.nodes(list1, list2)
 }
 
 func nodeLists(n ast.Node) []nodeList {

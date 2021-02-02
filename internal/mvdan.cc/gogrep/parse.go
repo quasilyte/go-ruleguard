@@ -32,13 +32,13 @@ func (m *matcher) transformSource(expr string) (string, []posOffset, error) {
 	lastLit := false
 	for _, t := range toks {
 		if lbuf.offs >= t.pos.Offset && lastLit && t.lit != "" {
-			lbuf.WriteString(" ")
+			_, _ = lbuf.WriteString(" ")
 		}
 		for lbuf.offs < t.pos.Offset {
-			lbuf.WriteString(" ")
+			_, _ = lbuf.WriteString(" ")
 		}
 		if t.lit == "" {
-			lbuf.WriteString(t.tok.String())
+			_, _ = lbuf.WriteString(t.tok.String())
 			lastLit = false
 			continue
 		}
@@ -47,7 +47,7 @@ func (m *matcher) transformSource(expr string) (string, []posOffset, error) {
 			// info attached to ident name strings
 			addOffset(len(wildSeparator) - 1)
 		}
-		lbuf.WriteString(t.lit)
+		_, _ = lbuf.WriteString(t.lit)
 		lastLit = strings.TrimSpace(t.lit) != ""
 	}
 	// trailing newlines can cause issues with commas
@@ -137,6 +137,52 @@ func parseType(fset *token.FileSet, src string) (ast.Expr, *ast.File, error) {
 	return vs.Type, f, nil
 }
 
+// expandStmtListQuery adds $*_ to the beginning and end of nodes, if necessary.
+// This is needed to enable partial matches,
+// so `a; b` matches `a; b; c` and `x; a; b`.
+func expandStmtListQuery(nodes []ast.Stmt) stmtList {
+	if len(nodes) == 0 {
+		return stmtList(nodes)
+	}
+	needPrefix := wildAnyIdent(nodes[0]) == nil
+	needSuffix := wildAnyIdent(nodes[len(nodes)-1]) == nil
+	if !needSuffix && !needPrefix {
+		return stmtList(nodes)
+	}
+	list := make([]ast.Stmt, 0, len(nodes)+2)
+	if needPrefix {
+		list = append(list, &ast.ExprStmt{X: &ast.Ident{Name: encodeWildName("_", true)}})
+	}
+	list = append(list, nodes...)
+	if needSuffix {
+		list = append(list, &ast.ExprStmt{X: &ast.Ident{Name: encodeWildName("_", true)}})
+	}
+	return stmtList(list)
+}
+
+// expandExprListQuery adds $*_ to the beginning and end of nodes, if necessary.
+// This is needed to enable partial matches,
+// so `a, b` matches `a, b, c` and `x, a, b`.
+func expandExprListQuery(nodes []ast.Expr) exprList {
+	if len(nodes) == 0 {
+		return exprList(nodes)
+	}
+	needPrefix := wildAnyIdent(nodes[0]) == nil
+	needSuffix := wildAnyIdent(nodes[len(nodes)-1]) == nil
+	if !needSuffix && !needPrefix {
+		return exprList(nodes)
+	}
+	list := make([]ast.Expr, 0, len(nodes)+2)
+	if needPrefix {
+		list = append(list, &ast.Ident{Name: encodeWildName("_", true)})
+	}
+	list = append(list, nodes...)
+	if needSuffix {
+		list = append(list, &ast.Ident{Name: encodeWildName("_", true)})
+	}
+	return exprList(list)
+}
+
 // parseDetectingNode tries its best to parse the ast.Node contained in src, as
 // one of: *ast.File, ast.Decl, ast.Expr, ast.Stmt, *ast.ValueSpec.
 // It also returns the *ast.File used for the parsing, so that the returned node
@@ -183,24 +229,24 @@ func parseDetectingNode(fset *token.FileSet, src string) (ast.Node, *ast.File, e
 		if len(cl.Elts) == 1 {
 			return cl.Elts[0], f, nil
 		}
-		return exprList(cl.Elts), f, nil
+		return expandExprListQuery(cl.Elts), f, nil
 	}
 
 	// then try as statements
 	asStmts := execTmpl(tmplStmts, src)
-	if f, err := parser.ParseFile(fset, "", asStmts, 0); err == nil && noBadNodes(f) {
+	f, err := parser.ParseFile(fset, "", asStmts, 0)
+	if err == nil && noBadNodes(f) {
 		bl := f.Decls[0].(*ast.FuncDecl).Body
 		if len(bl.List) == 1 {
 			return bl.List[0], f, nil
 		}
-		return stmtList(bl.List), f, nil
-	} else {
-		// Statements is what covers most cases, so it will give
-		// the best overall error message. Show positions
-		// relative to where the user's code is put in the
-		// template.
-		mainErr = subPosOffsets(err, posOffset{1, 1, 22})
+		return expandStmtListQuery(bl.List), f, nil
 	}
+	// Statements is what covers most cases, so it will give
+	// the best overall error message. Show positions
+	// relative to where the user's code is put in the
+	// template.
+	mainErr = subPosOffsets(err, posOffset{1, 1, 22})
 
 	// type expressions not yet picked up, for e.g. chans and interfaces
 	if typ, f, err := parseType(fset, src); err == nil && noBadNodes(f) {
