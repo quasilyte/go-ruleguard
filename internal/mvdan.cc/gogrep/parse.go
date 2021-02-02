@@ -10,7 +10,6 @@ import (
 	"go/parser"
 	"go/scanner"
 	"go/token"
-	"strconv"
 	"strings"
 	"text/template"
 )
@@ -46,7 +45,7 @@ func (m *matcher) transformSource(expr string) (string, []posOffset, error) {
 		if isWildName(t.lit) {
 			// to correct the position offsets for the extra
 			// info attached to ident name strings
-			addOffset(len(wildPrefix) - 1)
+			addOffset(len(wildSeparator) - 1)
 		}
 		lbuf.WriteString(t.lit)
 		lastLit = strings.TrimSpace(t.lit) != ""
@@ -317,38 +316,61 @@ func (m *matcher) tokenize(src []byte) ([]fullToken, error) {
 }
 
 func (m *matcher) wildcard(pos token.Position, next func() fullToken) (fullToken, error) {
-	wt := fullToken{pos, token.IDENT, wildPrefix}
 	t := next()
-	var info varInfo
+	any := false
 	if t.tok == token.MUL {
 		t = next()
-		info.any = true
+		any = true
 	}
+	wildName := encodeWildName(t.lit, any)
+	wt := fullToken{pos, token.IDENT, wildName}
 	if t.tok != token.IDENT {
 		return wt, fmt.Errorf("%v: $ must be followed by ident, got %v",
 			t.pos, t.tok)
 	}
-	id := len(m.vars)
-	wt.lit += strconv.Itoa(id)
-	info.name = t.lit
-	m.vars = append(m.vars, info)
 	return wt, nil
 }
 
-// using a prefix is good enough for now
-const wildPrefix = "gogrep_"
+const wildSeparator = "ᐸᐳ"
 
-func isWildName(name string) bool {
-	return strings.HasPrefix(name, wildPrefix)
+func isWildName(s string) bool {
+	return strings.HasPrefix(s, wildSeparator)
 }
 
-func fromWildName(s string) int {
-	if !isWildName(s) {
-		return -1
+func encodeWildName(name string, any bool) string {
+	suffix := "v"
+	if any {
+		suffix = "a"
 	}
-	n, err := strconv.Atoi(s[len(wildPrefix):])
-	if err != nil {
-		return -1
+	return wildSeparator + name + wildSeparator + suffix
+}
+
+func decodeWildName(s string) varInfo {
+	s = s[len(wildSeparator):]
+	nameEnd := strings.Index(s, wildSeparator)
+	name := s[:nameEnd]
+	s = s[nameEnd:]
+	s = s[len(wildSeparator):]
+	kind := s
+	return varInfo{Name: name, Any: kind == "a"}
+}
+
+func decodeWildNode(node ast.Node) varInfo {
+	switch node := node.(type) {
+	case *ast.Ident:
+		if isWildName(node.Name) {
+			return decodeWildName(node.Name)
+		}
+	case *ast.ExprStmt:
+		return decodeWildNode(node.X)
+	case *ast.Field:
+		// Allow $var to represent an entire field; the lone identifier
+		// gets picked up as an anonymous field.
+		if len(node.Names) == 0 && node.Tag == nil {
+			return decodeWildNode(node.Type)
+		}
+	case *ast.KeyValueExpr:
+		return decodeWildNode(node.Value)
 	}
-	return n
+	return varInfo{}
 }
