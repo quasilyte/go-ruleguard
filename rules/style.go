@@ -15,3 +15,8 @@ func emptyDecl(m dsl.Matcher) {
 	m.Match(`const()`).Report(`empty const() block`)
 	m.Match(`type()`).Report(`empty type() block`)
 }
+
+func emptyError(m dsl.Matcher) {
+	m.Match(`fmt.Errorf("")`, `errors.New("")`).
+		Report(`empty errors are hard to debug`)
+}
