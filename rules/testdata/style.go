@@ -1,5 +1,10 @@
 package target
 
+import (
+	"errors"
+	"fmt"
+)
+
 func exprUnparen() {
 	var f func(args ...interface{})
 
@@ -12,4 +17,11 @@ func emptyDecl() {
 	var ()   // want `\QemptyDecl: empty var() block`
 	const () // want `\QemptyDecl: empty const() block`
 	type ()  // want `\QemptyDecl: empty type() block`
+}
+
+func emptyError() {
+	_ = fmt.Errorf("") // want `\Qempty errors are hard to debug`
+	_ = fmt.Errorf(``) // want `\Qempty errors are hard to debug`
+	_ = errors.New("") // want `\Qempty errors are hard to debug`
+	_ = errors.New(``) // want `\Qempty errors are hard to debug`
 }
