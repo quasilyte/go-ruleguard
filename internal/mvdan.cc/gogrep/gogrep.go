@@ -9,8 +9,8 @@ type StmtList = stmtList
 type ExprList = exprList
 
 // Parse creates a gogrep pattern out of a given string expression.
-func Parse(fset *token.FileSet, expr string) (*Pattern, error) {
-	m := matcher{fset: fset}
+func Parse(fset *token.FileSet, expr string, strict bool) (*Pattern, error) {
+	m := matcher{fset: fset, strict: strict}
 	node, err := m.parseExpr(expr)
 	if err != nil {
 		return nil, err

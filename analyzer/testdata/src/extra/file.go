@@ -2,6 +2,7 @@ package extra
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -432,4 +433,9 @@ func redundantLenCheck(xs []int, v int) {
 			println(v)
 		}
 	}
+}
+
+func emptyError() {
+	_ = errors.New("") // want `empty error`
+	_ = errors.New(``) // want `empty error`
 }

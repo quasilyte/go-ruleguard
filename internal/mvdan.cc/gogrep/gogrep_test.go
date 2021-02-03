@@ -137,7 +137,7 @@ func TestCapture(t *testing.T) {
 		test := tests[i]
 		t.Run(fmt.Sprintf("test%d", i), func(t *testing.T) {
 			fset := token.NewFileSet()
-			pat, err := Parse(fset, test.pat)
+			pat, err := Parse(fset, test.pat, true)
 			if err != nil {
 				t.Errorf("parse `%s`: %v", test.pat, err)
 				return
@@ -161,6 +161,17 @@ func TestCapture(t *testing.T) {
 }
 
 func TestMatch(t *testing.T) {
+	strict := func(s string) string {
+		return "STRICT " + s
+	}
+	isStrict := func(s string) bool {
+		return strings.HasPrefix(s, "STRICT ")
+	}
+	unwrapPattern := func(s string) string {
+		s = strings.TrimPrefix(s, "STRICT ")
+		return s
+	}
+
 	tests := []struct {
 		pat        string
 		numMatches int
@@ -168,6 +179,22 @@ func TestMatch(t *testing.T) {
 	}{
 		{`123`, 1, `123`},
 		{`false`, 0, `true`},
+
+		// in strict mode, different literals won't match
+		{strict(`"a"`), 1, `"a"`},
+		{strict("`a`"), 1, "`a`"},
+		{strict(`"a"`), 0, "`a`"},
+		{strict("`a`"), 0, `"a"`},
+		{strict("`a`"), 0, `"b"`},
+		{strict(`'\n'`), 0, `'\x0a'`},
+		{strict(`0x0`), 0, `0`},
+
+		// in non-strict mode, these literals can match
+		{`"aa"`, 1, "`aa`"},
+		{`'\n'`, 1, `'\x0a'`},
+		{`0x0`, 1, `0`},
+		{`3`, 1, `0b11`},
+		{`0.01`, 1, `.01`},
 
 		{`$x`, 1, `rune`},
 		{`foo($x, $x)`, 0, `foo(1, 2)`},
@@ -543,7 +570,8 @@ func TestMatch(t *testing.T) {
 		test := tests[i]
 		t.Run(fmt.Sprintf("test%d", i), func(t *testing.T) {
 			fset := token.NewFileSet()
-			pat, err := Parse(fset, test.pat)
+			testPattern := unwrapPattern(test.pat)
+			pat, err := Parse(fset, testPattern, isStrict(test.pat))
 			if err != nil {
 				t.Errorf("parse `%s`: %v", test.pat, err)
 				return

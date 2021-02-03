@@ -162,4 +162,6 @@ func testRules(m dsl.Matcher) {
 		`if $xs != nil { for _, $x := range $xs { $*_ } }`,
 		`if $xs != nil { for _, $x = range $xs { $*_ } }`).
 		Report(`check on $xs is redundant, empty/nil slices and maps can be safely iterated`)
+
+	m.Match(`errors.New("")`).Report(`empty error`)
 }
