@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"strconv"
 )
 
 type matcher struct {
@@ -15,6 +16,8 @@ type matcher struct {
 	// node values recorded by name, excluding "_" (used only by the
 	// actual matching phase)
 	values map[string]ast.Node
+
+	strict bool
 }
 
 type varInfo struct {
@@ -105,7 +108,19 @@ func (m *matcher) node(expr, node ast.Node) bool {
 	// lits
 	case *ast.BasicLit:
 		y, ok := node.(*ast.BasicLit)
-		return ok && x.Kind == y.Kind && x.Value == y.Value
+		if !ok || x.Kind != y.Kind {
+			return false
+		}
+		if m.strict {
+			return x.Value == y.Value
+		}
+		// We may use types.TypeAndValue in the future, to avoid excessive
+		// values interpretation; but since we don't pass types info here
+		// right now, it's good enough to do it this way.
+		// Note that it's not trivial to use types info here:
+		// x and y come from different phases and can't be typechecked together,
+		// so a single types map won't contain all values.
+		return literalValue(x) == literalValue(y)
 	case *ast.CompositeLit:
 		y, ok := node.(*ast.CompositeLit)
 		return ok && m.node(x.Type, y.Type) && m.exprs(x.Elts, y.Elts)
@@ -605,3 +620,25 @@ func (l identList) End() token.Pos { return l[len(l)-1].End() }
 func (l stmtList) End() token.Pos  { return l[len(l)-1].End() }
 func (l specList) End() token.Pos  { return l[len(l)-1].End() }
 func (l fieldList) End() token.Pos { return l[len(l)-1].End() }
+
+func literalValue(lit *ast.BasicLit) interface{} {
+	switch lit.Kind {
+	case token.INT:
+		v, err := strconv.ParseInt(lit.Value, 0, 64)
+		if err == nil {
+			return v
+		}
+		return v
+	case token.STRING, token.CHAR:
+		s, err := strconv.Unquote(lit.Value)
+		if err == nil {
+			return s
+		}
+	case token.FLOAT:
+		v, err := strconv.ParseFloat(lit.Value, 64)
+		if err == nil {
+			return v
+		}
+	}
+	return nil
+}

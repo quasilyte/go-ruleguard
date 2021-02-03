@@ -450,7 +450,7 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 
 	for i, alt := range alternatives {
 		rule := proto
-		pat, err := gogrep.Parse(p.ctx.Fset, alt)
+		pat, err := gogrep.Parse(p.ctx.Fset, alt, false)
 		if err != nil {
 			return p.errorf((*matchArgs)[i], "parse match pattern: %v", err)
 		}
