@@ -25,12 +25,6 @@ type varInfo struct {
 	Any  bool
 }
 
-func captureCopy(capture []CapturedNode) []CapturedNode {
-	copied := make([]CapturedNode, len(capture))
-	copy(copied, capture)
-	return copied
-}
-
 // optNode is like node, but for those nodes that can be nil and are not
 // part of a list. For example, init and post statements in a for loop.
 func (m *matcher) optNode(expr, node ast.Node) bool {
@@ -390,9 +384,6 @@ func (m *matcher) nodes(ns1, ns2 nodeList, partial bool) (ast.Node, int) {
 	i1, i2 := 0, 0
 	next1, next2 := 0, 0
 
-	// We need to keep a copy of m.values so that we can restart
-	// with a different "any of" match while discarding any matches
-	// we found while trying it.
 	type restart struct {
 		matches      []CapturedNode
 		next1, next2 int
@@ -407,7 +398,7 @@ func (m *matcher) nodes(ns1, ns2 nodeList, partial bool) (ast.Node, int) {
 		if n2 > ns2len {
 			return // would be discarded anyway
 		}
-		stack = append(stack, restart{captureCopy(m.capture), n1, n2})
+		stack = append(stack, restart{m.capture, n1, n2})
 		next1, next2 = n1, n2
 	}
 	pop := func() {
