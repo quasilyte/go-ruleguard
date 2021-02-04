@@ -224,7 +224,8 @@ func makeTextFilter(src, varname string, op token.Token, rhsVarname string) filt
 	return func(params *filterParams) matchFilterResult {
 		s1 := params.nodeText(params.subExpr(varname))
 		lhsValue := constant.MakeString(string(s1))
-		s2 := params.nodeText(params.values[rhsVarname])
+		n, _ := params.match.CapturedByName(rhsVarname)
+		s2 := params.nodeText(n)
 		rhsValue := constant.MakeString(string(s2))
 		if constant.Compare(lhsValue, op, rhsValue) {
 			return filterSuccess

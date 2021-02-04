@@ -149,8 +149,8 @@ func TestCapture(t *testing.T) {
 			}
 			capture := vars{}
 			pat.MatchNode(target, func(m MatchData) {
-				for k, n := range m.Values {
-					capture[k] = sprintNode(n)
+				for _, c := range m.Capture {
+					capture[c.Name] = sprintNode(c.Node)
 				}
 			})
 			if diff := cmp.Diff(capture, test.capture); diff != "" {
@@ -623,7 +623,7 @@ func testAllMatches(p *Pattern, target ast.Node, cb func(MatchData)) {
 	})
 }
 
-func testParseNode(t *testing.T, s string) ast.Node {
+func testParseNode(t testing.TB, s string) ast.Node {
 	if strings.HasPrefix(s, "package ") {
 		file, err := parser.ParseFile(token.NewFileSet(), "string", s, 0)
 		if err != nil {

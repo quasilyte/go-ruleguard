@@ -15,7 +15,7 @@ type matcher struct {
 
 	// node values recorded by name, excluding "_" (used only by the
 	// actual matching phase)
-	values map[string]ast.Node
+	capture []CapturedNode
 
 	strict bool
 }
@@ -25,12 +25,10 @@ type varInfo struct {
 	Any  bool
 }
 
-func valsCopy(values map[string]ast.Node) map[string]ast.Node {
-	v2 := make(map[string]ast.Node, len(values))
-	for k, v := range values {
-		v2[k] = v
-	}
-	return v2
+func captureCopy(capture []CapturedNode) []CapturedNode {
+	copied := make([]CapturedNode, len(capture))
+	copy(copied, capture)
+	return copied
 }
 
 // optNode is like node, but for those nodes that can be nil and are not
@@ -88,10 +86,10 @@ func (m *matcher) node(expr, node ast.Node) bool {
 			// values are discarded, matches anything
 			return true
 		}
-		prev, ok := m.values[info.Name]
+		prev, ok := findNamed(m.capture, info.Name)
 		if !ok {
 			// first occurrence, record value
-			m.values[info.Name] = node
+			m.capture = append(m.capture, CapturedNode{Name: info.Name, Node: node})
 			return true
 		}
 		// multiple uses must match
@@ -396,7 +394,7 @@ func (m *matcher) nodes(ns1, ns2 nodeList, partial bool) (ast.Node, int) {
 	// with a different "any of" match while discarding any matches
 	// we found while trying it.
 	type restart struct {
-		matches      map[string]ast.Node
+		matches      []CapturedNode
 		next1, next2 int
 	}
 	// We need to stack these because otherwise some edge cases
@@ -409,12 +407,12 @@ func (m *matcher) nodes(ns1, ns2 nodeList, partial bool) (ast.Node, int) {
 		if n2 > ns2len {
 			return // would be discarded anyway
 		}
-		stack = append(stack, restart{valsCopy(m.values), n1, n2})
+		stack = append(stack, restart{captureCopy(m.capture), n1, n2})
 		next1, next2 = n1, n2
 	}
 	pop := func() {
 		i1, i2 = next1, next2
-		m.values = stack[len(stack)-1].matches
+		m.capture = stack[len(stack)-1].matches
 		stack = stack[:len(stack)-1]
 		next1, next2 = 0, 0
 		if len(stack) > 0 {
@@ -434,11 +432,11 @@ func (m *matcher) nodes(ns1, ns2 nodeList, partial bool) (ast.Node, int) {
 		}
 		list := ns2.slice(wildStart, i2)
 		// check that it matches any nodes found elsewhere
-		prev, ok := m.values[wildName]
+		prev, ok := findNamed(m.capture, wildName)
 		if ok && !m.node(prev, list) {
 			return false
 		}
-		m.values[wildName] = list
+		m.capture = append(m.capture, CapturedNode{Name: wildName, Node: list})
 		return true
 	}
 	for i1 < ns1len || i2 < ns2len {
@@ -641,4 +639,13 @@ func literalValue(lit *ast.BasicLit) interface{} {
 		}
 	}
 	return nil
+}
+
+func findNamed(capture []CapturedNode, name string) (ast.Node, bool) {
+	for _, c := range capture {
+		if c.Name == name {
+			return c.Node, true
+		}
+	}
+	return nil, false
 }
