@@ -53,7 +53,7 @@ type filterParams struct {
 
 	importer *goImporter
 
-	values map[string]ast.Node
+	match gogrep.MatchData
 
 	nodeText func(n ast.Node) []byte
 
@@ -62,7 +62,8 @@ type filterParams struct {
 }
 
 func (params *filterParams) subExpr(name string) ast.Expr {
-	switch n := params.values[name].(type) {
+	n, _ := params.match.CapturedByName(name)
+	switch n := n.(type) {
 	case ast.Expr:
 		return n
 	case *ast.ExprStmt:

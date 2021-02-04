@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/quasilyte/go-ruleguard/internal/mvdan.cc/gogrep"
 )
 
 func TestRenderMessage(t *testing.T) {
@@ -89,12 +90,19 @@ func TestRenderMessage(t *testing.T) {
 		Fset: token.NewFileSet(),
 	}
 	for _, test := range tests {
-		nodes := make(map[string]ast.Node, len(test.vars))
-		for _, v := range test.vars {
-			nodes[v] = &ast.Ident{Name: v + "var"}
+		capture := make([]gogrep.CapturedNode, len(test.vars))
+		for i, v := range test.vars {
+			capture[i] = gogrep.CapturedNode{
+				Name: v,
+				Node: &ast.Ident{Name: v + "var"},
+			}
 		}
 
-		have := rr.renderMessage(test.msg, &ast.Ident{Name: "dd"}, nodes, false)
+		m := gogrep.MatchData{
+			Node:    &ast.Ident{Name: "dd"},
+			Capture: capture,
+		}
+		have := rr.renderMessage(test.msg, m, false)
 		if diff := cmp.Diff(have, test.want); diff != "" {
 			t.Errorf("render %s %v:\n(+want -have)\n%s", test.msg, test.vars, diff)
 		}

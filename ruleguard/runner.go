@@ -26,9 +26,6 @@ type rulesRunner struct {
 	filename string
 	src      []byte
 
-	// A slice that is used to do a nodes keys sorting in renderMessage().
-	sortScratch []string
-
 	filterParams filterParams
 }
 
@@ -47,7 +44,6 @@ func newRulesRunner(ctx *RunContext, state *engineState, rules *goRuleSet) *rule
 			importer: importer,
 			ctx:      ctx,
 		},
-		sortScratch: make([]string, 0, 8),
 	}
 	rr.filterParams.nodeText = rr.nodeText
 	return rr
@@ -167,21 +163,15 @@ func (rr *rulesRunner) reject(rule goRule, reason string, m gogrep.MatchData) {
 	rr.ctx.DebugPrint(fmt.Sprintf("%s:%d: [%s:%d] rejected by %s",
 		pos.Filename, pos.Line, filepath.Base(rule.filename), rule.line, reason))
 
-	type namedNode struct {
-		name string
-		node ast.Node
-	}
-	values := make([]namedNode, 0, len(m.Values))
-	for name, node := range m.Values {
-		values = append(values, namedNode{name: name, node: node})
-	}
+	values := make([]gogrep.CapturedNode, len(m.Capture))
+	copy(values, m.Capture)
 	sort.Slice(values, func(i, j int) bool {
-		return values[i].name < values[j].name
+		return values[i].Name < values[j].Name
 	})
 
 	for _, v := range values {
-		name := v.name
-		node := v.node
+		name := v.Name
+		node := v.Node
 		var expr ast.Expr
 		switch node := node.(type) {
 		case ast.Expr:
@@ -204,7 +194,7 @@ func (rr *rulesRunner) reject(rule goRule, reason string, m gogrep.MatchData) {
 
 func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 	if rule.filter.fn != nil {
-		rr.filterParams.values = m.Values
+		rr.filterParams.match = m
 		filterResult := rule.filter.fn(&rr.filterParams)
 		if !filterResult.Matched() {
 			rr.reject(rule, filterResult.RejectReason(), m)
@@ -212,15 +202,15 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 		}
 	}
 
-	message := rr.renderMessage(rule.msg, m.Node, m.Values, true)
+	message := rr.renderMessage(rule.msg, m, true)
 	node := m.Node
 	if rule.location != "" {
-		node = m.Values[rule.location]
+		node, _ = m.CapturedByName(rule.location)
 	}
 	var suggestion *Suggestion
 	if rule.suggestion != "" {
 		suggestion = &Suggestion{
-			Replacement: []byte(rr.renderMessage(rule.suggestion, m.Node, m.Values, false)),
+			Replacement: []byte(rr.renderMessage(rule.suggestion, m, false)),
 			From:        node.Pos(),
 			To:          node.End(),
 		}
@@ -245,27 +235,25 @@ func (rr *rulesRunner) collectImports(f *ast.File) {
 	}
 }
 
-func (rr *rulesRunner) renderMessage(msg string, n ast.Node, nodes map[string]ast.Node, truncate bool) string {
+func (rr *rulesRunner) renderMessage(msg string, m gogrep.MatchData, truncate bool) string {
 	var buf strings.Builder
 	if strings.Contains(msg, "$$") {
-		buf.Write(rr.nodeText(n))
+		buf.Write(rr.nodeText(m.Node))
 		msg = strings.ReplaceAll(msg, "$$", buf.String())
 	}
-	if len(nodes) == 0 {
+	if len(m.Capture) == 0 {
 		return msg
 	}
 
-	rr.sortScratch = rr.sortScratch[:0]
-	for name := range nodes {
-		rr.sortScratch = append(rr.sortScratch, name)
-	}
-	sort.Slice(rr.sortScratch, func(i, j int) bool {
-		return len(rr.sortScratch[i]) > len(rr.sortScratch[j])
+	capture := make([]gogrep.CapturedNode, len(m.Capture))
+	copy(capture, m.Capture)
+	sort.Slice(capture, func(i, j int) bool {
+		return len(capture[i].Name) > len(capture[j].Name)
 	})
 
-	for _, name := range rr.sortScratch {
-		n := nodes[name]
-		key := "$" + name
+	for _, c := range capture {
+		n := c.Node
+		key := "$" + c.Name
 		if !strings.Contains(msg, key) {
 			continue
 		}
