@@ -17,10 +17,10 @@ You write the rules, `ruleguard` checks whether they are satisfied.
 
 **Features:**
 
-* Custom linting rules without re-compilation and Go plugins.
-* Diagnostics are written in a declarative way.
-* [Quickfix](_docs/dsl.md#suggestions-quickfix-support) actions support.
-* Powerful match filtering features, like expression [type pattern matching](_docs/dsl.md#type-pattern-matching).
+* Custom linting rules without re-compilation and Go plugins
+* Diagnostics are written in a declarative way
+* [Quickfix](_docs/dsl.md#suggestions-quickfix-support) actions support
+* Powerful match filtering features, like expression [type pattern matching](_docs/dsl.md#type-pattern-matching)
 * Rules can be installed as [Go modules](https://quasilyte.dev/blog/post/ruleguard-modules/)
 * Integrated into [golangci-lint](https://github.com/golangci/golangci-lint)
 
