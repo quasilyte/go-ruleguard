@@ -8,6 +8,13 @@ import (
 type StmtList = stmtList
 type ExprList = exprList
 
+func IsEmptyList(n ast.Node) bool {
+	if list, ok := n.(nodeList); ok {
+		return list.len() == 0
+	}
+	return false
+}
+
 // Parse creates a gogrep pattern out of a given string expression.
 func Parse(fset *token.FileSet, expr string, strict bool) (*Pattern, error) {
 	m := matcher{

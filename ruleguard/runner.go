@@ -50,6 +50,10 @@ func newRulesRunner(ctx *RunContext, state *engineState, rules *goRuleSet) *rule
 }
 
 func (rr *rulesRunner) nodeText(n ast.Node) []byte {
+	if gogrep.IsEmptyList(n) {
+		return nil
+	}
+
 	from := rr.ctx.Fset.Position(n.Pos()).Offset
 	to := rr.ctx.Fset.Position(n.End()).Offset
 	src := rr.fileBytes()
