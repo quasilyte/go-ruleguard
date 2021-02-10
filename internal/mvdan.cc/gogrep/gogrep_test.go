@@ -91,17 +91,46 @@ func TestCapture(t *testing.T) {
 			`f(1, 2)`,
 			vars{"left": "1", "mid": "", "right": "2"},
 		},
-		// TODO: #192
-		// {
-		// 	`f($left, $*mid, $right)`,
-		// 	`f(1, 2, 3)`,
-		// 	vars{"left": "1", "mid": "2", "right": "3"},
-		// },
-		// {
-		// 	`f($left, $*mid, $right)`,
-		// 	`f(1, 2, 3, 4)`,
-		// 	vars{"left": "1", "mid": "2, 3", "right": "4"},
-		// },
+		{
+			`f($left, $*mid, $right)`,
+			`f(1, 2, 3)`,
+			vars{"left": "1", "mid": "2", "right": "3"},
+		},
+		{
+			`f($left, $*mid, $right)`,
+			`f(1, 2, 3, 4)`,
+			vars{"left": "1", "mid": "2, 3", "right": "4"},
+		},
+		{
+			`f($a, $b, $*mid, $c, $d)`,
+			`f(1, 2, 3, 4)`,
+			vars{"a": "1", "b": "2", "c": "3", "d": "4", "mid": ""},
+		},
+		{
+			`f($a, $b, $*mid, $c, $d)`,
+			`f(1, 2, 3, 4, 5)`,
+			vars{"a": "1", "b": "2", "c": "4", "d": "5", "mid": "3"},
+		},
+		{
+			`f($*left, $x, 0, $*right)`,
+			`f(1, 2, 7, 0, 1, 0)`,
+			vars{"left": "1, 2", "x": "7", "right": "1, 0"},
+		},
+		{
+			`f($*left, $x, $*right)`,
+			`f(1, 2, 7, 0, 1, 0)`,
+			vars{"left": "", "x": "1", "right": "2, 7, 0, 1, 0"},
+		},
+		{
+			`f($*left, $*right)`,
+			`f()`,
+			vars{"right": ""},
+		},
+		{
+			`f($*left, $*right)`,
+			`f(1, 2)`,
+			vars{"right": "1, 2"},
+		},
 
 		{
 			`f($*butlast, "last")`,
@@ -129,17 +158,16 @@ func TestCapture(t *testing.T) {
 			`f(1)`,
 			vars{"butlast": "", "x": "1"},
 		},
-		// TODO: #192
-		// {
-		// 	`f($*butlast, $x)`,
-		// 	`f(1, 2, 3)`,
-		// 	vars{"butlast": "1, 2", "x": "3"},
-		// },
-		// {
-		// 	`f($first, $*butlast, $x)`,
-		// 	`f(1, 2, 3)`,
-		// 	vars{"first": "1", "butlast": "2", "x": "2"},
-		// },
+		{
+			`f($*butlast, $x)`,
+			`f(1, 2, 3)`,
+			vars{"butlast": "1, 2", "x": "3"},
+		},
+		{
+			`f($first, $*butlast, $x)`,
+			`f(1, 2, 3)`,
+			vars{"first": "1", "butlast": "2", "x": "3"},
+		},
 	}
 
 	emptyFset := token.NewFileSet()
@@ -303,6 +331,8 @@ func TestMatch(t *testing.T) {
 
 		// calls
 		{`someFunc($x)`, 1, `someFunc(a > b)`},
+		{`fmt.Printf($format, $*args)`, 1, `g(fmt.Printf("x"))`},
+		{`fmt.Printf($format, $*args)`, 1, `g(fmt.Printf("%d", 1))`},
 
 		// selector
 		{`$x.Field`, 1, `a.Field`},

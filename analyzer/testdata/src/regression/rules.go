@@ -25,3 +25,11 @@ func issue115(m dsl.Matcher) {
 		Where(!(m["x"].Const && m["x"].Type.Is("int"))).
 		Report("$x is not a constexpr int")
 }
+
+func issue192(m dsl.Matcher) {
+	m.Match(`fmt.Print(fmt.Sprintf($format, $*args))`).
+		Suggest(`fmt.Printf($format, $args)`)
+
+	m.Match(`fmt.Println(fmt.Sprintf($format, $*args, $last))`).
+		Suggest(`fmt.Printf($format+"\n", $args, $last)`)
+}

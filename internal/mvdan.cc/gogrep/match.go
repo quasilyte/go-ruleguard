@@ -387,6 +387,8 @@ func (m *matcher) nodes(ns1, ns2 nodeList, partial bool) (ast.Node, int) {
 	type restart struct {
 		matches      []CapturedNode
 		next1, next2 int
+		wildStart    int
+		wildName     string
 	}
 	// We need to stack these because otherwise some edge cases
 	// would not match properly. Since we have various kinds of
@@ -394,16 +396,20 @@ func (m *matcher) nodes(ns1, ns2 nodeList, partial bool) (ast.Node, int) {
 	// we may have to go back and do multiple restarts to get to the
 	// right starting position.
 	var stack []restart
+	wildName := ""
+	wildStart := 0
 	push := func(n1, n2 int) {
 		if n2 > ns2len {
 			return // would be discarded anyway
 		}
-		stack = append(stack, restart{m.capture, n1, n2})
+		stack = append(stack, restart{m.capture, n1, n2, wildStart, wildName})
 		next1, next2 = n1, n2
 	}
 	pop := func() {
 		i1, i2 = next1, next2
 		m.capture = stack[len(stack)-1].matches
+		wildName = stack[len(stack)-1].wildName
+		wildStart = stack[len(stack)-1].wildStart
 		stack = stack[:len(stack)-1]
 		next1, next2 = 0, 0
 		if len(stack) > 0 {
@@ -411,8 +417,6 @@ func (m *matcher) nodes(ns1, ns2 nodeList, partial bool) (ast.Node, int) {
 			next2 = stack[len(stack)-1].next2
 		}
 	}
-	wildName := ""
-	wildStart := 0
 
 	// wouldMatch returns whether the current wildcard - if any -
 	// matches the nodes we are currently trying it on.
