@@ -18,12 +18,35 @@ type Type interface {
 }
 
 type (
+	// An Array represents an array type.
+	Array struct{}
+
+	// A Slice represents a slice type.
+	Slice struct{}
+
 	// A Pointer represents a pointer type.
 	Pointer struct{}
 
 	// An Interface represents an interface type.
 	Interface struct{}
 )
+
+// NewArray returns a new array type for the given element type and length.
+// A negative length indicates an unknown length.
+func NewArray(elem Type, len int) *Array { return nil }
+
+// Elem returns element type of array.
+func (*Array) Elem() Type { return nil }
+
+// NewSlice returns a new slice type for the given element type.
+func NewSlice(elem Type) *Slice { return nil }
+
+// Elem returns element type of slice.
+func (*Slice) Elem() Type { return nil }
+
+// Len returns the length of array.
+// A negative result indicates an unknown length.
+func (*Array) Len() int { return 0 }
 
 // NewPointer returns a new pointer type for the given element (base) type.
 func NewPointer(elem Type) *Pointer { return nil }

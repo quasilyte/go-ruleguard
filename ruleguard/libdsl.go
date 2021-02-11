@@ -32,6 +32,8 @@ func initEnv(state *engineState, env *quasigo.Env) {
 		`github.com/quasilyte/go-ruleguard/dsl/types.Type`:        dslTypesType{},
 		`*github.com/quasilyte/go-ruleguard/dsl/types.Interface`:  dslTypesInterface{},
 		`*github.com/quasilyte/go-ruleguard/dsl/types.Pointer`:    dslTypesPointer{},
+		`*github.com/quasilyte/go-ruleguard/dsl/types.Array`:      dslTypesArray{},
+		`*github.com/quasilyte/go-ruleguard/dsl/types.Slice`:      dslTypesSlice{},
 	}
 
 	for qualifier, typ := range nativeTypes {
@@ -89,6 +91,55 @@ func (dslTypesInterface) String(stack *quasigo.ValueStack) {
 	stack.Push(stack.Pop().(*types.Interface).String())
 }
 
+type dslTypesSlice struct{}
+
+func (native dslTypesSlice) funcs() map[string]func(*quasigo.ValueStack) {
+	return map[string]func(*quasigo.ValueStack){
+		"Underlying": native.Underlying,
+		"String":     native.String,
+		"Elem":       native.Elem,
+	}
+}
+
+func (dslTypesSlice) Underlying(stack *quasigo.ValueStack) {
+	stack.Push(stack.Pop().(*types.Slice).Underlying())
+}
+
+func (dslTypesSlice) String(stack *quasigo.ValueStack) {
+	stack.Push(stack.Pop().(*types.Slice).String())
+}
+
+func (dslTypesSlice) Elem(stack *quasigo.ValueStack) {
+	stack.Push(stack.Pop().(*types.Slice).Elem())
+}
+
+type dslTypesArray struct{}
+
+func (native dslTypesArray) funcs() map[string]func(*quasigo.ValueStack) {
+	return map[string]func(*quasigo.ValueStack){
+		"Underlying": native.Underlying,
+		"String":     native.String,
+		"Elem":       native.Elem,
+		"Len":        native.Len,
+	}
+}
+
+func (dslTypesArray) Underlying(stack *quasigo.ValueStack) {
+	stack.Push(stack.Pop().(*types.Array).Underlying())
+}
+
+func (dslTypesArray) String(stack *quasigo.ValueStack) {
+	stack.Push(stack.Pop().(*types.Array).String())
+}
+
+func (dslTypesArray) Elem(stack *quasigo.ValueStack) {
+	stack.Push(stack.Pop().(*types.Array).Elem())
+}
+
+func (dslTypesArray) Len(stack *quasigo.ValueStack) {
+	stack.PushInt(int(stack.Pop().(*types.Array).Len()))
+}
+
 type dslTypesPointer struct{}
 
 func (native dslTypesPointer) funcs() map[string]func(*quasigo.ValueStack) {
@@ -117,7 +168,11 @@ func (native dslTypesPackage) funcs() map[string]func(*quasigo.ValueStack) {
 	return map[string]func(*quasigo.ValueStack){
 		"Implements":  native.Implements,
 		"Identical":   native.Identical,
+		"NewArray":    native.NewArray,
+		"NewSlice":    native.NewSlice,
 		"NewPointer":  native.NewPointer,
+		"AsArray":     native.AsArray,
+		"AsSlice":     native.AsSlice,
 		"AsPointer":   native.AsPointer,
 		"AsInterface": native.AsInterface,
 	}
@@ -135,9 +190,30 @@ func (dslTypesPackage) Identical(stack *quasigo.ValueStack) {
 	stack.Push(xtypes.Identical(x, y))
 }
 
+func (dslTypesPackage) NewArray(stack *quasigo.ValueStack) {
+	length := stack.PopInt()
+	typ := stack.Pop().(types.Type)
+	stack.Push(types.NewArray(typ, int64(length)))
+}
+
+func (dslTypesPackage) NewSlice(stack *quasigo.ValueStack) {
+	typ := stack.Pop().(types.Type)
+	stack.Push(types.NewSlice(typ))
+}
+
 func (dslTypesPackage) NewPointer(stack *quasigo.ValueStack) {
 	typ := stack.Pop().(types.Type)
 	stack.Push(types.NewPointer(typ))
+}
+
+func (dslTypesPackage) AsArray(stack *quasigo.ValueStack) {
+	typ, _ := stack.Pop().(types.Type).(*types.Array)
+	stack.Push(typ)
+}
+
+func (dslTypesPackage) AsSlice(stack *quasigo.ValueStack) {
+	typ, _ := stack.Pop().(types.Type).(*types.Slice)
+	stack.Push(typ)
 }
 
 func (dslTypesPackage) AsPointer(stack *quasigo.ValueStack) {
