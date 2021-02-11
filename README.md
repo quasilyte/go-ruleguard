@@ -4,6 +4,7 @@
 ![Build Status](https://github.com/quasilyte/go-ruleguard/workflows/Merge/badge.svg)
 [![PkgGoDev](https://pkg.go.dev/badge/mod/github.com/quasilyte/go-ruleguard)](https://pkg.go.dev/mod/github.com/quasilyte/go-ruleguard)
 [![Go Report Card](https://goreportcard.com/badge/github.com/quasilyte/go-ruleguard)](https://goreportcard.com/report/github.com/quasilyte/go-ruleguard)
+![Code Coverage](https://codecov.io/gh/quasilyte/go-ruleguard/branch/master/graph/badge.svg)
 
 ![Logo](_docs/logo2.png)
 
