@@ -78,32 +78,12 @@ type engineState struct {
 func newEngineState() *engineState {
 	env := quasigo.NewEnv()
 	state := &engineState{
-		env:      env,
-		pkgCache: make(map[string]*types.Package),
-		typeByFQN: map[string]types.Type{
-			// Predeclared types.
-			`error`:      types.Universe.Lookup("error").Type(),
-			`bool`:       types.Typ[types.Bool],
-			`int`:        types.Typ[types.Int],
-			`int8`:       types.Typ[types.Int8],
-			`int16`:      types.Typ[types.Int16],
-			`int32`:      types.Typ[types.Int32],
-			`int64`:      types.Typ[types.Int64],
-			`uint`:       types.Typ[types.Uint],
-			`uint8`:      types.Typ[types.Uint8],
-			`uint16`:     types.Typ[types.Uint16],
-			`uint32`:     types.Typ[types.Uint32],
-			`uint64`:     types.Typ[types.Uint64],
-			`uintptr`:    types.Typ[types.Uintptr],
-			`string`:     types.Typ[types.String],
-			`float32`:    types.Typ[types.Float32],
-			`float64`:    types.Typ[types.Float64],
-			`complex64`:  types.Typ[types.Complex64],
-			`complex128`: types.Typ[types.Complex128],
-			// Predeclared aliases (provided for convenience).
-			`byte`: types.Typ[types.Uint8],
-			`rune`: types.Typ[types.Int32],
-		},
+		env:       env,
+		pkgCache:  make(map[string]*types.Package),
+		typeByFQN: map[string]types.Type{},
+	}
+	for key, typ := range typeByName {
+		state.typeByFQN[key] = typ
 	}
 	initEnv(state, env)
 	return state
