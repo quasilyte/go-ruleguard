@@ -80,7 +80,37 @@ func ptrElemSmallerThanUintptr(ctx *dsl.VarFilterContext) bool {
 	return elemSize < uintptrSize
 }
 
+func isIntArray3(ctx *dsl.VarFilterContext) bool {
+	arr3 := types.NewArray(ctx.GetType(`int`), 3)
+	return types.Identical(ctx.Type, arr3)
+}
+
+func isIntArray(ctx *dsl.VarFilterContext) bool {
+	arr := types.AsArray(ctx.Type)
+	if arr != nil {
+		return types.Identical(ctx.GetType(`int`), arr.Elem())
+	}
+	return false
+}
+
+func isIntSlice(ctx *dsl.VarFilterContext) bool {
+	intSlice := types.NewSlice(ctx.GetType(`int`))
+	return types.Identical(ctx.Type, intSlice)
+}
+
 func testRules(m dsl.Matcher) {
+	m.Match(`test($x, "is [3]int")`).
+		Where(m["x"].Filter(isIntArray3)).
+		Report(`true`)
+
+	m.Match(`test($x, "is int array")`).
+		Where(m["x"].Filter(isIntArray)).
+		Report(`true`)
+
+	m.Match(`test($x, "is int slice")`).
+		Where(m["x"].Filter(isIntSlice)).
+		Report(`true`)
+
 	m.Match(`test($x, "underlying type is string")`).
 		Where(m["x"].Filter(stringUnderlying)).
 		Report(`true`)

@@ -7,6 +7,20 @@ func f() {
 	var stringer fmt.Stringer
 	var err error
 
+	test([3]int{}, "is [3]int") // want `true`
+	test([2]int{}, "is [3]int")
+	test(0, "is [3]int")
+
+	test([1]int{}, "is int array") // want `true`
+	test([3]int{}, "is int array") // want `true`
+	test([3]string{}, "is int array")
+	test([]int{}, "is int array")
+	test(1, "is int array")
+
+	test([]int{}, "is int slice") // want `true`
+	test([2]int{}, "is int slice")
+	test([]string{}, "is int slice")
+
 	test("foo", "underlying type is string")           // want `true`
 	test(myString("123"), "underlying type is string") // want `true`
 	test(0, "underlying type is string")

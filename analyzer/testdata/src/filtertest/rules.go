@@ -117,4 +117,20 @@ func testRules(m dsl.Matcher) {
 	m.Match(`nodeTest($x, "Ident")`).Where(m["x"].Node.Is(`Ident`)).Report(`YES`)
 	m.Match(`nodeTest($x, "!Ident")`).Where(!m["x"].Node.Is(`Ident`)).Report(`YES`)
 	m.Match(`nodeTest($x, "IndexExpr")`).Where(m["x"].Node.Is(`IndexExpr`)).Report(`YES`)
+
+	m.Match(`typeTest($x, "convertible to ([2]int)")`).
+		Where(m["x"].Type.ConvertibleTo(`([2]int)`)).
+		Report(`YES`)
+
+	m.Match(`typeTest($x, "convertible to [][]int")`).
+		Where(m["x"].Type.ConvertibleTo(`[][]int`)).
+		Report(`YES`)
+
+	m.Match(`typeTest($x, "assignable to map[*string]error")`).
+		Where(m["x"].Type.AssignableTo(`map[*string]error`)).
+		Report(`YES`)
+
+	m.Match(`typeTest($x, "assignable to interface{}")`).
+		Where(m["x"].Type.AssignableTo(`interface{}`)).
+		Report(`YES`)
 }
