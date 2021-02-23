@@ -24,7 +24,7 @@ import (
 
 type parseError error
 
-// ImportError is returned when a package cannot be imported.
+// ImportError is returned when a ruleguard file references a package that cannot be imported.
 type ImportError struct {
   msg string
   err error
