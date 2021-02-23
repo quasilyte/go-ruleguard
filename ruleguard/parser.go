@@ -82,13 +82,13 @@ func (p *rulesParser) ParseFile(filename string, r io.Reader) (*goRuleSet, error
 	parserFlags := parser.Mode(0)
 	f, err := parser.ParseFile(p.ctx.Fset, filename, r, parserFlags)
 	if err != nil {
-		return nil, fmt.Errorf("parse file error: %v", err)
+		return nil, fmt.Errorf("parse file error: %w", err)
 	}
 
 	for _, imp := range f.Imports {
 		importPath, err := strconv.Unquote(imp.Path.Value)
 		if err != nil {
-			return nil, p.errorf(imp, "unquote %s import path: %v", imp.Path.Value, err)
+			return nil, p.errorf(imp, "unquote %s import path: %w", imp.Path.Value, err)
 		}
 		if importPath == "github.com/quasilyte/go-ruleguard/dsl" {
 			if imp.Name != nil {
@@ -109,7 +109,7 @@ func (p *rulesParser) ParseFile(filename string, r io.Reader) (*goRuleSet, error
 	}
 	pkg, err := typechecker.Check("gorules", p.ctx.Fset, []*ast.File{f}, p.types)
 	if err != nil {
-		return nil, fmt.Errorf("typechecker error: %v", err)
+		return nil, fmt.Errorf("typechecker error: %w", err)
 	}
 	p.pkg = pkg
 
@@ -227,12 +227,12 @@ func (p *rulesParser) parseInitFunc(f *ast.FuncDecl) error {
 	for _, imp := range imported {
 		files, err := findBundleFiles(imp.pkgPath)
 		if err != nil {
-			return p.errorf(imp.node, "import lookup error: %v", err)
+			return p.errorf(imp.node, "import lookup error: %w", err)
 		}
 		for _, filename := range files {
 			rset, err := p.importRules(imp.prefix, imp.pkgPath, filename)
 			if err != nil {
-				return p.errorf(imp.node, "import parsing error: %v", err)
+				return p.errorf(imp.node, "import parsing error: %w", err)
 			}
 			p.imported = append(p.imported, rset)
 		}
@@ -256,7 +256,7 @@ func (p *rulesParser) importRules(prefix, pkgPath, filename string) (*goRuleSet,
 	}
 	rset, err := newRulesParser(config).ParseFile(filename, bytes.NewReader(data))
 	if err != nil {
-		return nil, fmt.Errorf("%s: %v", p.importedPkg, err)
+		return nil, fmt.Errorf("%s: %w", p.importedPkg, err)
 	}
 	return rset, nil
 }
@@ -452,7 +452,7 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 		rule := proto
 		pat, err := gogrep.Parse(p.ctx.Fset, alt, false)
 		if err != nil {
-			return p.errorf((*matchArgs)[i], "parse match pattern: %v", err)
+			return p.errorf((*matchArgs)[i], "parse match pattern: %w", err)
 		}
 		rule.pat = pat
 		cat := categorizeNode(pat.Expr)
@@ -503,7 +503,7 @@ func (p *rulesParser) parseTypeStringArg(e ast.Expr) types.Type {
 	}
 	typ, err := typeFromString(typeString)
 	if err != nil {
-		panic(p.errorf(e, "parse type expr: %v", err))
+		panic(p.errorf(e, "parse type expr: %w", err))
 	}
 	if typ == nil {
 		panic(p.errorf(e, "can't convert %s into a type constraint yet", typeString))
@@ -610,7 +610,7 @@ func (p *rulesParser) parseFilterExpr(e ast.Expr) matchFilter {
 		ctx := typematch.Context{Itab: p.itab}
 		pat, err := typematch.Parse(&ctx, typeString)
 		if err != nil {
-			panic(p.errorf(args[0], "parse type expr: %v", err))
+			panic(p.errorf(args[0], "parse type expr: %w", err))
 		}
 		underlying := operand.path == "Type.Underlying.Is"
 		result.fn = makeTypeIsFilter(result.src, operand.varName, underlying, pat)
@@ -666,7 +666,7 @@ func (p *rulesParser) toInterfaceValue(x ast.Node) *types.Interface {
 
 	n, err := parser.ParseExpr(typeString)
 	if err != nil {
-		panic(p.errorf(x, "parse type expr: %v", err))
+		panic(p.errorf(x, "parse type expr: %w", err))
 	}
 	qn, ok := n.(*ast.SelectorExpr)
 	if !ok {
@@ -682,7 +682,7 @@ func (p *rulesParser) toInterfaceValue(x ast.Node) *types.Interface {
 	}
 	pkg, err := p.importer.Import(pkgPath)
 	if err != nil {
-		panic(p.errorf(n, "can't load %s: %v", pkgPath, err))
+		panic(p.errorf(n, "can't load %s: %w", pkgPath, err))
 	}
 	obj := pkg.Scope().Lookup(qn.Sel.Name)
 	if obj == nil {
