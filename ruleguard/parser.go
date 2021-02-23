@@ -24,6 +24,15 @@ import (
 
 type parseError error
 
+// ImportError is returned when a package cannot be imported.
+type ImportError struct {
+  msg string
+  err error
+}
+
+func (e *ImportError) Error() string { return e.msg }
+func (e *ImportError) Unwrap() error { return e.err }
+
 type rulesParser struct {
 	state *engineState
 	ctx   *ParseContext
@@ -680,7 +689,7 @@ func (p *rulesParser) toInterfaceValue(x ast.Node) *types.Interface {
 	}
 	pkg, err := p.importer.Import(pkgPath)
 	if err != nil {
-		panic(p.errorf(n, fmt.Errorf("can't load %s: %w", pkgPath, err)))
+		panic(p.errorf(n, &ImportError{msg: fmt.Sprintf("can't load %s", pkgPath), err: err}))
 	}
 	obj := pkg.Scope().Lookup(qn.Sel.Name)
 	if obj == nil {
