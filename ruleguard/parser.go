@@ -2,7 +2,7 @@ package ruleguard
 
 import (
 	"bytes"
-  "errors"
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -352,7 +352,7 @@ func (p *rulesParser) parseStmt(fn *ast.Ident, args []ast.Expr) error {
 		p.itab.Load(pkgName, pkgPath)
 		return nil
 	default:
-		return p.errorf(fn,  fmt.Errorf("unexpected %s method", fn.Name))
+		return p.errorf(fn, fmt.Errorf("unexpected %s method", fn.Name))
 	}
 }
 
