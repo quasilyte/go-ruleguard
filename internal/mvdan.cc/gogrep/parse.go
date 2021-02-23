@@ -10,8 +10,6 @@ import (
 	"go/parser"
 	"go/scanner"
 	"go/token"
-	"regexp"
-	"strconv"
 	"strings"
 	"text/template"
 )
@@ -31,29 +29,25 @@ func (m *matcher) transformSource(expr string) (string, []posOffset, error) {
 			offset: length,
 		})
 	}
-	if len(toks) > 0 && toks[0].tok == tokAggressive {
-		toks = toks[1:]
-		m.aggressive = true
-	}
 	lastLit := false
 	for _, t := range toks {
 		if lbuf.offs >= t.pos.Offset && lastLit && t.lit != "" {
-			lbuf.WriteString(" ")
+			_, _ = lbuf.WriteString(" ")
 		}
 		for lbuf.offs < t.pos.Offset {
-			lbuf.WriteString(" ")
+			_, _ = lbuf.WriteString(" ")
 		}
 		if t.lit == "" {
-			lbuf.WriteString(t.tok.String())
+			_, _ = lbuf.WriteString(t.tok.String())
 			lastLit = false
 			continue
 		}
 		if isWildName(t.lit) {
 			// to correct the position offsets for the extra
 			// info attached to ident name strings
-			addOffset(len(wildPrefix) - 1)
+			addOffset(len(wildSeparator) - 1)
 		}
-		lbuf.WriteString(t.lit)
+		_, _ = lbuf.WriteString(t.lit)
 		lastLit = strings.TrimSpace(t.lit) != ""
 	}
 	// trailing newlines can cause issues with commas
@@ -93,6 +87,9 @@ func (l *lineColBuffer) WriteString(s string) (n int, err error) {
 
 var tmplDecl = template.Must(template.New("").Parse(`` +
 	`package p; {{ . }}`))
+
+var tmplBlock = template.Must(template.New("").Parse(`` +
+	`package p; func _() { if true {{ . }} else {} }`))
 
 var tmplExprs = template.Must(template.New("").Parse(`` +
 	`package p; var _ = []interface{}{ {{ . }}, }`))
@@ -167,6 +164,17 @@ func parseDetectingNode(fset *token.FileSet, src string) (ast.Node, *ast.File, e
 		return f, f, nil
 	}
 
+	// then as a block; otherwise blocks might be mistaken for composite
+	// literals further below
+	asBlock := execTmpl(tmplBlock, src)
+	if f, err := parser.ParseFile(fset, "", asBlock, 0); err == nil && noBadNodes(f) {
+		bl := f.Decls[0].(*ast.FuncDecl).Body
+		if len(bl.List) == 1 {
+			ifs := bl.List[0].(*ast.IfStmt)
+			return ifs.Body, f, nil
+		}
+	}
+
 	// then as value expressions
 	asExprs := execTmpl(tmplExprs, src)
 	if f, err := parser.ParseFile(fset, "", asExprs, 0); err == nil && noBadNodes(f) {
@@ -180,19 +188,19 @@ func parseDetectingNode(fset *token.FileSet, src string) (ast.Node, *ast.File, e
 
 	// then try as statements
 	asStmts := execTmpl(tmplStmts, src)
-	if f, err := parser.ParseFile(fset, "", asStmts, 0); err == nil && noBadNodes(f) {
+	f, err := parser.ParseFile(fset, "", asStmts, 0)
+	if err == nil && noBadNodes(f) {
 		bl := f.Decls[0].(*ast.FuncDecl).Body
 		if len(bl.List) == 1 {
 			return bl.List[0], f, nil
 		}
 		return stmtList(bl.List), f, nil
-	} else {
-		// Statements is what covers most cases, so it will give
-		// the best overall error message. Show positions
-		// relative to where the user's code is put in the
-		// template.
-		mainErr = subPosOffsets(err, posOffset{1, 1, 22})
 	}
+	// Statements is what covers most cases, so it will give
+	// the best overall error message. Show positions
+	// relative to where the user's code is put in the
+	// template.
+	mainErr = subPosOffsets(err, posOffset{1, 1, 22})
 
 	// type expressions not yet picked up, for e.g. chans and interfaces
 	if typ, f, err := parseType(fset, src); err == nil && noBadNodes(f) {
@@ -232,11 +240,6 @@ func subPosOffsets(err error, offs ...posOffset) error {
 	}
 	return list
 }
-
-const (
-	_ token.Token = -iota
-	tokAggressive
-)
 
 type fullToken struct {
 	pos token.Position
@@ -282,9 +285,6 @@ func (m *matcher) tokenize(src []byte) ([]fullToken, error) {
 	for t := next(); t.tok != token.EOF; t = next() {
 		switch t.lit {
 		case "$": // continues below
-		case "~":
-			toks = append(toks, fullToken{t.pos, tokAggressive, ""})
-			continue
 		case "switch", "select", "case":
 			if t.lit == "case" {
 				caseStat = caseNone
@@ -316,137 +316,61 @@ func (m *matcher) tokenize(src []byte) ([]fullToken, error) {
 }
 
 func (m *matcher) wildcard(pos token.Position, next func() fullToken) (fullToken, error) {
-	wt := fullToken{pos, token.IDENT, wildPrefix}
 	t := next()
-	var info varInfo
+	any := false
 	if t.tok == token.MUL {
 		t = next()
-		info.any = true
+		any = true
 	}
+	wildName := encodeWildName(t.lit, any)
+	wt := fullToken{pos, token.IDENT, wildName}
 	if t.tok != token.IDENT {
 		return wt, fmt.Errorf("%v: $ must be followed by ident, got %v",
 			t.pos, t.tok)
 	}
-	id := len(m.vars)
-	wt.lit += strconv.Itoa(id)
-	info.name = t.lit
-	m.vars = append(m.vars, info)
 	return wt, nil
 }
 
-type typeCheck struct {
-	op   string // "type", "asgn", "conv"
-	expr ast.Expr
+const wildSeparator = "ᐸᐳ"
+
+func isWildName(s string) bool {
+	return strings.HasPrefix(s, wildSeparator)
 }
 
-type attribute interface{}
-
-type typProperty string
-
-type typUnderlying string
-
-func (m *matcher) parseAttrs(src string) (attribute, error) {
-	toks, err := m.tokenize([]byte(src))
-	if err != nil {
-		return nil, err
+func encodeWildName(name string, any bool) string {
+	suffix := "v"
+	if any {
+		suffix = "a"
 	}
-	i := -1
-	var t fullToken
-	next := func() fullToken {
-		if i++; i < len(toks) {
-			return toks[i]
-		}
-		return fullToken{tok: token.EOF, pos: t.pos}
-	}
-	t = next()
-	op := t.lit
-	switch op { // the ones that don't take args
-	case "comp", "addr":
-		if t = next(); t.tok != token.SEMICOLON {
-			return nil, fmt.Errorf("%v: wanted EOF, got %v", t.pos, t.tok)
-		}
-		return typProperty(op), nil
-	}
-	opPos := t.pos
-	if t = next(); t.tok != token.LPAREN {
-		return nil, fmt.Errorf("%v: wanted (", t.pos)
-	}
-	var attr attribute
-	switch op {
-	case "rx":
-		t = next()
-		rxStr, err := strconv.Unquote(t.lit)
-		if err != nil {
-			return nil, fmt.Errorf("%v: %v", t.pos, err)
-		}
-		if !strings.HasPrefix(rxStr, "^") {
-			rxStr = "^" + rxStr
-		}
-		if !strings.HasSuffix(rxStr, "$") {
-			rxStr = rxStr + "$"
-		}
-		rx, err := regexp.Compile(rxStr)
-		if err != nil {
-			return nil, fmt.Errorf("%v: %v", t.pos, err)
-		}
-		attr = rx
-	case "type", "asgn", "conv":
-		t = next()
-		start := t.pos.Offset
-		for open := 1; open > 0; t = next() {
-			switch t.tok {
-			case token.LPAREN:
-				open++
-			case token.RPAREN:
-				open--
-			case token.EOF:
-				return nil, fmt.Errorf("%v: expected ) to close (", t.pos)
-			}
-		}
-		end := t.pos.Offset - 1
-		typeStr := strings.TrimSpace(string(src[start:end]))
-		fset := token.NewFileSet()
-		typeExpr, _, err := parseType(fset, typeStr)
-		if err != nil {
-			return nil, err
-		}
-		attr = typeCheck{op, typeExpr}
-		i -= 2 // since we went past RPAREN above
-	case "is":
-		switch t = next(); t.lit {
-		case "basic", "array", "slice", "struct", "interface",
-			"pointer", "func", "map", "chan":
-		default:
-			return nil, fmt.Errorf("%v: unknown type: %q", t.pos,
-				t.lit)
-		}
-		attr = typUnderlying(t.lit)
-	default:
-		return nil, fmt.Errorf("%v: unknown op %q", opPos, op)
-	}
-	if t = next(); t.tok != token.RPAREN {
-		return nil, fmt.Errorf("%v: wanted ), got %v", t.pos, t.tok)
-	}
-	if t = next(); t.tok != token.SEMICOLON {
-		return nil, fmt.Errorf("%v: wanted EOF, got %v", t.pos, t.tok)
-	}
-	return attr, nil
+	return wildSeparator + name + wildSeparator + suffix
 }
 
-// using a prefix is good enough for now
-const wildPrefix = "gogrep_"
-
-func isWildName(name string) bool {
-	return strings.HasPrefix(name, wildPrefix)
+func decodeWildName(s string) varInfo {
+	s = s[len(wildSeparator):]
+	nameEnd := strings.Index(s, wildSeparator)
+	name := s[:nameEnd]
+	s = s[nameEnd:]
+	s = s[len(wildSeparator):]
+	kind := s
+	return varInfo{Name: name, Any: kind == "a"}
 }
 
-func fromWildName(s string) int {
-	if !isWildName(s) {
-		return -1
+func decodeWildNode(node ast.Node) varInfo {
+	switch node := node.(type) {
+	case *ast.Ident:
+		if isWildName(node.Name) {
+			return decodeWildName(node.Name)
+		}
+	case *ast.ExprStmt:
+		return decodeWildNode(node.X)
+	case *ast.Field:
+		// Allow $var to represent an entire field; the lone identifier
+		// gets picked up as an anonymous field.
+		if len(node.Names) == 0 && node.Tag == nil {
+			return decodeWildNode(node.Type)
+		}
+	case *ast.KeyValueExpr:
+		return decodeWildNode(node.Value)
 	}
-	n, err := strconv.Atoi(s[len(wildPrefix):])
-	if err != nil {
-		return -1
-	}
-	return n
+	return varInfo{}
 }

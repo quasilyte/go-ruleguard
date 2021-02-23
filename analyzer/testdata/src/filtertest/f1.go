@@ -27,6 +27,27 @@ func _() {
 	fileTest("f1.go") // want `YES`
 }
 
+func convertibleTo() {
+	type myInt2Array [2]int
+	typeTest([2]int{}, "convertible to ([2]int)")      // want `YES`
+	typeTest(myInt2Array{}, "convertible to ([2]int)") // want `YES`
+	typeTest([3]int{}, "convertible to ([2]int)")
+
+	type myIntSlice2 [][]int
+	typeTest([][]int{{1}}, "convertible to [][]int")     // want `YES`
+	typeTest(myIntSlice2(nil), "convertible to [][]int") // want `YES`
+	typeTest([]int{}, "convertible to [][]int")
+}
+
+func assignableTo() {
+	typeTest(map[*string]error{}, "assignable to map[*string]error") // want `YES`
+	typeTest(map[*string]int{}, "assignable to map[*string]error")
+
+	typeTest(0, "assignable to interface{}")   // want `YES`
+	typeTest(5.6, "assignable to interface{}") // want `YES`
+	typeTest("", "assignable to interface{}")  // want `YES`
+}
+
 func detectType() {
 	{
 		type withNamedTime struct {
@@ -84,14 +105,14 @@ func detectType() {
 	var ss []string
 	typeTest(s1 + s2) // want `concat`
 	typeTest(i1 + i2) // want `addition`
-	typeTest(s1 > s2) // want `s1 !is\(int\)`
-	typeTest(i1 > i2) // want `i1 !is\(string\) && pure`
+	typeTest(s1 > s2) // want `\Qs1 !is(int)`
+	typeTest(i1 > i2) // want `\Qi1 !is(string) && pure`
 	typeTest(random() > i2)
-	typeTest(ss, ss) // want `ss is\(\[\]string\)`
+	typeTest(ss, ss) // want `\Qss is([]string)`
 	typeTest(ii, ii)
 	typeTest("2 type filters", i1)
 	typeTest("2 type filters", s1)
-	typeTest("2 type filters", ii) // want `ii !is\(string\) && !is\(int\)`
+	typeTest("2 type filters", ii) // want `\Qii !is(string) && !is(int)`
 
 	typeTest(implementsAll{}, "implements io.Reader") // want `YES`
 	typeTest(i1, "implements io.Reader")
@@ -157,9 +178,27 @@ func detectType() {
 
 }
 
-func detectPure(x int) {
-	pureTest(random()) // want `!pure`
-	pureTest(x * x)    // want `pure`
+func detectPure(x int, xs []int) {
+	var foo struct {
+		a int
+	}
+
+	xptr := &x
+
+	pureTest(random())        // want `!pure`
+	pureTest([]int{random()}) // want `!pure`
+
+	pureTest(*xptr)               // want `pure`
+	pureTest(int(x))              // want `pure`
+	pureTest((*int)(&x))          // want `pure`
+	pureTest((func())(func() {})) // want `pure`
+	pureTest(foo.a)               // want `pure`
+	pureTest(x * x)               // want `pure`
+	pureTest((x * x))             // want `pure`
+	pureTest(+x)                  // want `pure`
+	pureTest(xs[0])               // want `pure`
+	pureTest(xs[x])               // want `pure`
+	pureTest([]int{0})            // want `pure`
 }
 
 func detectText(foo, bar int) {

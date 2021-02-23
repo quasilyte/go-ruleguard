@@ -10,4 +10,7 @@ func test(b bool) {
 
 	println(b == true)
 	println(!!b)
+
+	var eface interface{}
+	println(&eface)
 }

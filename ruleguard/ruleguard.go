@@ -5,11 +5,46 @@ import (
 	"go/token"
 	"go/types"
 	"io"
-
-	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
 )
 
+// Engine is the main ruleguard package API object.
+//
+// First, load some ruleguard files with Load() to build a rule set.
+// Then use Run() to execute the rules.
+//
+// It's advised to have only 1 engine per application as it does a lot of caching.
+// The Run() method is synchronized, so it can be used concurrently.
+//
+// An Engine must be created with NewEngine() function.
+type Engine struct {
+	impl *engine
+}
+
+// NewEngine creates an engine with empty rule set.
+func NewEngine() *Engine {
+	return &Engine{impl: newEngine()}
+}
+
+// Load reads a ruleguard file from r and adds it to the engine rule set.
+//
+// Load() is not thread-safe, especially if used concurrently with Run() method.
+// It's advised to Load() all ruleguard files under a critical section (like sync.Once)
+// and then use Run() to execute all of them.
+func (e *Engine) Load(ctx *ParseContext, filename string, r io.Reader) error {
+	return e.impl.Load(ctx, filename, r)
+}
+
+// Run executes all loaded rules on a given file.
+// Matched rules invoke `RunContext.Report()` method.
+//
+// Run() is thread-safe, unless used in parallel with Load(),
+// which modifies the engine state.
+func (e *Engine) Run(ctx *RunContext, f *ast.File) error {
+	return e.impl.Run(ctx, f)
+}
+
 type ParseContext struct {
+	DebugFilter  string
 	DebugImports bool
 	DebugPrint   func(string)
 
@@ -22,9 +57,10 @@ type ParseContext struct {
 	Fset *token.FileSet
 }
 
-type Context struct {
-	Debug      string
-	DebugPrint func(string)
+type RunContext struct {
+	Debug        string
+	DebugImports bool
+	DebugPrint   func(string)
 
 	Types  *types.Info
 	Sizes  types.Sizes
@@ -39,20 +75,6 @@ type Suggestion struct {
 	Replacement []byte
 }
 
-func ParseRules(ctx *ParseContext, filename string, r io.Reader) (*GoRuleSet, error) {
-	config := rulesParserConfig{
-		ctx:      ctx,
-		itab:     typematch.NewImportsTab(stdlibPackages),
-		importer: newGoImporter(ctx),
-	}
-	p := newRulesParser(config)
-	return p.ParseFile(filename, r)
-}
-
-func RunRules(ctx *Context, f *ast.File, rules *GoRuleSet) error {
-	return newRulesRunner(ctx, rules).run(f)
-}
-
 type GoRuleInfo struct {
 	// Filename is a file that defined this rule.
 	Filename string
@@ -62,18 +84,4 @@ type GoRuleInfo struct {
 
 	// Group is a function name that contained this rule.
 	Group string
-}
-
-type GoRuleSet struct {
-	universal *scopedGoRuleSet
-	local     *scopedGoRuleSet
-
-	groups map[string]token.Position // To handle redefinitions
-
-	// Imports is a set of rule bundles that were imported.
-	Imports map[string]struct{}
-}
-
-func MergeRuleSets(toMerge []*GoRuleSet) (*GoRuleSet, error) {
-	return mergeRuleSets(toMerge)
 }

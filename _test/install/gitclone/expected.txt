@@ -1,2 +1,4 @@
-/root/target.go:8:10: exprUnparen: the parentheses around 1 are superfluous
-/root/target.go:9:10: exprUnparen: the parentheses around 2 are superfluous
+/root/target.go:10:10: exprUnparen: the parentheses around 1 are superfluous (rules.go:17)
+/root/target.go:11:10: exprUnparen: the parentheses around 2 are superfluous (rules.go:17)
+/root/target.go:20:10: sprintStringer: can use foo.String() directly (rules.go:23)
+/root/target.go:21:10: sprintStringer: can use fooptr.String() directly (rules.go:23)

@@ -1,157 +1,13 @@
 package ruleguard
 
 import (
-	"fmt"
 	"go/ast"
 	"go/token"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/quasilyte/go-ruleguard/internal/mvdan.cc/gogrep"
 )
-
-func TestParseRuleError(t *testing.T) {
-	tests := []struct {
-		expr string
-		err  string
-	}{
-		{
-			`m.Where(m.File().Imports("strings")).Report("no match call")`,
-			`missing Match() call`,
-		},
-
-		{
-			`m.Match("$x").Where(m["x"].Pure)`,
-			`missing Report() or Suggest() call`,
-		},
-
-		{
-			`m.Match("$x").Match("$x")`,
-			`Match() can't be repeated`,
-		},
-
-		{
-			`m.Match().Report("$$")`,
-			`too few arguments in call to m.Match`,
-		},
-
-		{
-			`m.Match("func[]").Report("$$")`,
-			`parse match pattern: cannot parse expr: 1:5: expected '(', found '['`,
-		},
-	}
-
-	for _, test := range tests {
-		file := fmt.Sprintf(`
-			package gorules
-			import "github.com/quasilyte/go-ruleguard/dsl"
-			func testrule(m dsl.Matcher) {
-				%s
-			}`,
-			test.expr)
-		ctx := &ParseContext{Fset: token.NewFileSet()}
-		_, err := ParseRules(ctx, "rules.go", strings.NewReader(file))
-		if err == nil {
-			t.Errorf("parse %s: expected %s error, got none", test.expr, test.err)
-			continue
-		}
-		have := err.Error()
-		want := test.err
-		if !strings.Contains(have, want) {
-			t.Errorf("parse %s: errors mismatch:\nhave: %s\nwant: %s", test.expr, have, want)
-			continue
-		}
-	}
-}
-
-func TestParseFilterError(t *testing.T) {
-	tests := []struct {
-		expr string
-		err  string
-	}{
-		{
-			`true`,
-			`unsupported expr: true`,
-		},
-
-		{
-			`m["x"].Text == 5`,
-			`cannot convert 5 (untyped int constant) to string`,
-		},
-
-		{
-			`m["x"].Text.Matches("(12")`,
-			`error parsing regexp: missing closing )`,
-		},
-
-		{
-			`m["x"].Type.Is("%illegal")`,
-			`parse type expr: 1:1: expected operand, found '%'`,
-		},
-
-		{
-			`m["x"].Type.Is("interface{String() string}")`,
-			`parse type expr: can't convert interface{String() string} type expression`,
-		},
-
-		{
-			`m["x"].Type.ConvertibleTo("interface{String() string}")`,
-			`can't convert interface{String() string} into a type constraint yet`,
-		},
-
-		{
-			`m["x"].Type.AssignableTo("interface{String() string}")`,
-			`can't convert interface{String() string} into a type constraint yet`,
-		},
-
-		{
-			`m["x"].Type.Implements("foo")`,
-			"only `error` unqualified type is recognized",
-		},
-
-		{
-			`m["x"].Type.Implements("func()")`,
-			"only qualified names (and `error`) are supported",
-		},
-
-		{
-			`m["x"].Type.Implements("foo.Bar")`,
-			`package foo is not imported`,
-		},
-
-		{
-			`m["x"].Type.Implements("strings.Replacer3")`,
-			`Replacer3 is not found in strings`,
-		},
-
-		{
-			`m["x"].Node.Is("abc")`,
-			`abc is not a valid go/ast type name`,
-		},
-	}
-
-	for _, test := range tests {
-		file := fmt.Sprintf(`
-			package gorules
-			import "github.com/quasilyte/go-ruleguard/dsl"
-			func testrule(m dsl.Matcher) {
-				m.Match("$x + $y[$key]").Where(%s).Report("$$")
-			}`,
-			test.expr)
-		ctx := &ParseContext{Fset: token.NewFileSet()}
-		_, err := ParseRules(ctx, "rules.go", strings.NewReader(file))
-		if err == nil {
-			t.Errorf("parse %s: expected %s error, got none", test.expr, test.err)
-			continue
-		}
-		have := err.Error()
-		want := test.err
-		if !strings.Contains(have, want) {
-			t.Errorf("parse %s: errors mismatch:\nhave: %s\nwant: %s", test.expr, have, want)
-			continue
-		}
-	}
-}
 
 func TestRenderMessage(t *testing.T) {
 	tests := []struct {
@@ -227,17 +83,26 @@ func TestRenderMessage(t *testing.T) {
 		},
 	}
 
+	e := NewEngine()
 	var rr rulesRunner
-	rr.ctx = &Context{
+	rr.state = e.impl.state
+	rr.ctx = &RunContext{
 		Fset: token.NewFileSet(),
 	}
 	for _, test := range tests {
-		nodes := make(map[string]ast.Node, len(test.vars))
-		for _, v := range test.vars {
-			nodes[v] = &ast.Ident{Name: v + "var"}
+		capture := make([]gogrep.CapturedNode, len(test.vars))
+		for i, v := range test.vars {
+			capture[i] = gogrep.CapturedNode{
+				Name: v,
+				Node: &ast.Ident{Name: v + "var"},
+			}
 		}
 
-		have := rr.renderMessage(test.msg, &ast.Ident{Name: "dd"}, nodes, false)
+		m := gogrep.MatchData{
+			Node:    &ast.Ident{Name: "dd"},
+			Capture: capture,
+		}
+		have := rr.renderMessage(test.msg, m, false)
 		if diff := cmp.Diff(have, test.want); diff != "" {
 			t.Errorf("render %s %v:\n(+want -have)\n%s", test.msg, test.vars, diff)
 		}

@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"go/importer"
 	"go/parser"
+	"go/token"
 	"go/types"
 	"path/filepath"
 	"runtime"
@@ -17,49 +18,56 @@ import (
 type goImporter struct {
 	// TODO(quasilyte): share importers with gogrep?
 
-	ctx *ParseContext
-
-	// cache contains all imported packages, from any importer.
-	// Both default and source importers have their own caches,
-	// but since we use several importers, it's better to
-	// have our own, unified cache.
-	cache map[string]*types.Package
+	state *engineState
 
 	defaultImporter types.Importer
 	srcImporter     types.Importer
+
+	fset *token.FileSet
+
+	debugImports bool
+	debugPrint   func(string)
 }
 
-func newGoImporter(ctx *ParseContext) *goImporter {
+type goImporterConfig struct {
+	fset         *token.FileSet
+	debugImports bool
+	debugPrint   func(string)
+}
+
+func newGoImporter(state *engineState, config goImporterConfig) *goImporter {
 	return &goImporter{
-		ctx:             ctx,
-		cache:           make(map[string]*types.Package),
+		state:           state,
+		fset:            config.fset,
+		debugImports:    config.debugImports,
+		debugPrint:      config.debugPrint,
 		defaultImporter: importer.Default(),
-		srcImporter:     importer.ForCompiler(ctx.Fset, "source", nil),
+		srcImporter:     importer.ForCompiler(config.fset, "source", nil),
 	}
 }
 
 func (imp *goImporter) Import(path string) (*types.Package, error) {
-	if pkg := imp.cache[path]; pkg != nil {
-		if imp.ctx.DebugImports {
-			imp.ctx.DebugPrint(fmt.Sprintf(`imported "%s" from importer cache`, path))
+	if pkg := imp.state.GetCachedPackage(path); pkg != nil {
+		if imp.debugImports {
+			imp.debugPrint(fmt.Sprintf(`imported "%s" from importer cache`, path))
 		}
 		return pkg, nil
 	}
 
 	pkg, err1 := imp.srcImporter.Import(path)
 	if err1 == nil {
-		imp.cache[path] = pkg
-		if imp.ctx.DebugImports {
-			imp.ctx.DebugPrint(fmt.Sprintf(`imported "%s" from source importer`, path))
+		imp.state.AddCachedPackage(path, pkg)
+		if imp.debugImports {
+			imp.debugPrint(fmt.Sprintf(`imported "%s" from source importer`, path))
 		}
 		return pkg, nil
 	}
 
 	pkg, err2 := imp.defaultImporter.Import(path)
 	if err2 == nil {
-		imp.cache[path] = pkg
-		if imp.ctx.DebugImports {
-			imp.ctx.DebugPrint(fmt.Sprintf(`imported "%s" from %s importer`, path, runtime.Compiler))
+		imp.state.AddCachedPackage(path, pkg)
+		if imp.debugImports {
+			imp.debugPrint(fmt.Sprintf(`imported "%s" from %s importer`, path, runtime.Compiler))
 		}
 		return pkg, nil
 	}
@@ -67,18 +75,18 @@ func (imp *goImporter) Import(path string) (*types.Package, error) {
 	// Fallback to `go list` as a last resort.
 	pkg, err3 := imp.golistImport(path)
 	if err3 == nil {
-		imp.cache[path] = pkg
-		if imp.ctx.DebugImports {
-			imp.ctx.DebugPrint(fmt.Sprintf(`imported "%s" from golist importer`, path))
+		imp.state.AddCachedPackage(path, pkg)
+		if imp.debugImports {
+			imp.debugPrint(fmt.Sprintf(`imported "%s" from golist importer`, path))
 		}
 		return pkg, nil
 	}
 
-	if imp.ctx.DebugImports {
-		imp.ctx.DebugPrint(fmt.Sprintf(`failed to import "%s":`, path))
-		imp.ctx.DebugPrint(fmt.Sprintf("  source importer: %v", err1))
-		imp.ctx.DebugPrint(fmt.Sprintf("  %s importer: %v", runtime.Compiler, err2))
-		imp.ctx.DebugPrint(fmt.Sprintf("  golist importer: %v", err3))
+	if imp.debugImports {
+		imp.debugPrint(fmt.Sprintf(`failed to import "%s":`, path))
+		imp.debugPrint(fmt.Sprintf("  source importer: %v", err1))
+		imp.debugPrint(fmt.Sprintf("  %s importer: %v", runtime.Compiler, err2))
+		imp.debugPrint(fmt.Sprintf("  golist importer: %v", err3))
 	}
 
 	return nil, err2
@@ -93,7 +101,7 @@ func (imp *goImporter) golistImport(path string) (*types.Package, error) {
 	files := make([]*ast.File, 0, len(golistPkg.GoFiles))
 	for _, filename := range golistPkg.GoFiles {
 		fullname := filepath.Join(golistPkg.Dir, filename)
-		f, err := parser.ParseFile(imp.ctx.Fset, fullname, nil, 0)
+		f, err := parser.ParseFile(imp.fset, fullname, nil, 0)
 		if err != nil {
 			return nil, err
 		}
@@ -104,5 +112,5 @@ func (imp *goImporter) golistImport(path string) (*types.Package, error) {
 	// Otherwise it won't be able to resolve imports.
 	var typecheker types.Config
 	var info types.Info
-	return typecheker.Check(path, imp.ctx.Fset, files, &info)
+	return typecheker.Check(path, imp.fset, files, &info)
 }

@@ -26,4 +26,12 @@ diff -u actual.txt /root/expected.txt
 ./ruleguard -e 'm.Match(`$f($*_, ($x), $*_)`)' /root/target.go &> actual.txt || true
 diff -u actual.txt /root/expected2.txt
 
+# TODO: make it work with `go mod vendor` properly.
+unset GO111MODULE
+cd /usr/local/go
+go get -v -u github.com/quasilyte/go-ruleguard/dsl
+go get -v -u github.com/quasilyte/ruleguard-rules-test
+CGO_ENABLED=0 /root/test/ruleguard -rules /root/rules.go ./src/encoding/... &> actual.txt || true
+diff -u actual.txt /root/expected3.txt
+
 echo SUCCESS

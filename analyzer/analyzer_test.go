@@ -20,8 +20,12 @@ func TestAnalyzer(t *testing.T) {
 		"golint",
 		"regression",
 		"testvendored",
+		"quasigo",
+		"matching",
+		"dgryski",
 	}
 
+	analyzer.ForceNewEngine = true
 	for _, test := range tests {
 		t.Run(test, func(t *testing.T) {
 			testdata := analysistest.TestData()

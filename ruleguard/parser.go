@@ -14,62 +14,69 @@ import (
 	"strconv"
 
 	"github.com/quasilyte/go-ruleguard/internal/mvdan.cc/gogrep"
+	"github.com/quasilyte/go-ruleguard/ruleguard/goutil"
+	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
 	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
 )
+
+// TODO(quasilyte): use source code byte slicing instead of SprintNode?
 
 type parseError string
 
 func (e parseError) Error() string { return string(e) }
 
 type rulesParser struct {
-	ctx *ParseContext
+	state *engineState
+	ctx   *ParseContext
 
 	prefix      string // For imported packages, a prefix that is added to a rule group name
 	importedPkg string // Package path; only for imported packages
 
 	filename string
 	group    string
-	fset     *token.FileSet
-	res      *GoRuleSet
+	res      *goRuleSet
+	pkg      *types.Package
 	types    *types.Info
 
-	itab     *typematch.ImportsTab
 	importer *goImporter
 
-	imported []*GoRuleSet
+	itab *typematch.ImportsTab
+
+	imported []*goRuleSet
 
 	dslPkgname string // The local name of the "ruleguard/dsl" package (usually its just "dsl")
 }
 
 type rulesParserConfig struct {
+	state *engineState
+
 	ctx *ParseContext
+
+	importer *goImporter
 
 	prefix      string
 	importedPkg string
 
-	itab     *typematch.ImportsTab
-	importer *goImporter
+	itab *typematch.ImportsTab
 }
 
 func newRulesParser(config rulesParserConfig) *rulesParser {
 	return &rulesParser{
+		state:       config.state,
 		ctx:         config.ctx,
+		importer:    config.importer,
 		prefix:      config.prefix,
 		importedPkg: config.importedPkg,
 		itab:        config.itab,
-		importer:    config.importer,
 	}
 }
 
-func (p *rulesParser) ParseFile(filename string, r io.Reader) (*GoRuleSet, error) {
+func (p *rulesParser) ParseFile(filename string, r io.Reader) (*goRuleSet, error) {
 	p.dslPkgname = "dsl"
 	p.filename = filename
-	p.fset = p.ctx.Fset
-	p.res = &GoRuleSet{
-		local:     &scopedGoRuleSet{},
+	p.res = &goRuleSet{
 		universal: &scopedGoRuleSet{},
 		groups:    make(map[string]token.Position),
-		Imports:   make(map[string]struct{}),
 	}
 
 	parserFlags := parser.Mode(0)
@@ -98,12 +105,16 @@ func (p *rulesParser) ParseFile(filename string, r io.Reader) (*GoRuleSet, error
 	p.types = &types.Info{
 		Types: map[ast.Expr]types.TypeAndValue{},
 		Uses:  map[*ast.Ident]types.Object{},
+		Defs:  map[*ast.Ident]types.Object{},
 	}
-	_, err = typechecker.Check("gorules", p.ctx.Fset, []*ast.File{f}, p.types)
+	pkg, err := typechecker.Check("gorules", p.ctx.Fset, []*ast.File{f}, p.types)
 	if err != nil {
 		return nil, fmt.Errorf("typechecker error: %v", err)
 	}
+	p.pkg = pkg
 
+	var matcherFuncs []*ast.FuncDecl
+	var userFuncs []*ast.FuncDecl
 	for _, decl := range f.Decls {
 		decl, ok := decl.(*ast.FuncDecl)
 		if !ok {
@@ -115,15 +126,29 @@ func (p *rulesParser) ParseFile(filename string, r io.Reader) (*GoRuleSet, error
 			}
 			continue
 		}
+
+		if p.isMatcherFunc(decl) {
+			matcherFuncs = append(matcherFuncs, decl)
+		} else {
+			userFuncs = append(userFuncs, decl)
+		}
+	}
+
+	for _, decl := range userFuncs {
+		if err := p.parseUserFunc(decl); err != nil {
+			return nil, err
+		}
+	}
+	for _, decl := range matcherFuncs {
 		if err := p.parseRuleGroup(decl); err != nil {
 			return nil, err
 		}
 	}
 
 	if len(p.imported) != 0 {
-		toMerge := []*GoRuleSet{p.res}
+		toMerge := []*goRuleSet{p.res}
 		toMerge = append(toMerge, p.imported...)
-		merged, err := MergeRuleSets(toMerge)
+		merged, err := mergeRuleSets(toMerge)
 		if err != nil {
 			return nil, err
 		}
@@ -131,6 +156,23 @@ func (p *rulesParser) ParseFile(filename string, r io.Reader) (*GoRuleSet, error
 	}
 
 	return p.res, nil
+}
+
+func (p *rulesParser) parseUserFunc(f *ast.FuncDecl) error {
+	ctx := &quasigo.CompileContext{
+		Env:   p.state.env,
+		Types: p.types,
+		Fset:  p.ctx.Fset,
+	}
+	compiled, err := quasigo.Compile(ctx, f)
+	if err != nil {
+		return err
+	}
+	if p.ctx.DebugFilter == f.Name.String() {
+		p.ctx.DebugPrint(quasigo.Disasm(p.state.env, compiled))
+	}
+	ctx.Env.AddFunc(p.pkg.Path(), f.Name.String(), compiled)
+	return nil
 }
 
 func (p *rulesParser) parseInitFunc(f *ast.FuncDecl) error {
@@ -193,30 +235,37 @@ func (p *rulesParser) parseInitFunc(f *ast.FuncDecl) error {
 				return p.errorf(imp.node, "import parsing error: %v", err)
 			}
 			p.imported = append(p.imported, rset)
-			p.res.Imports[imp.pkgPath] = struct{}{}
 		}
 	}
 
 	return nil
 }
 
-func (p *rulesParser) importRules(prefix, pkgPath, filename string) (*GoRuleSet, error) {
+func (p *rulesParser) importRules(prefix, pkgPath, filename string) (*goRuleSet, error) {
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
 	config := rulesParserConfig{
+		state:       p.state,
 		ctx:         p.ctx,
+		importer:    p.importer,
 		prefix:      prefix,
 		importedPkg: pkgPath,
 		itab:        p.itab,
-		importer:    p.importer,
 	}
 	rset, err := newRulesParser(config).ParseFile(filename, bytes.NewReader(data))
 	if err != nil {
 		return nil, fmt.Errorf("%s: %v", p.importedPkg, err)
 	}
 	return rset, nil
+}
+
+func (p *rulesParser) isMatcherFunc(f *ast.FuncDecl) bool {
+	typ := p.types.ObjectOf(f.Name).Type().(*types.Signature)
+	return typ.Results().Len() == 0 &&
+		typ.Params().Len() == 1 &&
+		typ.Params().At(0).Type().String() == "github.com/quasilyte/go-ruleguard/dsl.Matcher"
 }
 
 func (p *rulesParser) parseRuleGroup(f *ast.FuncDecl) (err error) {
@@ -238,14 +287,7 @@ func (p *rulesParser) parseRuleGroup(f *ast.FuncDecl) (err error) {
 	if f.Body == nil {
 		return p.errorf(f, "unexpected empty function body")
 	}
-	if f.Type.Results != nil {
-		return p.errorf(f.Type.Results, "rule group function should not return anything")
-	}
 	params := f.Type.Params.List
-	if len(params) != 1 || len(params[0].Names) != 1 {
-		return p.errorf(f.Type.Params, "rule group function should accept exactly 1 Matcher param")
-	}
-	// TODO(quasilyte): do an actual matcher param type check?
 	matcher := params[0].Names[0].Name
 
 	p.group = f.Name.Name
@@ -261,7 +303,7 @@ func (p *rulesParser) parseRuleGroup(f *ast.FuncDecl) (err error) {
 	}
 	p.res.groups[p.group] = token.Position{
 		Filename: p.filename,
-		Line:     p.fset.Position(f.Name.Pos()).Line,
+		Line:     p.ctx.Fset.Position(f.Name.Pos()).Line,
 	}
 
 	p.itab.EnterScope()
@@ -273,11 +315,11 @@ func (p *rulesParser) parseRuleGroup(f *ast.FuncDecl) (err error) {
 		}
 		stmtExpr, ok := stmt.(*ast.ExprStmt)
 		if !ok {
-			return p.errorf(stmt, "expected a %s method call, found %s", matcher, sprintNode(p.fset, stmt))
+			return p.errorf(stmt, "expected a %s method call, found %s", matcher, goutil.SprintNode(p.ctx.Fset, stmt))
 		}
 		call, ok := stmtExpr.X.(*ast.CallExpr)
 		if !ok {
-			return p.errorf(stmt, "expected a %s method call, found %s", matcher, sprintNode(p.fset, stmt))
+			return p.errorf(stmt, "expected a %s method call, found %s", matcher, goutil.SprintNode(p.ctx.Fset, stmt))
 		}
 		if err := p.parseCall(matcher, call); err != nil {
 			return err
@@ -365,7 +407,7 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 	dst := p.res.universal
 	proto := goRule{
 		filename: p.filename,
-		line:     p.fset.Position(origCall.Pos()).Line,
+		line:     p.ctx.Fset.Position(origCall.Pos()).Line,
 		group:    p.group,
 	}
 	var alternatives []string
@@ -408,18 +450,17 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 
 	for i, alt := range alternatives {
 		rule := proto
-		pat, err := gogrep.Parse(p.fset, alt)
+		pat, err := gogrep.Parse(p.ctx.Fset, alt, false)
 		if err != nil {
 			return p.errorf((*matchArgs)[i], "parse match pattern: %v", err)
 		}
 		rule.pat = pat
 		cat := categorizeNode(pat.Expr)
 		if cat == nodeUnknown {
-			dst.uncategorized = append(dst.uncategorized, rule)
-		} else {
-			dst.categorizedNum++
-			dst.rulesByCategory[cat] = append(dst.rulesByCategory[cat], rule)
+			return p.errorf((*matchArgs)[i], "can't categorize %T node", pat.Expr)
 		}
+		dst.categorizedNum++
+		dst.rulesByCategory[cat] = append(dst.rulesByCategory[cat], rule)
 	}
 
 	return nil
@@ -430,7 +471,7 @@ func (p *rulesParser) parseFilter(root ast.Expr) matchFilter {
 }
 
 func (p *rulesParser) errorf(n ast.Node, format string, args ...interface{}) parseError {
-	loc := p.fset.Position(n.Pos())
+	loc := p.ctx.Fset.Position(n.Pos())
 	message := fmt.Sprintf("%s:%d: %s", loc.Filename, loc.Line, fmt.Sprintf(format, args...))
 	return parseError(message)
 }
@@ -471,7 +512,7 @@ func (p *rulesParser) parseTypeStringArg(e ast.Expr) types.Type {
 }
 
 func (p *rulesParser) parseFilterExpr(e ast.Expr) matchFilter {
-	result := matchFilter{src: sprintNode(p.fset, e)}
+	result := matchFilter{src: goutil.SprintNode(p.ctx.Fset, e)}
 
 	switch e := e.(type) {
 	case *ast.ParenExpr:
@@ -548,7 +589,20 @@ func (p *rulesParser) parseFilterExpr(e ast.Expr) matchFilter {
 	case "Addressable":
 		result.fn = makeAddressableFilter(result.src, operand.varName)
 
+	case "Filter":
+		expr, fn := goutil.ResolveFunc(p.types, args[0])
+		if expr != nil {
+			panic(p.errorf(expr, "expected a simple function name, found expression"))
+		}
+		sig := fn.Type().(*types.Signature)
+		userFn := p.state.env.GetFunc(fn.Pkg().Path(), fn.Name())
+		if userFn == nil {
+			panic(p.errorf(args[0], "can't find a compiled version of %s", sig.String()))
+		}
+		result.fn = makeCustomVarFilter(result.src, operand.varName, userFn)
+
 	case "Type.Is", "Type.Underlying.Is":
+		// TODO(quasilyte): add FQN support?
 		typeString, ok := p.toStringValue(args[0])
 		if !ok {
 			panic(p.errorf(args[0], "expected a string literal argument"))
@@ -570,45 +624,7 @@ func (p *rulesParser) parseFilterExpr(e ast.Expr) matchFilter {
 		result.fn = makeTypeAssignableToFilter(result.src, operand.varName, dstType)
 
 	case "Type.Implements":
-		typeString, ok := p.toStringValue(args[0])
-		if !ok {
-			panic(p.errorf(args[0], "expected a string literal argument"))
-		}
-		n, err := parser.ParseExpr(typeString)
-		if err != nil {
-			panic(p.errorf(args[0], "parse type expr: %v", err))
-		}
-		var iface *types.Interface
-		switch n := n.(type) {
-		case *ast.Ident:
-			if n.Name != `error` {
-				panic(p.errorf(n, "only `error` unqualified type is recognized"))
-			}
-			iface = types.Universe.Lookup("error").Type().Underlying().(*types.Interface)
-		case *ast.SelectorExpr:
-			pkgName, ok := n.X.(*ast.Ident)
-			if !ok {
-				panic(p.errorf(n.X, "invalid package name"))
-			}
-			pkgPath, ok := p.itab.Lookup(pkgName.Name)
-			if !ok {
-				panic(p.errorf(n.X, "package %s is not imported", pkgName.Name))
-			}
-			pkg, err := p.importer.Import(pkgPath)
-			if err != nil {
-				panic(p.errorf(n, "can't load %s: %v", pkgPath, err))
-			}
-			obj := pkg.Scope().Lookup(n.Sel.Name)
-			if obj == nil {
-				panic(p.errorf(n, "%s is not found in %s", n.Sel.Name, pkgPath))
-			}
-			iface, ok = obj.Type().Underlying().(*types.Interface)
-			if !ok {
-				panic(p.errorf(n, "%s is not an interface type", n.Sel.Name))
-			}
-		default:
-			panic(p.errorf(args[0], "only qualified names (and `error`) are supported"))
-		}
+		iface := p.toInterfaceValue(args[0])
 		result.fn = makeTypeImplementsFilter(result.src, operand.varName, iface)
 
 	case "Text.Matches":
@@ -631,6 +647,52 @@ func (p *rulesParser) parseFilterExpr(e ast.Expr) matchFilter {
 		panic("bug: nil func for the filter") // Should never happen
 	}
 	return result
+}
+
+func (p *rulesParser) toInterfaceValue(x ast.Node) *types.Interface {
+	typeString, ok := p.toStringValue(x)
+	if !ok {
+		panic(p.errorf(x, "expected a string literal argument"))
+	}
+
+	typ, err := p.state.FindType(p.importer, p.pkg, typeString)
+	if err == nil {
+		iface, ok := typ.Underlying().(*types.Interface)
+		if !ok {
+			panic(p.errorf(x, "%s is not an interface type", typeString))
+		}
+		return iface
+	}
+
+	n, err := parser.ParseExpr(typeString)
+	if err != nil {
+		panic(p.errorf(x, "parse type expr: %v", err))
+	}
+	qn, ok := n.(*ast.SelectorExpr)
+	if !ok {
+		panic(p.errorf(x, "can't resolve %s type; try a fully-qualified name", typeString))
+	}
+	pkgName, ok := qn.X.(*ast.Ident)
+	if !ok {
+		panic(p.errorf(qn.X, "invalid package name"))
+	}
+	pkgPath, ok := p.itab.Lookup(pkgName.Name)
+	if !ok {
+		panic(p.errorf(qn.X, "package %s is not imported", pkgName.Name))
+	}
+	pkg, err := p.importer.Import(pkgPath)
+	if err != nil {
+		panic(p.errorf(n, "can't load %s: %v", pkgPath, err))
+	}
+	obj := pkg.Scope().Lookup(qn.Sel.Name)
+	if obj == nil {
+		panic(p.errorf(n, "%s is not found in %s", qn.Sel.Name, pkgPath))
+	}
+	iface, ok := obj.Type().Underlying().(*types.Interface)
+	if !ok {
+		panic(p.errorf(n, "%s is not an interface type", qn.Sel.Name))
+	}
+	return iface
 }
 
 func (p *rulesParser) toStringValue(x ast.Node) (string, bool) {
