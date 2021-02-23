@@ -88,7 +88,7 @@ func (p *rulesParser) ParseFile(filename string, r io.Reader) (*goRuleSet, error
 	for _, imp := range f.Imports {
 		importPath, err := strconv.Unquote(imp.Path.Value)
 		if err != nil {
-			return nil, p.errorf(imp, "unquote %s import path: %w", imp.Path.Value, err)
+			return nil, p.errorf(imp, "unquote %s import path: %v", imp.Path.Value, err)
 		}
 		if importPath == "github.com/quasilyte/go-ruleguard/dsl" {
 			if imp.Name != nil {
@@ -227,12 +227,12 @@ func (p *rulesParser) parseInitFunc(f *ast.FuncDecl) error {
 	for _, imp := range imported {
 		files, err := findBundleFiles(imp.pkgPath)
 		if err != nil {
-			return p.errorf(imp.node, "import lookup error: %w", err)
+			return p.errorf(imp.node, "import lookup error: %v", err)
 		}
 		for _, filename := range files {
 			rset, err := p.importRules(imp.prefix, imp.pkgPath, filename)
 			if err != nil {
-				return p.errorf(imp.node, "import parsing error: %w", err)
+				return p.errorf(imp.node, "import parsing error: %v", err)
 			}
 			p.imported = append(p.imported, rset)
 		}
