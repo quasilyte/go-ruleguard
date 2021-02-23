@@ -22,9 +22,7 @@ import (
 
 // TODO(quasilyte): use source code byte slicing instead of SprintNode?
 
-type parseError string
-
-func (e parseError) Error() string { return string(e) }
+type parseError error
 
 type rulesParser struct {
 	state *engineState
@@ -473,8 +471,7 @@ func (p *rulesParser) parseFilter(root ast.Expr) matchFilter {
 
 func (p *rulesParser) errorf(n ast.Node, err error) parseError {
 	loc := p.ctx.Fset.Position(n.Pos())
-	message := fmt.Sprintf("%s:%d: %w", loc.Filename, loc.Line, err)
-	return parseError(message)
+	return parseError(fmt.Errorf("%s:%d: %w", loc.Filename, loc.Line, err))
 }
 
 func (p *rulesParser) parseStringArg(e ast.Expr) string {
