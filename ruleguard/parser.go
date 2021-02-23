@@ -26,8 +26,8 @@ type parseError error
 
 // ImportError is returned when a ruleguard file references a package that cannot be imported.
 type ImportError struct {
-  msg string
-  err error
+	msg string
+	err error
 }
 
 func (e *ImportError) Error() string { return e.msg }
