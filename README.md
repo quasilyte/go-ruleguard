@@ -105,7 +105,7 @@ func main() {
 Run `ruleguard` on that target file:
 
 ```bash
-$ ruleguard -rules example.rules.go -fix example.go
+$ ruleguard -rules rules.go -fix example.go
 example.go:5:10: hint: suggested: v1 == v2
 example.go:6:10: hint: suggested: v1 != v2
 example.go:7:5: error: suspicious identical LHS and RHS
