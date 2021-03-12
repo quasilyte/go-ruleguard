@@ -22,7 +22,7 @@ import (
 
 // TODO(quasilyte): use source code byte slicing instead of SprintNode?
 
-type parseError error
+type parseError struct{ error }
 
 // ImportError is returned when a ruleguard file references a package that cannot be imported.
 type ImportError struct {
@@ -480,7 +480,7 @@ func (p *rulesParser) parseFilter(root ast.Expr) matchFilter {
 
 func (p *rulesParser) errorf(n ast.Node, err error) parseError {
 	loc := p.ctx.Fset.Position(n.Pos())
-	return parseError(fmt.Errorf("%s:%d: %w", loc.Filename, loc.Line, err))
+	return parseError{fmt.Errorf("%s:%d: %w", loc.Filename, loc.Line, err)}
 }
 
 func (p *rulesParser) parseStringArg(e ast.Expr) string {
