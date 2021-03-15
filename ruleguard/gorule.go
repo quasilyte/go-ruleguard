@@ -103,7 +103,7 @@ func mergeRuleSets(toMerge []*goRuleSet) (*goRuleSet, error) {
 			if prevPos, ok := out.groups[group]; ok {
 				newRef := fmt.Sprintf("%s:%d", pos.Filename, pos.Line)
 				oldRef := fmt.Sprintf("%s:%d", prevPos.Filename, prevPos.Line)
-				return nil, fmt.Errorf("%s: redefenition of %s(), previously defined at %s", newRef, group, oldRef)
+				return nil, fmt.Errorf("%s: redefinition of %s(), previously defined at %s", newRef, group, oldRef)
 			}
 			out.groups[group] = pos
 		}
