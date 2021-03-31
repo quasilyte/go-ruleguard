@@ -1,11 +1,35 @@
 package ruleguard
 
 import (
+	"errors"
 	"fmt"
 	"go/token"
 	"strings"
 	"testing"
 )
+
+func TestImportError(t *testing.T) {
+	src := `
+	package gorules
+	import "github.com/quasilyte/go-ruleguard/dsl"
+	func badLock(m dsl.Matcher) {
+		m.Import("foo/nonexisting")
+		m.Match("$x").Where(m["x"].Type.Implements("nonexisting.Iface")).Report("ok")
+	}
+	`
+	e := NewEngine()
+	ctx := &ParseContext{
+		Fset: token.NewFileSet(),
+	}
+	err := e.Load(ctx, "rules.go", strings.NewReader(src))
+	if err == nil {
+		t.Fatal("expected an error, got none")
+	}
+	var importError *ImportError
+	if !errors.As(err, &importError) {
+		t.Fatal("got import that is not ImportError")
+	}
+}
 
 func TestParseFilterFuncError(t *testing.T) {
 	type testCase struct {
