@@ -9,6 +9,7 @@ import (
 	"regexp"
 
 	"github.com/quasilyte/go-ruleguard/internal/xtypes"
+	"github.com/quasilyte/go-ruleguard/nodetag"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
 	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
 )
@@ -243,17 +244,19 @@ func makeTextMatchesFilter(src, varname string, re *regexp.Regexp) filterFunc {
 	}
 }
 
-func makeNodeIsFilter(src, varname string, cat nodeCategory) filterFunc {
+func makeNodeIsFilter(src, varname string, tag nodetag.Value) filterFunc {
 	return func(params *filterParams) matchFilterResult {
 		n := params.subExpr(varname)
 		var matched bool
-		switch cat {
-		case nodeExpr:
+		switch tag {
+		case nodetag.Expr:
 			_, matched = n.(ast.Expr)
-		case nodeStmt:
+		case nodetag.Stmt:
 			_, matched = n.(ast.Stmt)
+		case nodetag.Node:
+			_, matched = n.(ast.Node)
 		default:
-			matched = (cat == categorizeNode(n))
+			matched = (tag == nodetag.FromNode(n))
 		}
 		if matched {
 			return filterSuccess

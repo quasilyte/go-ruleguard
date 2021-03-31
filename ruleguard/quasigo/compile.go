@@ -13,6 +13,9 @@ import (
 
 func compile(ctx *CompileContext, fn *ast.FuncDecl) (compiled *Func, err error) {
 	defer func() {
+		if err != nil {
+			return
+		}
 		rv := recover()
 		if rv == nil {
 			return
