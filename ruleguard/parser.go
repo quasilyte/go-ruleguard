@@ -283,7 +283,7 @@ func (p *rulesParser) parseRuleGroup(f *ast.FuncDecl) (err error) {
 			return
 		}
 		if parseErr, ok := rv.(parseError); ok {
-			err = parseErr
+			err = parseErr.error
 			return
 		}
 		panic(rv) // not our panic
