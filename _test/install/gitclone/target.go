@@ -11,7 +11,7 @@ func test(b bool) {
 	println(add(1, (2)))
 
 	println(b == true)
-	println(!!b)
+	println(!b)
 
 	var foo Foo
 	fooptr := &Foo{}
