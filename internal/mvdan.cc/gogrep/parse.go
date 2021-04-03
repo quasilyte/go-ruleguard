@@ -308,8 +308,7 @@ func (m *matcher) tokenize(src []byte) ([]fullToken, error) {
 		}
 		toks = append(toks, wt)
 		if caseStat == caseHere {
-			toks = append(toks, fullToken{wt.pos, token.COLON, ""})
-			toks = append(toks, fullToken{wt.pos, token.IDENT, "gogrep_body"})
+			toks = append(toks, fullToken{wt.pos, token.COLON, ""}, fullToken{wt.pos, token.IDENT, "gogrep_body"})
 		}
 	}
 	return toks, err
