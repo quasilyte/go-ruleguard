@@ -14,7 +14,8 @@ import (
 	"regexp"
 	"strconv"
 
-	"github.com/quasilyte/go-ruleguard/internal/mvdan.cc/gogrep"
+	"github.com/quasilyte/go-ruleguard/internal/gogrep"
+	"github.com/quasilyte/go-ruleguard/nodetag"
 	"github.com/quasilyte/go-ruleguard/ruleguard/goutil"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
 	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
@@ -278,6 +279,9 @@ func (p *rulesParser) isMatcherFunc(f *ast.FuncDecl) bool {
 
 func (p *rulesParser) parseRuleGroup(f *ast.FuncDecl) (err error) {
 	defer func() {
+		if err != nil {
+			return
+		}
 		rv := recover()
 		if rv == nil {
 			return
@@ -458,17 +462,37 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 
 	for i, alt := range alternatives {
 		rule := proto
-		pat, err := gogrep.Parse(p.ctx.Fset, alt, false)
+		pat, err := gogrep.Compile(p.ctx.Fset, alt, false)
 		if err != nil {
 			return p.errorf((*matchArgs)[i], fmt.Errorf("parse match pattern: %w", err))
 		}
 		rule.pat = pat
-		cat := categorizeNode(pat.Expr)
-		if cat == nodeUnknown {
-			return p.errorf((*matchArgs)[i], fmt.Errorf("can't categorize %T node", pat.Expr))
+		var dstTags []nodetag.Value
+		switch tag := pat.NodeTag(); tag {
+		case nodetag.Unknown:
+			return p.errorf((*matchArgs)[i], fmt.Errorf("can't infer a tag of %s", alt))
+		case nodetag.Node:
+			// TODO: add to every bucket?
+			return p.errorf((*matchArgs)[i], fmt.Errorf("%s is too general", alt))
+		case nodetag.StmtList:
+			dstTags = []nodetag.Value{
+				nodetag.BlockStmt,
+				nodetag.CaseClause,
+				nodetag.CommClause,
+			}
+		case nodetag.ExprList:
+			dstTags = []nodetag.Value{
+				nodetag.CallExpr,
+				nodetag.CompositeLit,
+				nodetag.ReturnStmt,
+			}
+		default:
+			dstTags = []nodetag.Value{tag}
+		}
+		for _, tag := range dstTags {
+			dst.rulesByTag[tag] = append(dst.rulesByTag[tag], rule)
 		}
 		dst.categorizedNum++
-		dst.rulesByCategory[cat] = append(dst.rulesByCategory[cat], rule)
 	}
 
 	return nil
@@ -643,11 +667,11 @@ func (p *rulesParser) parseFilterExpr(e ast.Expr) matchFilter {
 		if !ok {
 			panic(p.errorf(args[0], errors.New("expected a string literal argument")))
 		}
-		cat := categorizeNodeString(typeString)
-		if cat == nodeUnknown {
+		tag := nodetag.FromString(typeString)
+		if tag == nodetag.Unknown {
 			panic(p.errorf(args[0], fmt.Errorf("%s is not a valid go/ast type name", typeString)))
 		}
-		result.fn = makeNodeIsFilter(result.src, operand.varName, cat)
+		result.fn = makeNodeIsFilter(result.src, operand.varName, tag)
 	}
 
 	if result.fn == nil {

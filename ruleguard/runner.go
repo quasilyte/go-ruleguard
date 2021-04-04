@@ -11,7 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/quasilyte/go-ruleguard/internal/mvdan.cc/gogrep"
+	"github.com/quasilyte/go-ruleguard/internal/gogrep"
+	"github.com/quasilyte/go-ruleguard/nodetag"
 	"github.com/quasilyte/go-ruleguard/ruleguard/goutil"
 )
 
@@ -50,7 +51,7 @@ func newRulesRunner(ctx *RunContext, state *engineState, rules *goRuleSet) *rule
 }
 
 func (rr *rulesRunner) nodeText(n ast.Node) []byte {
-	if gogrep.IsEmptyList(n) {
+	if gogrep.IsEmptyNodeSlice(n) {
 		return nil
 	}
 
@@ -92,7 +93,7 @@ func (rr *rulesRunner) run(f *ast.File) error {
 	rr.filterParams.filename = rr.filename
 	rr.collectImports(f)
 
-	if rr.rules.universal.categorizedNum != 0 {
+	if rr.rules.universal.Empty() {
 		ast.Inspect(f, func(n ast.Node) bool {
 			if n == nil {
 				return false
@@ -106,50 +107,10 @@ func (rr *rulesRunner) run(f *ast.File) error {
 }
 
 func (rr *rulesRunner) runRules(n ast.Node) {
-	switch n := n.(type) {
-	case *ast.BlockStmt:
-		rr.runStmtListRules(n.List)
-	case *ast.CaseClause:
-		rr.runStmtListRules(n.Body)
-	case *ast.CommClause:
-		rr.runStmtListRules(n.Body)
-
-	case *ast.CallExpr:
-		rr.runExprListRules(n.Args)
-	case *ast.CompositeLit:
-		rr.runExprListRules(n.Elts)
-	case *ast.ReturnStmt:
-		rr.runExprListRules(n.Results)
-	}
-
-	cat := categorizeNode(n)
-	for _, rule := range rr.rules.universal.rulesByCategory[cat] {
+	tag := nodetag.FromNode(n)
+	for _, rule := range rr.rules.universal.rulesByTag[tag] {
 		matched := false
 		rule.pat.MatchNode(n, func(m gogrep.MatchData) {
-			matched = rr.handleMatch(rule, m)
-		})
-		if matched {
-			break
-		}
-	}
-}
-
-func (rr *rulesRunner) runExprListRules(list []ast.Expr) {
-	for _, rule := range rr.rules.universal.rulesByCategory[nodeExprList] {
-		matched := false
-		rule.pat.MatchExprList(list, func(m gogrep.MatchData) {
-			matched = rr.handleMatch(rule, m)
-		})
-		if matched {
-			break
-		}
-	}
-}
-
-func (rr *rulesRunner) runStmtListRules(list []ast.Stmt) {
-	for _, rule := range rr.rules.universal.rulesByCategory[nodeStmtList] {
-		matched := false
-		rule.pat.MatchStmtList(list, func(m gogrep.MatchData) {
 			matched = rr.handleMatch(rule, m)
 		})
 		if matched {

@@ -14,21 +14,13 @@ import (
 	"text/template"
 )
 
-func (m *matcher) transformSource(expr string) (string, []posOffset, error) {
-	toks, err := m.tokenize([]byte(expr))
+func transformSource(expr string) (string, []posOffset, error) {
+	toks, err := tokenize([]byte(expr))
 	if err != nil {
 		return "", nil, fmt.Errorf("cannot tokenize expr: %v", err)
 	}
 	var offs []posOffset
 	lbuf := lineColBuffer{line: 1, col: 1}
-	addOffset := func(length int) {
-		lbuf.offs -= length
-		offs = append(offs, posOffset{
-			atLine: lbuf.line,
-			atCol:  lbuf.col,
-			offset: length,
-		})
-	}
 	lastLit := false
 	for _, t := range toks {
 		if lbuf.offs >= t.pos.Offset && lastLit && t.lit != "" {
@@ -42,11 +34,6 @@ func (m *matcher) transformSource(expr string) (string, []posOffset, error) {
 			lastLit = false
 			continue
 		}
-		if isWildName(t.lit) {
-			// to correct the position offsets for the extra
-			// info attached to ident name strings
-			addOffset(len(wildSeparator) - 1)
-		}
 		_, _ = lbuf.WriteString(t.lit)
 		lastLit = strings.TrimSpace(t.lit) != ""
 	}
@@ -54,12 +41,12 @@ func (m *matcher) transformSource(expr string) (string, []posOffset, error) {
 	return strings.TrimSpace(lbuf.String()), offs, nil
 }
 
-func (m *matcher) parseExpr(expr string) (ast.Node, error) {
-	exprStr, offs, err := m.transformSource(expr)
+func parseExpr(fset *token.FileSet, expr string) (ast.Node, error) {
+	exprStr, offs, err := transformSource(expr)
 	if err != nil {
 		return nil, err
 	}
-	node, _, err := parseDetectingNode(m.fset, exprStr)
+	node, _, err := parseDetectingNode(fset, exprStr)
 	if err != nil {
 		err = subPosOffsets(err, offs...)
 		return nil, fmt.Errorf("cannot parse expr: %v", err)
@@ -183,7 +170,7 @@ func parseDetectingNode(fset *token.FileSet, src string) (ast.Node, *ast.File, e
 		if len(cl.Elts) == 1 {
 			return cl.Elts[0], f, nil
 		}
-		return exprList(cl.Elts), f, nil
+		return exprSlice(cl.Elts), f, nil
 	}
 
 	// then try as statements
@@ -194,7 +181,7 @@ func parseDetectingNode(fset *token.FileSet, src string) (ast.Node, *ast.File, e
 		if len(bl.List) == 1 {
 			return bl.List[0], f, nil
 		}
-		return stmtList(bl.List), f, nil
+		return stmtSlice(bl.List), f, nil
 	}
 	// Statements is what covers most cases, so it will give
 	// the best overall error message. Show positions
@@ -255,7 +242,7 @@ const (
 	caseHere
 )
 
-func (m *matcher) tokenize(src []byte) ([]fullToken, error) {
+func tokenize(src []byte) ([]fullToken, error) {
 	var s scanner.Scanner
 	fset := token.NewFileSet()
 	file := fset.AddFile("", fset.Base(), len(src))
@@ -299,7 +286,7 @@ func (m *matcher) tokenize(src []byte) ([]fullToken, error) {
 			toks = append(toks, t)
 			continue
 		}
-		wt, err := m.wildcard(t.pos, next)
+		wt, err := tokenizeWildcard(t.pos, next)
 		if err != nil {
 			return nil, err
 		}
@@ -315,7 +302,12 @@ func (m *matcher) tokenize(src []byte) ([]fullToken, error) {
 	return toks, err
 }
 
-func (m *matcher) wildcard(pos token.Position, next func() fullToken) (fullToken, error) {
+type varInfo struct {
+	Name string
+	Seq  bool
+}
+
+func tokenizeWildcard(pos token.Position, next func() fullToken) (fullToken, error) {
 	t := next()
 	any := false
 	if t.tok == token.MUL {
@@ -352,25 +344,17 @@ func decodeWildName(s string) varInfo {
 	s = s[nameEnd:]
 	s = s[len(wildSeparator):]
 	kind := s
-	return varInfo{Name: name, Any: kind == "a"}
+	return varInfo{Name: name, Seq: kind == "a"}
 }
 
-func decodeWildNode(node ast.Node) varInfo {
-	switch node := node.(type) {
-	case *ast.Ident:
-		if isWildName(node.Name) {
-			return decodeWildName(node.Name)
-		}
+func decodeWildNode(n ast.Node) varInfo {
+	switch n := n.(type) {
 	case *ast.ExprStmt:
-		return decodeWildNode(node.X)
-	case *ast.Field:
-		// Allow $var to represent an entire field; the lone identifier
-		// gets picked up as an anonymous field.
-		if len(node.Names) == 0 && node.Tag == nil {
-			return decodeWildNode(node.Type)
+		return decodeWildNode(n.X)
+	case *ast.Ident:
+		if isWildName(n.Name) {
+			return decodeWildName(n.Name)
 		}
-	case *ast.KeyValueExpr:
-		return decodeWildNode(node.Value)
 	}
 	return varInfo{}
 }

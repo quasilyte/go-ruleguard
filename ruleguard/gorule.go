@@ -6,7 +6,8 @@ import (
 	"go/token"
 	"go/types"
 
-	"github.com/quasilyte/go-ruleguard/internal/mvdan.cc/gogrep"
+	"github.com/quasilyte/go-ruleguard/internal/gogrep"
+	"github.com/quasilyte/go-ruleguard/nodetag"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
 )
 
@@ -17,8 +18,12 @@ type goRuleSet struct {
 }
 
 type scopedGoRuleSet struct {
-	categorizedNum  int
-	rulesByCategory [nodeCategoriesCount][]goRule
+	categorizedNum int
+	rulesByTag     [nodetag.NumBuckets][]goRule
+}
+
+func (rset *scopedGoRuleSet) Empty() bool {
+	return rset.categorizedNum != 0
 }
 
 type goRule struct {
@@ -113,8 +118,8 @@ func mergeRuleSets(toMerge []*goRuleSet) (*goRuleSet, error) {
 }
 
 func appendScopedRuleSet(dst, src *scopedGoRuleSet) *scopedGoRuleSet {
-	for cat, rules := range src.rulesByCategory {
-		dst.rulesByCategory[cat] = append(dst.rulesByCategory[cat], cloneRuleSlice(rules)...)
+	for tag, rules := range src.rulesByTag {
+		dst.rulesByTag[tag] = append(dst.rulesByTag[tag], cloneRuleSlice(rules)...)
 		dst.categorizedNum += len(rules)
 	}
 	return dst
