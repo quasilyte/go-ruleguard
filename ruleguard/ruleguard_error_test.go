@@ -188,8 +188,18 @@ func TestParseRuleError(t *testing.T) {
 		err  string
 	}{
 		{
+			`m.Match("$x").MatchComment("").Report("")`,
+			`Match() and MatchComment() can't be combined`,
+		},
+
+		{
+			`m.MatchComment("").Match("$x").Report("")`,
+			`Match() and MatchComment() can't be combined`,
+		},
+
+		{
 			`m.Where(m.File().Imports("strings")).Report("no match call")`,
-			`missing Match() call`,
+			`missing Match() or MatchComment() call`,
 		},
 
 		{
@@ -203,8 +213,23 @@ func TestParseRuleError(t *testing.T) {
 		},
 
 		{
+			`m.MatchComment("").MatchComment("")`,
+			`MatchComment() can't be repeated`,
+		},
+
+		{
 			`m.Match().Report("$$")`,
 			`too few arguments in call to m.Match`,
+		},
+
+		{
+			`m.MatchComment().Report("$$")`,
+			`too few arguments in call to m.MatchComment`,
+		},
+
+		{
+			`m.MatchComment("(").Report("")`,
+			`error parsing regexp: missing closing )`,
 		},
 
 		{

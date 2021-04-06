@@ -31,7 +31,7 @@ Every **matcher function** accepts exactly 1 argument, a [`dsl.Matcher`](https:/
 Every **rule** definition starts with a [`Match()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Match) or [`MatchComment()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.MatchComment) method call.
 
 * For `Match()`, you specify one or more [AST patterns](https://github.com/mvdan/gogrep) that should represent what kind of Go code a rule is supposed to match.
-* For `MatchComment()`, you provide one or more regular expressions that sould match a comment of interest.
+* For `MatchComment()`, you provide one or more regular expressions that should match a comment of interest.
 
 Another mandatory part is [`Report()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Report) or [`Suggest()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Suggest) that describe a rule match action. `Report()` will print a warning message while `Suggest()` can be used to provide a quickfix action (a syntax rewrite pattern).
 
@@ -240,17 +240,7 @@ m.Match(`!!$x`).Suggest(`$x`)
 m.Match(`!!$x`).Suggest(`$x`).Report(`suggested: $x`)
 ```
 
-Be careful when using `Suggest()` with `MatchComment()`. An entire comment node will be rewritten by the rule, so in this case you can't rely on the partial matching. Match an entire comment and use named groups to reconstruct the fixed form of the comment:
-
-```go
-// Bad! If the comment has some other text, it will be removed.
-// "// nolint foo bar" => "//nolint"
-m.MatchComment(`// nolint`).Suggest(`//nolint`)
-
-// Good. No information loss in this case.
-// "// nolint foo bar" => "//nolint foo bar"
-m.MatchComment(`// nolint(?P<rest>)`).Suggest(`//nolint$rest`)
-```
+Be careful when using `Suggest()` with `MatchComment()`. As regexp may match a subset of the comment, you'll replace that exact comment portion with `Suggest()` pattern. If you want to replace an entire comment, be sure that your pattern contains `^` and `$` anchors.
 
 ## Ruleguard bundles
 

@@ -15,6 +15,15 @@ import (
 
 func TestDebug(t *testing.T) {
 	allTests := map[string]map[string][]string{
+		`m.MatchComment("// (?P<x>\\w+)").Where(m["x"].Text.Matches("^Test"))`: {
+			`// TestFoo`: nil,
+
+			`// Foo`: {
+				`input.go:4: [rules.go:5] rejected by m["x"].Text.Matches("^Test")`,
+				`  $x: Foo`,
+			},
+		},
+
 		`m.Match("f($x)").Where(m["x"].Type.Is("string"))`: {
 			`f("abc")`: nil,
 
@@ -200,7 +209,7 @@ func newDebugTestRunner(input string) (*debugTestRunner, error) {
 		var sink interface{}`, input)
 
 	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, "input.go", []byte(fullInput), 0)
+	f, err := parser.ParseFile(fset, "input.go", []byte(fullInput), parser.ParseComments)
 	if err != nil {
 		return nil, err
 	}

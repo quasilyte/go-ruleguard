@@ -370,11 +370,12 @@ func (p *rulesParser) parseStmt(fn *ast.Ident, args []ast.Expr) error {
 func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 	origCall := call
 	var (
-		matchArgs   *[]ast.Expr
-		whereArgs   *[]ast.Expr
-		suggestArgs *[]ast.Expr
-		reportArgs  *[]ast.Expr
-		atArgs      *[]ast.Expr
+		matchArgs        *[]ast.Expr
+		matchCommentArgs *[]ast.Expr
+		whereArgs        *[]ast.Expr
+		suggestArgs      *[]ast.Expr
+		reportArgs       *[]ast.Expr
+		atArgs           *[]ast.Expr
 	)
 	for {
 		chain, ok := call.Fun.(*ast.SelectorExpr)
@@ -386,7 +387,18 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 			if matchArgs != nil {
 				return p.errorf(chain.Sel, errors.New("Match() can't be repeated"))
 			}
+			if matchCommentArgs != nil {
+				return p.errorf(chain.Sel, errors.New("Match() and MatchComment() can't be combined"))
+			}
 			matchArgs = &call.Args
+		case "MatchComment":
+			if matchCommentArgs != nil {
+				return p.errorf(chain.Sel, errors.New("MatchComment() can't be repeated"))
+			}
+			if matchArgs != nil {
+				return p.errorf(chain.Sel, errors.New("Match() and MatchComment() can't be combined"))
+			}
+			matchCommentArgs = &call.Args
 		case "Where":
 			if whereArgs != nil {
 				return p.errorf(chain.Sel, errors.New("Where() can't be repeated"))
@@ -416,19 +428,27 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 		}
 	}
 
-	dst := p.res.universal
 	proto := goRule{
 		filename: p.filename,
 		line:     p.ctx.Fset.Position(origCall.Pos()).Line,
 		group:    p.group,
 	}
+
+	// AST patterns for Match() or regexp patterns for MatchComment().
 	var alternatives []string
 
-	if matchArgs == nil {
-		return p.errorf(origCall, errors.New("missing Match() call"))
+	if matchArgs == nil && matchCommentArgs == nil {
+		return p.errorf(origCall, errors.New("missing Match() or MatchComment() call"))
 	}
-	for _, arg := range *matchArgs {
-		alternatives = append(alternatives, p.parseStringArg(arg))
+
+	if matchArgs != nil {
+		for _, arg := range *matchArgs {
+			alternatives = append(alternatives, p.parseStringArg(arg))
+		}
+	} else {
+		for _, arg := range *matchCommentArgs {
+			alternatives = append(alternatives, p.parseStringArg(arg))
+		}
 	}
 
 	if whereArgs != nil {
@@ -460,20 +480,46 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 		proto.location = arg
 	}
 
+	if matchArgs != nil {
+		return p.loadGogrepRules(proto, *matchArgs, alternatives)
+	}
+	return p.loadCommentRules(proto, *matchCommentArgs, alternatives)
+}
+
+func (p *rulesParser) loadCommentRules(proto goRule, matchArgs []ast.Expr, alternatives []string) error {
+	dst := p.res.universal
+	for i, alt := range alternatives {
+		pat, err := regexp.Compile(alt)
+		if err != nil {
+			return p.errorf(matchArgs[i], fmt.Errorf("parse match comment pattern: %w", err))
+		}
+		rule := goCommentRule{
+			base:          proto,
+			pat:           pat,
+			captureGroups: regexpHasCaptureGroups(alt),
+		}
+		dst.commentRules = append(dst.commentRules, rule)
+	}
+
+	return nil
+}
+
+func (p *rulesParser) loadGogrepRules(proto goRule, matchArgs []ast.Expr, alternatives []string) error {
+	dst := p.res.universal
 	for i, alt := range alternatives {
 		rule := proto
 		pat, err := gogrep.Compile(p.ctx.Fset, alt, false)
 		if err != nil {
-			return p.errorf((*matchArgs)[i], fmt.Errorf("parse match pattern: %w", err))
+			return p.errorf(matchArgs[i], fmt.Errorf("parse match pattern: %w", err))
 		}
 		rule.pat = pat
 		var dstTags []nodetag.Value
 		switch tag := pat.NodeTag(); tag {
 		case nodetag.Unknown:
-			return p.errorf((*matchArgs)[i], fmt.Errorf("can't infer a tag of %s", alt))
+			return p.errorf(matchArgs[i], fmt.Errorf("can't infer a tag of %s", alt))
 		case nodetag.Node:
 			// TODO: add to every bucket?
-			return p.errorf((*matchArgs)[i], fmt.Errorf("%s is too general", alt))
+			return p.errorf(matchArgs[i], fmt.Errorf("%s is too general", alt))
 		case nodetag.StmtList:
 			dstTags = []nodetag.Value{
 				nodetag.BlockStmt,
