@@ -24,6 +24,38 @@ func (m Matcher) Match(pattern string, alternatives ...string) Matcher {
 	return m
 }
 
+// MatchComment is like Match, but handles only comments and uses regexp patterns.
+//
+// Multi-line /**/ comments are passed as a single string.
+// Single-line // comments are passed line-by-line.
+//
+// Hint: if you want to match a plain text and don't want to do meta char escaping,
+// prepend `\Q` to your pattern. `\Qf(x)` will match `f(x)` as a plain text
+// and there is no need to escape the `(` and `)` chars.
+//
+// Named regexp capture groups can be accessed using the usual indexing notation.
+//
+// Given this pattern:
+//
+//     `(?P<first>\d+)\.(\d+).(?P<second>\d+)`
+//
+// And this input comment: `// 14.6.600`
+//
+// We'll get these submatches:
+//
+//     m["$$"] => `// 14.6.600`
+//     m["first"] => `14`
+//     m["second"] => `600`
+//
+// All usual filters can be applied:
+//
+//     Where(!m["first"].Text.Matches(`foo`))
+//
+// You can use this to reject some matches (allow-list behavior).
+func (m Matcher) MatchComment(pattern string, alternatives ...string) Matcher {
+	return m
+}
+
 // Where applies additional constraint to a match.
 // If a given cond is not satisfied, a match is rejected and
 // rule execution stops.
