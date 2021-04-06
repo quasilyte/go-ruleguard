@@ -6,9 +6,39 @@ import (
 	"go/parser"
 	"go/token"
 	"go/types"
+	"regexp/syntax"
 	"strconv"
 	"strings"
 )
+
+func regexpHasCaptureGroups(pattern string) bool {
+	// regexp.Compile() uses syntax.Perl flags, so
+	// we use the same flags here.
+	re, err := syntax.Parse(pattern, syntax.Perl)
+	if err != nil {
+		return true // true is more conservative than false
+	}
+
+	found := false
+
+	var walkRegexp func(*syntax.Regexp)
+	walkRegexp = func(re *syntax.Regexp) {
+		if found {
+			return
+		}
+		// OpCapture handles both named and unnamed capture groups.
+		if re.Op == syntax.OpCapture {
+			found = true
+			return
+		}
+		for _, sub := range re.Sub {
+			walkRegexp(sub)
+		}
+	}
+	walkRegexp(re)
+
+	return found
+}
 
 func findDependency(pkg *types.Package, path string) *types.Package {
 	if pkg.Path() == path {

@@ -23,6 +23,7 @@ func TestAnalyzer(t *testing.T) {
 		"quasigo",
 		"matching",
 		"dgryski",
+		"comments",
 	}
 
 	analyzer.ForceNewEngine = true

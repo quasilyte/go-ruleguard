@@ -5,6 +5,7 @@ import (
 	"go/ast"
 	"go/token"
 	"go/types"
+	"regexp"
 
 	"github.com/quasilyte/go-ruleguard/internal/gogrep"
 	"github.com/quasilyte/go-ruleguard/nodetag"
@@ -20,10 +21,13 @@ type goRuleSet struct {
 type scopedGoRuleSet struct {
 	categorizedNum int
 	rulesByTag     [nodetag.NumBuckets][]goRule
+	commentRules   []goCommentRule
 }
 
-func (rset *scopedGoRuleSet) Empty() bool {
-	return rset.categorizedNum != 0
+type goCommentRule struct {
+	base          goRule
+	pat           *regexp.Regexp
+	captureGroups bool
 }
 
 type goRule struct {
@@ -58,12 +62,17 @@ type filterParams struct {
 
 	importer *goImporter
 
-	match gogrep.MatchData
+	match matchData
 
 	nodeText func(n ast.Node) []byte
 
 	// varname is set only for custom filters before bytecode function is called.
 	varname string
+}
+
+func (params *filterParams) subNode(name string) ast.Node {
+	n, _ := params.match.CapturedByName(name)
+	return n
 }
 
 func (params *filterParams) subExpr(name string) ast.Expr {
@@ -122,6 +131,7 @@ func appendScopedRuleSet(dst, src *scopedGoRuleSet) *scopedGoRuleSet {
 		dst.rulesByTag[tag] = append(dst.rulesByTag[tag], cloneRuleSlice(rules)...)
 		dst.categorizedNum += len(rules)
 	}
+	dst.commentRules = append(dst.commentRules, src.commentRules...)
 	return dst
 }
 

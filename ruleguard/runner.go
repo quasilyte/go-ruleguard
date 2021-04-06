@@ -61,6 +61,12 @@ func (rr *rulesRunner) nodeText(n ast.Node) []byte {
 	if (from >= 0 && from < len(src)) && (to >= 0 && to < len(src)) {
 		return src[from:to]
 	}
+
+	// Go printer would panic on comments.
+	if n, ok := n.(*ast.Comment); ok {
+		return []byte(n.Text)
+	}
+
 	// Fallback to the printer.
 	var buf bytes.Buffer
 	if err := printer.Fprint(&buf, rr.ctx.Fset, n); err != nil {
@@ -93,7 +99,7 @@ func (rr *rulesRunner) run(f *ast.File) error {
 	rr.filterParams.filename = rr.filename
 	rr.collectImports(f)
 
-	if rr.rules.universal.Empty() {
+	if rr.rules.universal.categorizedNum != 0 {
 		ast.Inspect(f, func(n ast.Node) bool {
 			if n == nil {
 				return false
@@ -103,7 +109,74 @@ func (rr *rulesRunner) run(f *ast.File) error {
 		})
 	}
 
+	if len(rr.rules.universal.commentRules) != 0 {
+		for _, commentGroup := range f.Comments {
+			for _, comment := range commentGroup.List {
+				rr.runCommentRules(comment)
+			}
+		}
+	}
+
 	return nil
+}
+
+func (rr *rulesRunner) runCommentRules(comment *ast.Comment) {
+	// We'll need that file to create a token.Pos from the artificial offset.
+	file := rr.ctx.Fset.File(comment.Pos())
+
+	for _, rule := range rr.rules.universal.commentRules {
+		var m commentMatchData
+		if rule.captureGroups {
+			result := rule.pat.FindStringSubmatchIndex(comment.Text)
+			if result == nil {
+				continue
+			}
+			for i, name := range rule.pat.SubexpNames() {
+				if i == 0 || name == "" {
+					continue
+				}
+				resultIndex := i * 2
+				beginPos := result[resultIndex+0]
+				endPos := result[resultIndex+1]
+				// Negative index a special case when named group captured nothing.
+				// Consider this pattern: `(?P<x>foo)|(bar)`.
+				// If we have `bar` input string, <x> will remain empty.
+				if beginPos < 0 || endPos < 0 {
+					m.capture = append(m.capture, gogrep.CapturedNode{
+						Name: name,
+						Node: &ast.Comment{Slash: comment.Pos()},
+					})
+					continue
+				}
+				m.capture = append(m.capture, gogrep.CapturedNode{
+					Name: name,
+					Node: &ast.Comment{
+						Slash: file.Pos(beginPos + file.Offset(comment.Pos())),
+						Text:  comment.Text[beginPos:endPos],
+					},
+				})
+			}
+			m.node = &ast.Comment{
+				Slash: file.Pos(result[0] + file.Offset(comment.Pos())),
+				Text:  comment.Text[result[0]:result[1]],
+			}
+		} else {
+			// Fast path: no need to save any submatches.
+			result := rule.pat.FindStringIndex(comment.Text)
+			if result == nil {
+				continue
+			}
+			m.node = &ast.Comment{
+				Slash: file.Pos(result[0] + file.Offset(comment.Pos())),
+				Text:  comment.Text[result[0]:result[1]],
+			}
+		}
+
+		accept := rr.handleCommentMatch(rule, m)
+		if accept {
+			break
+		}
+	}
 }
 
 func (rr *rulesRunner) runRules(n ast.Node) {
@@ -119,17 +192,17 @@ func (rr *rulesRunner) runRules(n ast.Node) {
 	}
 }
 
-func (rr *rulesRunner) reject(rule goRule, reason string, m gogrep.MatchData) {
+func (rr *rulesRunner) reject(rule goRule, reason string, m matchData) {
 	if rule.group != rr.ctx.Debug {
 		return // This rule is not being debugged
 	}
 
-	pos := rr.ctx.Fset.Position(m.Node.Pos())
+	pos := rr.ctx.Fset.Position(m.Node().Pos())
 	rr.ctx.DebugPrint(fmt.Sprintf("%s:%d: [%s:%d] rejected by %s",
 		pos.Filename, pos.Line, filepath.Base(rule.filename), rule.line, reason))
 
-	values := make([]gogrep.CapturedNode, len(m.Capture))
-	copy(values, m.Capture)
+	values := make([]gogrep.CapturedNode, len(m.CaptureList()))
+	copy(values, m.CaptureList())
 	sort.Slice(values, func(i, j int) bool {
 		return values[i].Name < values[j].Name
 	})
@@ -137,6 +210,13 @@ func (rr *rulesRunner) reject(rule goRule, reason string, m gogrep.MatchData) {
 	for _, v := range values {
 		name := v.Name
 		node := v.Node
+
+		if comment, ok := node.(*ast.Comment); ok {
+			s := strings.ReplaceAll(comment.Text, "\n", `\n`)
+			rr.ctx.DebugPrint(fmt.Sprintf("  $%s: %s", name, s))
+			continue
+		}
+
 		var expr ast.Expr
 		switch node := node.(type) {
 		case ast.Expr:
@@ -157,17 +237,49 @@ func (rr *rulesRunner) reject(rule goRule, reason string, m gogrep.MatchData) {
 	}
 }
 
-func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
-	if rule.filter.fn != nil {
+func (rr *rulesRunner) handleCommentMatch(rule goCommentRule, m commentMatchData) bool {
+	if rule.base.filter.fn != nil {
 		rr.filterParams.match = m
-		filterResult := rule.filter.fn(&rr.filterParams)
+		filterResult := rule.base.filter.fn(&rr.filterParams)
 		if !filterResult.Matched() {
-			rr.reject(rule, filterResult.RejectReason(), m)
+			rr.reject(rule.base, filterResult.RejectReason(), m)
 			return false
 		}
 	}
 
-	message := rr.renderMessage(rule.msg, m, true)
+	message := rr.renderMessage(rule.base.msg, m, true)
+	node := m.Node()
+	if rule.base.location != "" {
+		node, _ = m.CapturedByName(rule.base.location)
+	}
+	var suggestion *Suggestion
+	if rule.base.suggestion != "" {
+		suggestion = &Suggestion{
+			Replacement: []byte(rr.renderMessage(rule.base.suggestion, m, false)),
+			From:        node.Pos(),
+			To:          node.End(),
+		}
+	}
+	info := GoRuleInfo{
+		Group:    rule.base.group,
+		Filename: rule.base.filename,
+		Line:     rule.base.line,
+	}
+	rr.ctx.Report(info, node, message, suggestion)
+	return true
+}
+
+func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
+	if rule.filter.fn != nil {
+		rr.filterParams.match = astMatchData{match: m}
+		filterResult := rule.filter.fn(&rr.filterParams)
+		if !filterResult.Matched() {
+			rr.reject(rule, filterResult.RejectReason(), astMatchData{match: m})
+			return false
+		}
+	}
+
+	message := rr.renderMessage(rule.msg, astMatchData{match: m}, true)
 	node := m.Node
 	if rule.location != "" {
 		node, _ = m.CapturedByName(rule.location)
@@ -175,7 +287,7 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 	var suggestion *Suggestion
 	if rule.suggestion != "" {
 		suggestion = &Suggestion{
-			Replacement: []byte(rr.renderMessage(rule.suggestion, m, false)),
+			Replacement: []byte(rr.renderMessage(rule.suggestion, astMatchData{match: m}, false)),
 			From:        node.Pos(),
 			To:          node.End(),
 		}
@@ -200,18 +312,18 @@ func (rr *rulesRunner) collectImports(f *ast.File) {
 	}
 }
 
-func (rr *rulesRunner) renderMessage(msg string, m gogrep.MatchData, truncate bool) string {
+func (rr *rulesRunner) renderMessage(msg string, m matchData, truncate bool) string {
 	var buf strings.Builder
 	if strings.Contains(msg, "$$") {
-		buf.Write(rr.nodeText(m.Node))
+		buf.Write(rr.nodeText(m.Node()))
 		msg = strings.ReplaceAll(msg, "$$", buf.String())
 	}
-	if len(m.Capture) == 0 {
+	if len(m.CaptureList()) == 0 {
 		return msg
 	}
 
-	capture := make([]gogrep.CapturedNode, len(m.Capture))
-	copy(capture, m.Capture)
+	capture := make([]gogrep.CapturedNode, len(m.CaptureList()))
+	copy(capture, m.CaptureList())
 	sort.Slice(capture, func(i, j int) bool {
 		return len(capture[i].Name) > len(capture[j].Name)
 	})

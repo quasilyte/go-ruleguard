@@ -212,7 +212,7 @@ func makeValueIntFilter(src, varname string, op token.Token, rhsVarname string) 
 
 func makeTextConstFilter(src, varname string, op token.Token, rhsValue constant.Value) filterFunc {
 	return func(params *filterParams) matchFilterResult {
-		s := params.nodeText(params.subExpr(varname))
+		s := params.nodeText(params.subNode(varname))
 		lhsValue := constant.MakeString(string(s))
 		if constant.Compare(lhsValue, op, rhsValue) {
 			return filterSuccess
@@ -223,7 +223,7 @@ func makeTextConstFilter(src, varname string, op token.Token, rhsValue constant.
 
 func makeTextFilter(src, varname string, op token.Token, rhsVarname string) filterFunc {
 	return func(params *filterParams) matchFilterResult {
-		s1 := params.nodeText(params.subExpr(varname))
+		s1 := params.nodeText(params.subNode(varname))
 		lhsValue := constant.MakeString(string(s1))
 		n, _ := params.match.CapturedByName(rhsVarname)
 		s2 := params.nodeText(n)
@@ -237,7 +237,7 @@ func makeTextFilter(src, varname string, op token.Token, rhsVarname string) filt
 
 func makeTextMatchesFilter(src, varname string, re *regexp.Regexp) filterFunc {
 	return func(params *filterParams) matchFilterResult {
-		if re.Match(params.nodeText(params.subExpr(varname))) {
+		if re.Match(params.nodeText(params.subNode(varname))) {
 			return filterSuccess
 		}
 		return filterFailure(src)
@@ -245,6 +245,7 @@ func makeTextMatchesFilter(src, varname string, re *regexp.Regexp) filterFunc {
 }
 
 func makeNodeIsFilter(src, varname string, tag nodetag.Value) filterFunc {
+	// TODO: add comment nodes support?
 	return func(params *filterParams) matchFilterResult {
 		n := params.subExpr(varname)
 		var matched bool
