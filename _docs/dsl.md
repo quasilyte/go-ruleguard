@@ -28,7 +28,10 @@ There are 3 kinds of functions you can declare:
 
 Every **matcher function** accepts exactly 1 argument, a [`dsl.Matcher`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher), and defines some **rules**.
 
-Every **rule** definition starts with a [`Match()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Match) method call that specifies one or more [AST patterns](https://github.com/mvdan/gogrep) that should represent what kind of Go code a rule is supposed to match.
+Every **rule** definition starts with a [`Match()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Match) or [`MatchComment()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.MatchComment) method call.
+
+* For `Match()`, you specify one or more [AST patterns](https://github.com/mvdan/gogrep) that should represent what kind of Go code a rule is supposed to match.
+* For `MatchComment()`, you provide one or more regular expressions that sould match a comment of interest.
 
 Another mandatory part is [`Report()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Report) or [`Suggest()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Suggest) that describe a rule match action. `Report()` will print a warning message while `Suggest()` can be used to provide a quickfix action (a syntax rewrite pattern).
 
@@ -93,6 +96,8 @@ Context-related filters can be applied through `m` members:
 // Using m.File() to apply a file-related filter.
 Where(m.File().Imports("io/ioutil"))
 ```
+
+When using `MatchComment`, submatches will have a type of `*ast.Comment`. Text-related filters can be used as usual.
 
 The filter concept is crucial to avoid false-positives in rules.
 
@@ -233,6 +238,18 @@ The following 2 lines are identical:
 ```go
 m.Match(`!!$x`).Suggest(`$x`)
 m.Match(`!!$x`).Suggest(`$x`).Report(`suggested: $x`)
+```
+
+Be careful when using `Suggest()` with `MatchComment()`. An entire comment node will be rewritten by the rule, so in this case you can't rely on the partial matching. Match an entire comment and use named groups to reconstruct the fixed form of the comment:
+
+```go
+// Bad! If the comment has some other text, it will be removed.
+// "// nolint foo bar" => "//nolint"
+m.MatchComment(`// nolint`).Suggest(`//nolint`)
+
+// Good. No information loss in this case.
+// "// nolint foo bar" => "//nolint foo bar"
+m.MatchComment(`// nolint(?P<rest>)`).Suggest(`//nolint$rest`)
 ```
 
 ## Ruleguard bundles
