@@ -43,7 +43,7 @@ func (m Matcher) Match(pattern string, alternatives ...string) Matcher {
 //
 // We'll get these submatches:
 //
-//     m["$$"] => `// 14.6.600`
+//     m["$$"] => `14.6.600`
 //     m["first"] => `14`
 //     m["second"] => `600`
 //
