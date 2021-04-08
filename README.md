@@ -22,7 +22,7 @@ You write the rules, `ruleguard` checks whether they are satisfied.
 * Diagnostics are written in a declarative way
 * [Quickfix](_docs/dsl.md#suggestions-quickfix-support) actions support
 * Powerful match filtering features, like expression [type pattern matching](_docs/dsl.md#type-pattern-matching)
-* Can match comments in a meaningful way
+* Not restricted to AST rules; it's possible to write a comment-related rule, for example
 * Rules can be installed as [Go modules](https://quasilyte.dev/blog/post/ruleguard-modules/)
 * Integrated into [golangci-lint](https://github.com/golangci/golangci-lint)
 
