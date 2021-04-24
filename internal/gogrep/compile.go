@@ -137,6 +137,21 @@ func (c *compiler) compileOptExpr(n ast.Expr) {
 	c.compileExpr(n)
 }
 
+func (c *compiler) compileOptFieldList(n *ast.FieldList) {
+	if len(n.List) == 1 {
+		if ident, ok := n.List[0].Type.(*ast.Ident); ok && isWildName(ident.Name) {
+			// `func (...) $*result` - result could be anything
+			// `func (...) $result`  - result is a field list of 1 element
+			info := decodeWildName(ident.Name)
+			if info.Seq {
+				c.compileWildIdent(ident, true)
+				return
+			}
+		}
+	}
+	c.compileFieldList(n)
+}
+
 func (c *compiler) compileFieldList(n *ast.FieldList) {
 	c.emitInstOp(opFieldList)
 	for _, x := range n.List {
@@ -452,9 +467,9 @@ func (c *compiler) compileFuncType(n *ast.FuncType) {
 	} else {
 		c.emitInstOp(opFuncType)
 	}
-	c.compileFieldList(n.Params)
+	c.compileOptFieldList(n.Params)
 	if !void {
-		c.compileFieldList(n.Results)
+		c.compileOptFieldList(n.Results)
 	}
 }
 

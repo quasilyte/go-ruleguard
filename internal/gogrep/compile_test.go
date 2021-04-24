@@ -223,6 +223,50 @@ func TestCompileWildcard(t *testing.T) {
 			`EmptyPackage`,
 			` • NamedNode p`,
 		},
+
+		// $*_ in a place of a field list implies a field list of 0 or more fields.
+		// It can also match a field list of 1 element and nil.
+		`func $_() $*_ { $*_ }`: {
+			`FuncDecl`,
+			` • Node`,
+			` • FuncType`,
+			` •  • FieldList`,
+			` •  •  • End`,
+			` •  • OptNode`,
+			` • BlockStmt`,
+			` •  • NodeSeq`,
+			` •  • End`,
+		},
+
+		// $y in a place of a field list implies a field list of exactly 1 field.
+		`func $_($x $y) $y { return $x }`: {
+			`FuncDecl`,
+			` • Node`,
+			` • FuncType`,
+			` •  • FieldList`,
+			` •  •  • Field`,
+			` •  •  •  • NamedNode x`,
+			` •  •  •  • NamedNode y`,
+			` •  •  • End`,
+			` •  • FieldList`,
+			` •  •  • UnnamedField`,
+			` •  •  •  • NamedNode y`,
+			` •  •  • End`,
+			` • BlockStmt`,
+			` •  • ReturnStmt`,
+			` •  •  • NamedNode x`,
+			` •  •  • End`,
+			` •  • End`,
+		},
+
+		`func _($*_) {}`: {
+			`FuncDecl`,
+			` • Ident _`,
+			` • VoidFuncType`,
+			` •  • OptNode`,
+			` • BlockStmt`,
+			` •  • End`,
+		},
 	})
 
 	for i := range tests {

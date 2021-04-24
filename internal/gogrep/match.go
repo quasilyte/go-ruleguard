@@ -244,7 +244,7 @@ func (m *matcher) matchNodeWithInst(inst instruction, n ast.Node) bool {
 		return ok && n.Results == nil && m.matchNode(n.Params)
 	case opFuncType:
 		n, ok := n.(*ast.FuncType)
-		return ok && n.Results != nil && m.matchNode(n.Params) && m.matchNode(n.Results)
+		return ok && m.matchNode(n.Params) && m.matchNode(n.Results)
 
 	case opCompositeLit:
 		n, ok := n.(*ast.CompositeLit)
@@ -266,8 +266,9 @@ func (m *matcher) matchNodeWithInst(inst instruction, n ast.Node) bool {
 		n, ok := n.(*ast.Field)
 		return ok && len(n.Names) >= 2 && m.matchIdentSlice(n.Names) && m.matchNode(n.Type)
 	case opFieldList:
+		// FieldList could be nil in places like function return types.
 		n, ok := n.(*ast.FieldList)
-		return ok && m.matchFieldSlice(n.List)
+		return ok && n != nil && m.matchFieldSlice(n.List)
 
 	case opFuncLit:
 		n, ok := n.(*ast.FuncLit)
