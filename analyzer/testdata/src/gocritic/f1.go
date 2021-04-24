@@ -245,11 +245,11 @@ func newDeref() {
 func emptyStringTest(s string) {
 	sptr := &s
 
-	_ = len(s) == 0 // want `\Qreplace len(s) == 0 with len(s) == ""`
-	_ = len(s) != 0 // want `\Qreplace len(s) != 0 with len(s) != ""`
+	_ = len(s) == 0 // want `\Qreplace len(s) == 0 with s == ""`
+	_ = len(s) != 0 // want `\Qreplace len(s) != 0 with s != ""`
 
-	_ = len(*sptr) == 0 // want `\Qreplace len(*sptr) == 0 with len(*sptr) == ""`
-	_ = len(*sptr) != 0 // want `\Qreplace len(*sptr) != 0 with len(*sptr) != ""`
+	_ = len(*sptr) == 0 // want `\Qreplace len(*sptr) == 0 with *sptr == ""`
+	_ = len(*sptr) != 0 // want `\Qreplace len(*sptr) != 0 with *sptr != ""`
 
 	_ = s == ""
 	_ = s != ""
