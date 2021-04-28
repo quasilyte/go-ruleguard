@@ -31,7 +31,7 @@ type goCommentRule struct {
 }
 
 type goRule struct {
-	group      string
+	group      *GoRuleGroup
 	filename   string
 	line       int
 	pat        *gogrep.Pattern
