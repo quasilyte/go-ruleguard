@@ -99,7 +99,7 @@ func runAnalyzer(pass *analysis.Pass) (interface{}, error) {
 			fullMessage := msg
 			if printRuleLocation {
 				fullMessage = fmt.Sprintf("%s: %s (%s:%d)",
-					info.Group, msg, filepath.Base(info.Group.Filename), info.Line)
+					info.Group.Name, msg, filepath.Base(info.Group.Filename), info.Line)
 			}
 			diag := analysis.Diagnostic{
 				Pos:     n.Pos(),
