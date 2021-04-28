@@ -86,7 +86,7 @@ func (p *rulesParser) ParseFile(filename string, r io.Reader) (*goRuleSet, error
 	p.filename = filename
 	p.res = &goRuleSet{
 		universal: &scopedGoRuleSet{},
-		groups:    make(map[string]token.Position),
+		groups:    make(map[string]*GoRuleGroup),
 	}
 
 	parserFlags := parser.ParseComments
@@ -304,7 +304,9 @@ func (p *rulesParser) parseRuleGroup(f *ast.FuncDecl) (err error) {
 	matcher := params[0].Names[0].Name
 
 	p.group = &GoRuleGroup{
-		Name: f.Name.Name,
+		Line:     p.ctx.Fset.Position(f.Name.Pos()).Line,
+		Filename: p.filename,
+		Name:     f.Name.Name,
 	}
 	if p.prefix != "" {
 		p.group.Name = p.prefix + "/" + p.group.Name
@@ -319,12 +321,9 @@ func (p *rulesParser) parseRuleGroup(f *ast.FuncDecl) (err error) {
 		return nil // Skip this group
 	}
 	if _, ok := p.res.groups[p.group.Name]; ok {
-		panic(fmt.Sprintf("duplicated function %s after the typecheck", p.group)) // Should never happen
+		panic(fmt.Sprintf("duplicated function %s after the typecheck", p.group.Name)) // Should never happen
 	}
-	p.res.groups[p.group.Name] = token.Position{
-		Filename: p.filename,
-		Line:     p.ctx.Fset.Position(f.Name.Pos()).Line,
-	}
+	p.res.groups[p.group.Name] = p.group
 
 	p.itab.EnterScope()
 	defer p.itab.LeaveScope()
@@ -477,9 +476,8 @@ func (p *rulesParser) parseRule(matcher string, call *ast.CallExpr) error {
 	}
 
 	proto := goRule{
-		filename: p.filename,
-		line:     p.ctx.Fset.Position(origCall.Pos()).Line,
-		group:    p.group,
+		line:  p.ctx.Fset.Position(origCall.Pos()).Line,
+		group: p.group,
 	}
 
 	// AST patterns for Match() or regexp patterns for MatchComment().

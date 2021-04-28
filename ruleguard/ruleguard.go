@@ -34,6 +34,11 @@ func (e *Engine) Load(ctx *ParseContext, filename string, r io.Reader) error {
 	return e.impl.Load(ctx, filename, r)
 }
 
+// LoadedGroups returns information about all currently loaded rule groups.
+func (e *Engine) LoadedGroups() []GoRuleGroup {
+	return e.impl.LoadedGroups()
+}
+
 // Run executes all loaded rules on a given file.
 // Matched rules invoke `RunContext.Report()` method.
 //
@@ -86,6 +91,13 @@ type GoRuleInfo struct {
 type GoRuleGroup struct {
 	// Name is a function name associated with this rule group.
 	Name string
+
+	// Pos is a location where this rule group was defined.
+	Pos token.Position
+
+	// Line is a source code line number inside associated file.
+	// A pair of Filename:Line form a conventional location string.
+	Line int
 
 	// Filename is a file that defined this rule group.
 	Filename string

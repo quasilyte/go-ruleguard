@@ -199,7 +199,7 @@ func (rr *rulesRunner) reject(rule goRule, reason string, m matchData) {
 
 	pos := rr.ctx.Fset.Position(m.Node().Pos())
 	rr.ctx.DebugPrint(fmt.Sprintf("%s:%d: [%s:%d] rejected by %s",
-		pos.Filename, pos.Line, filepath.Base(rule.filename), rule.line, reason))
+		pos.Filename, pos.Line, filepath.Base(rule.group.Filename), rule.line, reason))
 
 	values := make([]gogrep.CapturedNode, len(m.CaptureList()))
 	copy(values, m.CaptureList())

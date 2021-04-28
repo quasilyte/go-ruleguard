@@ -6,6 +6,7 @@ import (
 	"go/ast"
 	"go/types"
 	"io"
+	"sort"
 	"strings"
 	"sync"
 
@@ -23,6 +24,17 @@ func newEngine() *engine {
 	return &engine{
 		state: newEngineState(),
 	}
+}
+
+func (e *engine) LoadedGroups() []GoRuleGroup {
+	result := make([]GoRuleGroup, 0, len(e.ruleSet.groups))
+	for _, g := range e.ruleSet.groups {
+		result = append(result, *g)
+	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Name < result[j].Name
+	})
+	return result
 }
 
 func (e *engine) Load(ctx *ParseContext, filename string, r io.Reader) error {
