@@ -13,6 +13,7 @@ import (
 	"path"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/quasilyte/go-ruleguard/internal/gogrep"
 	"github.com/quasilyte/go-ruleguard/nodetag"
@@ -42,7 +43,7 @@ type rulesParser struct {
 	importedPkg string // Package path; only for imported packages
 
 	filename string
-	group    string
+	group    *GoRuleGroup
 	res      *goRuleSet
 	pkg      *types.Package
 	types    *types.Info
@@ -88,7 +89,7 @@ func (p *rulesParser) ParseFile(filename string, r io.Reader) (*goRuleSet, error
 		groups:    make(map[string]token.Position),
 	}
 
-	parserFlags := parser.Mode(0)
+	parserFlags := parser.ParseComments
 	f, err := parser.ParseFile(p.ctx.Fset, filename, r, parserFlags)
 	if err != nil {
 		return nil, fmt.Errorf("parse file error: %w", err)
@@ -302,18 +303,25 @@ func (p *rulesParser) parseRuleGroup(f *ast.FuncDecl) (err error) {
 	params := f.Type.Params.List
 	matcher := params[0].Names[0].Name
 
-	p.group = f.Name.Name
+	p.group = &GoRuleGroup{
+		Name: f.Name.Name,
+	}
 	if p.prefix != "" {
-		p.group = p.prefix + "/" + f.Name.Name
+		p.group.Name = p.prefix + "/" + p.group.Name
+	}
+	if f.Doc != nil {
+		if err := p.parseDocComments(f.Doc); err != nil {
+			return err
+		}
 	}
 
-	if p.ctx.GroupFilter != nil && !p.ctx.GroupFilter(p.group) {
+	if p.ctx.GroupFilter != nil && !p.ctx.GroupFilter(p.group.Name) {
 		return nil // Skip this group
 	}
-	if _, ok := p.res.groups[p.group]; ok {
+	if _, ok := p.res.groups[p.group.Name]; ok {
 		panic(fmt.Sprintf("duplicated function %s after the typecheck", p.group)) // Should never happen
 	}
-	p.res.groups[p.group] = token.Position{
+	p.res.groups[p.group.Name] = token.Position{
 		Filename: p.filename,
 		Line:     p.ctx.Fset.Position(f.Name.Pos()).Line,
 	}
@@ -336,9 +344,49 @@ func (p *rulesParser) parseRuleGroup(f *ast.FuncDecl) (err error) {
 		if err := p.parseCall(matcher, call); err != nil {
 			return err
 		}
-
 	}
 
+	return nil
+}
+
+func (p *rulesParser) parseDocComments(comment *ast.CommentGroup) error {
+	knownPragmas := []string{
+		"tags",
+		"summary",
+		"before",
+		"after",
+	}
+
+	for _, c := range comment.List {
+		if !strings.HasPrefix(c.Text, "//doc:") {
+			continue
+		}
+		s := strings.TrimPrefix(c.Text, "//doc:")
+		var pragma string
+		for i := range knownPragmas {
+			if strings.HasPrefix(s, knownPragmas[i]) {
+				pragma = knownPragmas[i]
+				break
+			}
+		}
+		if pragma == "" {
+			return p.errorf(c, errors.New("unrecognized 'doc' pragma in comment"))
+		}
+		s = strings.TrimPrefix(s, pragma)
+		s = strings.TrimSpace(s)
+		switch pragma {
+		case "summary":
+			p.group.DocSummary = s
+		case "before":
+			p.group.DocBefore = s
+		case "after":
+			p.group.DocAfter = s
+		case "tags":
+			p.group.DocTags = strings.Fields(s)
+		default:
+			panic("unhandled 'doc' pragma: " + pragma) // Should never happen
+		}
+	}
 	return nil
 }
 

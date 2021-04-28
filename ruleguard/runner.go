@@ -193,7 +193,7 @@ func (rr *rulesRunner) runRules(n ast.Node) {
 }
 
 func (rr *rulesRunner) reject(rule goRule, reason string, m matchData) {
-	if rule.group != rr.ctx.Debug {
+	if rule.group.Name != rr.ctx.Debug {
 		return // This rule is not being debugged
 	}
 
@@ -261,9 +261,8 @@ func (rr *rulesRunner) handleCommentMatch(rule goCommentRule, m commentMatchData
 		}
 	}
 	info := GoRuleInfo{
-		Group:    rule.base.group,
-		Filename: rule.base.filename,
-		Line:     rule.base.line,
+		Group: rule.base.group,
+		Line:  rule.base.line,
 	}
 	rr.ctx.Report(info, node, message, suggestion)
 	return true
@@ -293,9 +292,8 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 		}
 	}
 	info := GoRuleInfo{
-		Group:    rule.group,
-		Filename: rule.filename,
-		Line:     rule.line,
+		Group: rule.group,
+		Line:  rule.line,
 	}
 	rr.ctx.Report(info, node, message, suggestion)
 	return true

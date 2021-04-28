@@ -76,12 +76,32 @@ type Suggestion struct {
 }
 
 type GoRuleInfo struct {
-	// Filename is a file that defined this rule.
-	Filename string
-
 	// Line is a line inside a file that defined this rule.
 	Line int
 
-	// Group is a function name that contained this rule.
-	Group string
+	// Group is a function that contains this rule.
+	Group *GoRuleGroup
+}
+
+type GoRuleGroup struct {
+	// Name is a function name associated with this rule group.
+	Name string
+
+	// Filename is a file that defined this rule group.
+	Filename string
+
+	// DocTags contains a list of keys from the `gorules:tags` comment.
+	DocTags []string
+
+	// DocSummary is a short one sentence description.
+	// Filled from the `gorules:summary` doc content.
+	DocSummary string
+
+	// DocBefore is a code snippet of code that will violate rule.
+	// Filled from the `gorules:before` doc content.
+	DocBefore string
+
+	// DocAfter is a code snippet of fixed code that complies to the rule.
+	// Filled from the `gorules:after` doc content.
+	DocAfter string
 }

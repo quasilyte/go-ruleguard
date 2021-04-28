@@ -55,6 +55,28 @@ A `Report()` argument string can use `$<varname>` notation to interpolate the na
 
 There is a special variable `$$` which can be used to inject the entire pattern match into the message (like `$0` in regular expressions).
 
+### Documenting your rules
+
+It's a good practice to add structured documentation for your rule groups.
+
+To add such documentation, use special pragmas when commenting a matcher function.
+
+```go
+//doc:summary reports always false/true conditions
+//doc:before  strings.Count(s, "/") >= 0
+//doc:after   strings.Count(s, "/") > 0
+//doc:tags    diagnostic exprimental
+func badCond(m dsl.Matcher) {
+	m.Match(`strings.Count($_, $_) >= 0`).Report(`statement always true`)
+	m.Match(`bytes.Count($_, $_) >= 0`).Report(`statement always true`)
+}
+```
+
+* `summary` - short one sentence description
+* `before` - code snippet of code that will violate rule
+* `after` - code after a fix (one that complies to the rule)
+* `tags` - space separated list of custom tags
+
 ### Filters
 
 The rule is matched if:
