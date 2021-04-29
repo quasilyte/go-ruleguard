@@ -106,14 +106,20 @@ type GoRuleGroup struct {
 	DocTags []string
 
 	// DocSummary is a short one sentence description.
-	// Filled from the `gorules:summary` doc content.
+	// Filled from the `doc:summary` pragma content.
 	DocSummary string
 
 	// DocBefore is a code snippet of code that will violate rule.
-	// Filled from the `gorules:before` doc content.
+	// Filled from the `doc:before` pragma content.
 	DocBefore string
 
 	// DocAfter is a code snippet of fixed code that complies to the rule.
-	// Filled from the `gorules:after` doc content.
+	// Filled from the `doc:after` pragma content.
 	DocAfter string
+
+	// DocNote is an optional caution message or advice.
+	// Usually, it's used to reference some external resource, like
+	// issue on the GitHub.
+	// Filled from the `doc:note` pragma content.
+	DocNote string
 }

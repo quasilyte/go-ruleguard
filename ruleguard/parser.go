@@ -354,6 +354,7 @@ func (p *rulesParser) parseDocComments(comment *ast.CommentGroup) error {
 		"summary",
 		"before",
 		"after",
+		"note",
 	}
 
 	for _, c := range comment.List {
@@ -380,6 +381,8 @@ func (p *rulesParser) parseDocComments(comment *ast.CommentGroup) error {
 			p.group.DocBefore = s
 		case "after":
 			p.group.DocAfter = s
+		case "note":
+			p.group.DocNote = s
 		case "tags":
 			p.group.DocTags = strings.Fields(s)
 		default:
