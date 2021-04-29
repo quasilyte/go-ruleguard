@@ -42,6 +42,7 @@ func docCommand(args []string) error {
 		DocBefore  string
 		DocAfter   string
 		DocTags    []string
+		DocNote    string
 	}
 	type JsonList struct {
 		List []JsonListEntry
@@ -86,6 +87,7 @@ func docCommand(args []string) error {
 				DocBefore:  g.DocBefore,
 				DocAfter:   g.DocAfter,
 				DocTags:    g.DocTags,
+				DocNote:    g.DocNote,
 			})
 		}
 		var buf bytes.Buffer
