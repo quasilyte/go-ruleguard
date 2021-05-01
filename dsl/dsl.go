@@ -117,6 +117,10 @@ type Var struct {
 
 	// Node is a captured AST node.
 	Node MatchedNode
+
+	// Line is a source code line number that contains this match.
+	// If this match is multi-line, this is the first line number.
+	Line int
 }
 
 // Filter applies a custom predicate function on a submatch.
