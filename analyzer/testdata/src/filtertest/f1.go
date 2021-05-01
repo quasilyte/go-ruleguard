@@ -230,6 +230,21 @@ func fileFilters1() {
 	importsTest(os.PathListSeparator, "path/filepath")
 }
 
+func detectLine() {
+	lineTest(1, 2, "same line") // want `YES`
+	lineTest(1,
+		2, "same line")
+
+	lineTest( // want `YES`
+		1,
+		2,
+		"different line",
+	)
+	lineTest(1, 2,
+		"different line")
+	lineTest(1, 2, "different line")
+}
+
 func detectNode() {
 	var i int
 	var s string

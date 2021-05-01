@@ -664,6 +664,14 @@ func (p *rulesParser) parseFilterExpr(e ast.Expr) matchFilter {
 			operand := p.toFilterOperand(e.X)
 			rhs := p.toFilterOperand(e.Y)
 			rhsValue := p.types.Types[e.Y].Value
+			if operand.path == "Line" && rhsValue != nil {
+				result.fn = makeLineConstFilter(result.src, operand.varName, e.Op, rhsValue)
+				return result
+			}
+			if operand.path == "Line" && rhs.path == "Line" && rhs.varName != "" {
+				result.fn = makeLineFilter(result.src, operand.varName, e.Op, rhs.varName)
+				return result
+			}
 			if operand.path == "Type.Size" && rhsValue != nil {
 				result.fn = makeTypeSizeConstFilter(result.src, operand.varName, e.Op, rhsValue)
 				return result
