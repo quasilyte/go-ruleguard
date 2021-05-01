@@ -76,6 +76,7 @@ func badCond(m dsl.Matcher) {
 * `before` - code snippet of code that will violate rule
 * `after` - code after a fix (one that complies to the rule)
 * `tags` - space separated list of custom tags
+* `note` - extra information, like issue links
 
 ### Filters
 
