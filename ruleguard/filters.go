@@ -169,6 +169,30 @@ func makeTypeAssignableToFilter(src, varname string, dstType types.Type) filterF
 	}
 }
 
+func makeLineFilter(src, varname string, op token.Token, rhsVarname string) filterFunc {
+	return func(params *filterParams) matchFilterResult {
+		line1 := params.ctx.Fset.Position(params.subNode(varname).Pos()).Line
+		line2 := params.ctx.Fset.Position(params.subNode(rhsVarname).Pos()).Line
+		lhsValue := constant.MakeInt64(int64(line1))
+		rhsValue := constant.MakeInt64(int64(line2))
+		if constant.Compare(lhsValue, op, rhsValue) {
+			return filterSuccess
+		}
+		return filterFailure(src)
+	}
+}
+
+func makeLineConstFilter(src, varname string, op token.Token, rhsValue constant.Value) filterFunc {
+	return func(params *filterParams) matchFilterResult {
+		n := params.subNode(varname)
+		lhsValue := constant.MakeInt64(int64(params.ctx.Fset.Position(n.Pos()).Line))
+		if constant.Compare(lhsValue, op, rhsValue) {
+			return filterSuccess
+		}
+		return filterFailure(src)
+	}
+}
+
 func makeTypeSizeConstFilter(src, varname string, op token.Token, rhsValue constant.Value) filterFunc {
 	return func(params *filterParams) matchFilterResult {
 		typ := params.typeofNode(params.subExpr(varname))

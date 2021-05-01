@@ -84,6 +84,10 @@ func testRules(m dsl.Matcher) {
 		Where(!m["x"].Pure).
 		Report("!pure")
 
+	m.Match(`lineTest($x, "line 4")`).Where(m["x"].Line == 4).Report(`YES`)
+	m.Match(`lineTest($x, $y, "same line")`).Where(m["x"].Line == m["y"].Line).Report(`YES`)
+	m.Match(`lineTest($x, $y, "different line")`).Where(m["x"].Line != m["y"].Line).Report(`YES`)
+
 	m.Match(`textTest($x, "text=foo")`).Where(m["x"].Text == `foo`).Report(`YES`)
 	m.Match(`textTest($x, "text='foo'")`).Where(m["x"].Text == `"foo"`).Report(`YES`)
 	m.Match(`textTest($x, "text!='foo'")`).Where(m["x"].Text != `"foo"`).Report(`YES`)
