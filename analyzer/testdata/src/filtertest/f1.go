@@ -2,6 +2,7 @@ package filtertest
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"time"
 )
@@ -49,6 +50,24 @@ func assignableTo() {
 }
 
 func detectType() {
+	{
+		var s fmt.Stringer
+
+		typeTest(s, "is interface")
+		typeTest(interface{}(nil), "is interface") // want `YES`
+		typeTest(implementsAll{}, "is interface")
+		typeTest(&implementsAll{}, "is interface")
+		typeTest(4, "is interface")
+		typeTest("", "is interface")
+
+		typeTest(s, "underlying is interface")                // want `YES`
+		typeTest(interface{}(nil), "underlying is interface") // want `YES`
+		typeTest(implementsAll{}, "underlying is interface")
+		typeTest(&implementsAll{}, "underlying is interface")
+		typeTest(4, "underlying is interface")
+		typeTest("", "underlying is interface")
+	}
+
 	{
 		type withNamedTime struct {
 			x int
