@@ -137,4 +137,12 @@ func testRules(m dsl.Matcher) {
 	m.Match(`typeTest($x, "assignable to interface{}")`).
 		Where(m["x"].Type.AssignableTo(`interface{}`)).
 		Report(`YES`)
+
+	m.Match(`typeTest($x, "is interface")`).
+		Where(m["x"].Type.Is(`interface{ $*_ }`)).
+		Report(`YES`)
+
+	m.Match(`typeTest($x, "underlying is interface")`).
+		Where(m["x"].Type.Underlying().Is(`interface{ $*_ }`)).
+		Report(`YES`)
 }

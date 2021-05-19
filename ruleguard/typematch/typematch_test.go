@@ -14,6 +14,11 @@ var (
 	typeUint8   = types.Typ[types.Uint8]
 	typeEstruct = types.NewStruct(nil, nil)
 
+	stringerIface = types.NewInterfaceType([]*types.Func{
+		types.NewFunc(token.NoPos, nil, "String",
+			types.NewSignature(nil, types.NewTuple(), types.NewTuple(types.NewVar(token.NoPos, nil, "result", typeString)), false)),
+	}, nil)
+
 	intVar     = types.NewVar(token.NoPos, nil, "_", typeInt)
 	int32Var   = types.NewVar(token.NoPos, nil, "_", typeInt32)
 	estructVar = types.NewVar(token.NoPos, nil, "_", typeEstruct)
@@ -55,7 +60,9 @@ func TestIdentical(t *testing.T) {
 		{`[][]int`, types.NewSlice(types.NewSlice(typeInt))},
 		{`[10]int`, types.NewArray(typeInt, 10)},
 		{`map[int]int`, types.NewMap(typeInt, typeInt)},
+
 		{`interface{}`, types.NewInterfaceType(nil, nil)},
+		{`interface{ $*_ }`, stringerIface},
 
 		{`$t`, typeInt},
 		{`*$t`, types.NewPointer(typeInt)},
@@ -159,7 +166,10 @@ func TestIdenticalNegative(t *testing.T) {
 		{`map[int]int`, types.NewMap(typeString, typeString)},
 		{`map[int]int`, types.NewMap(typeString, typeInt)},
 		{`map[int]int`, types.NewMap(typeInt, typeString)},
+
 		{`interface{}`, typeInt},
+		{`interface{ $*_ }`, typeString},
+		{`interface{ $*_ }`, types.NewArray(typeString, 10)},
 
 		{`*$t`, typeInt},
 		{`map[$t]$t`, types.NewMap(typeString, typeInt)},
