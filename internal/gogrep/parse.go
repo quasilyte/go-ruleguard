@@ -170,7 +170,7 @@ func parseDetectingNode(fset *token.FileSet, src string) (ast.Node, *ast.File, e
 		if len(cl.Elts) == 1 {
 			return cl.Elts[0], f, nil
 		}
-		return exprSlice(cl.Elts), f, nil
+		return ExprSlice(cl.Elts), f, nil
 	}
 
 	// then try as statements

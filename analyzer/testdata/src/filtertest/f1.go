@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"time"
+	"unsafe"
 )
 
 type implementsAll struct{}
@@ -47,6 +48,17 @@ func assignableTo() {
 	typeTest(0, "assignable to interface{}")   // want `YES`
 	typeTest(5.6, "assignable to interface{}") // want `YES`
 	typeTest("", "assignable to interface{}")  // want `YES`
+}
+
+func detectValue() {
+	valueTest("variadic value 5")           // want `true`
+	valueTest(5, "variadic value 5")        // want `true`
+	valueTest(2+3, 6-1, "variadic value 5") // want `true`
+
+	valueTest(0, "variadic value 5")    // want `false`
+	valueTest("5", "variadic value 5")  // want `false`
+	valueTest(5, 0, "variadic value 5") // want `false`
+	valueTest(0, 5, "variadic value 5") // want `false`
 }
 
 func detectType() {
@@ -151,6 +163,22 @@ func detectType() {
 	typeTest(embedImplementsAllPtr{}, "implements error")  // want `YES`
 	typeTest(&embedImplementsAllPtr{}, "implements error") // want `YES`
 
+	typeTest(&implementsAll{}, "variadic implements error")                 // want `true`
+	typeTest(&implementsAll{}, error(nil), "variadic implements error")     // want `true`
+	typeTest(error(nil), "variadic implements error")                       // want `true`
+	typeTest(errors.New("example"), "variadic implements error")            // want `true`
+	typeTest(&embedImplementsAll{}, "variadic implements error")            // want `true`
+	typeTest(embedImplementsAllPtr{}, "variadic implements error")          // want `true`
+	typeTest(&embedImplementsAllPtr{}, "variadic implements error")         // want `true`
+	typeTest(implementsAll{}, "variadic implements error")                  // want `false`
+	typeTest(i1, "variadic implements error")                               // want `false`
+	typeTest(implementsAllNewtype{}, "variadic implements error")           // want `false`
+	typeTest(&implementsAllNewtype{}, "variadic implements error")          // want `false`
+	typeTest(embedImplementsAll{}, "variadic implements error")             // want `false`
+	typeTest(embedImplementsAll{}, 1, "variadic implements error")          // want `false`
+	typeTest(embedImplementsAll{}, 1, "variadic implements error")          // want `false`
+	typeTest(embedImplementsAll{}, error(nil), "variadic implements error") // want `false`
+
 	typeTest([100]byte{}, "size>=100") // want `YES`
 	typeTest([105]byte{}, "size>=100") // want `YES`
 	typeTest([10]byte{}, "size>=100")
@@ -169,6 +197,14 @@ func detectType() {
 	typeTest([100]byte{}, "size!=100")
 	typeTest([105]byte{}, "size!=100") // want `YES`
 	typeTest([10]byte{}, "size!=100")  // want `YES`
+
+	typeTest("variadic size==4")                                 // want `true`
+	typeTest([4]byte{}, "variadic size==4")                      // want `true`
+	typeTest(int32(0), rune(0), [2]uint16{}, "variadic size==4") // want `true`
+
+	typeTest([6]byte{}, "variadic size==4")            // want `false`
+	typeTest(uint32(0), [6]byte{}, "variadic size==4") // want `false`
+	typeTest([6]byte{}, uint32(0), "variadic size==4") // want `false`
 
 	var time1, time2 time.Time
 	var err error
@@ -195,6 +231,99 @@ func detectType() {
 	typeTest(implementsAll.String(v), "func() string")
 	typeTest(implementsAll.String, "func() string")
 
+	{
+		type newInt int
+
+		var x int
+		y := newInt(5)
+
+		typeTest("variadic int")              // want `true`
+		typeTest(1, "variadic int")           // want `true`
+		typeTest(x, 2, "variadic int")        // want `true`
+		typeTest(-x, x+1, +x, "variadic int") // want `true`
+
+		typeTest("no", "variadic int")       // want `false`
+		typeTest(1, "no", "variadic int")    // want `false`
+		typeTest(y, "variadic int")          // want `false`
+		typeTest("no", 2, "variadic int")    // want `false`
+		typeTest(1, "no", 3, "variadic int") // want `false`
+		typeTest(1, 2, "no", "variadic int") // want `false`
+	}
+
+	{
+		type newInt int
+
+		var x int
+		y := newInt(5)
+
+		typeTest("variadic underlying int")              // want `true`
+		typeTest(1, "variadic underlying int")           // want `true`
+		typeTest(y, "variadic underlying int")           // want `true`
+		typeTest(x, 2, "variadic underlying int")        // want `true`
+		typeTest(-y, y+1, +x, "variadic underlying int") // want `true`
+
+		typeTest("no", "variadic underlying int")       // want `false`
+		typeTest(1, "no", "variadic underlying int")    // want `false`
+		typeTest("no", 2, "variadic underlying int")    // want `false`
+		typeTest(1, "no", 3, "variadic underlying int") // want `false`
+		typeTest(1, 2, "no", "variadic underlying int") // want `false`
+	}
+}
+
+func detectAddressable(x int, xs []int) {
+	typeTest("variadic addressable")               // want `true`
+	typeTest(x, "variadic addressable")            // want `true`
+	typeTest(xs, x, "variadic addressable")        // want `true`
+	typeTest(xs, x, xs[0], "variadic addressable") // want `true`
+
+	typeTest(x, "", "variadic addressable")       // want `false`
+	typeTest(1, x, xs[0], "variadic addressable") // want `false`
+}
+
+func detectConvertibleTo(x int, xs []int) {
+	type newString string
+	stringSlice := []string{""}
+
+	typeTest("variadic convertible to string")                                                      // want `true`
+	typeTest("yes", "variadic convertible to string")                                               // want `true`
+	typeTest("yes", newString("yes"), "variadic convertible to string")                             // want `true`
+	typeTest([]byte("yes"), newString("yes"), "", stringSlice[0], "variadic convertible to string") // want `true`
+
+	typeTest(xs, "variadic convertible to string")        // want `false`
+	typeTest(xs, "", "variadic convertible to string")    // want `false`
+	typeTest("", xs[:], "variadic convertible to string") // want `false`
+}
+
+func detectAssignableTo(x int, xs []int) {
+	type newString string
+	type stringAlias = string
+	stringSlice := []string{""}
+
+	typeTest("variadic assignable to string")                            // want `true`
+	typeTest("yes", "variadic assignable to string")                     // want `true`
+	typeTest(stringAlias("yes"), "yes", "variadic assignable to string") // want `true`
+
+	typeTest("yes", newString("yes"), "variadic assignable to string")                             // want `false`
+	typeTest([]byte("yes"), newString("yes"), "", stringSlice[0], "variadic assignable to string") // want `false`
+	typeTest([]byte("no"), "variadic assignable to string")                                        // want `false`
+	typeTest(xs, "variadic assignable to string")                                                  // want `false`
+	typeTest(xs, "", "variadic assignable to string")                                              // want `false`
+	typeTest("", xs[:], "variadic assignable to string")                                           // want `false`
+}
+
+func detectConst(x int, xs []int) {
+	const namedIntConst = 130
+
+	constTest("variadic const")                                 // want `true`
+	constTest(1, "variadic const")                              // want `true`
+	constTest(namedIntConst, 1<<3, "variadic const")            // want `true`
+	constTest(namedIntConst, namedIntConst*2, "variadic const") // want `true`
+	constTest(1, unsafe.Sizeof(int(0)), 3, "variadic const")    // want `true`
+
+	constTest(x, "variadic const")           // want `false`
+	constTest(random(), "variadic const")    // want `false`
+	constTest(1, random(), "variadic const") // want `false`
+	constTest(random(), 2, "variadic const") // want `false`
 }
 
 func detectPure(x int, xs []int) {
@@ -204,20 +333,33 @@ func detectPure(x int, xs []int) {
 
 	xptr := &x
 
-	pureTest(random())        // want `!pure`
-	pureTest([]int{random()}) // want `!pure`
+	pureTest(random())        // want `false`
+	pureTest([]int{random()}) // want `false`
 
-	pureTest(*xptr)               // want `pure`
-	pureTest(int(x))              // want `pure`
-	pureTest((*int)(&x))          // want `pure`
-	pureTest((func())(func() {})) // want `pure`
-	pureTest(foo.a)               // want `pure`
-	pureTest(x * x)               // want `pure`
-	pureTest((x * x))             // want `pure`
-	pureTest(+x)                  // want `pure`
-	pureTest(xs[0])               // want `pure`
-	pureTest(xs[x])               // want `pure`
-	pureTest([]int{0})            // want `pure`
+	pureTest(*xptr)               // want `true`
+	pureTest(int(x))              // want `true`
+	pureTest((*int)(&x))          // want `true`
+	pureTest((func())(func() {})) // want `true`
+	pureTest(foo.a)               // want `true`
+	pureTest(x * x)               // want `true`
+	pureTest((x * x))             // want `true`
+	pureTest(+x)                  // want `true`
+	pureTest(xs[0])               // want `true`
+	pureTest(xs[x])               // want `true`
+	pureTest([]int{0})            // want `true`
+
+	pureTest("variadic pure")                     // want `true`
+	pureTest("", "variadic pure")                 // want `true`
+	pureTest(1, 2, "variadic pure")               // want `true`
+	pureTest(1, xs[0], "variadic pure")           // want `true`
+	pureTest(*xptr, xs[0], xptr, "variadic pure") // want `true`
+
+	pureTest(random(), "variadic pure")           // want `false`
+	pureTest(1, random(), "variadic pure")        // want `false`
+	pureTest(random(), 2, "variadic pure")        // want `false`
+	pureTest(1, xs[0], random(), "variadic pure") // want `false`
+	pureTest(random(), xs[0], 3, "variadic pure") // want `false`
+	pureTest(random(), random(), "variadic pure") // want `false`
 }
 
 func detectText(foo, bar int) {

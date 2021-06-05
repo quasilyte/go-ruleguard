@@ -8,8 +8,8 @@ import (
 )
 
 func IsEmptyNodeSlice(n ast.Node) bool {
-	if list, ok := n.(nodeSlice); ok {
-		return list.len() == 0
+	if list, ok := n.(NodeSlice); ok {
+		return list.Len() == 0
 	}
 	return false
 }
