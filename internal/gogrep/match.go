@@ -76,15 +76,15 @@ func (m *matcher) MatchNode(n ast.Node, accept func(MatchData)) {
 }
 
 func (m *matcher) walkExprSlice(exprs []ast.Expr, accept func(MatchData)) {
-	m.walkNodeSlice(exprSlice(exprs), accept)
+	m.walkNodeSlice(ExprSlice(exprs), accept)
 }
 
 func (m *matcher) walkStmtSlice(stmts []ast.Stmt, accept func(MatchData)) {
 	m.walkNodeSlice(stmtSlice(stmts), accept)
 }
 
-func (m *matcher) walkNodeSlice(nodes nodeSlice, accept func(MatchData)) {
-	sliceLen := nodes.len()
+func (m *matcher) walkNodeSlice(nodes NodeSlice, accept func(MatchData)) {
+	sliceLen := nodes.Len()
 	from := 0
 	for {
 		m.pc = 1 // FIXME: this is a kludge
@@ -506,7 +506,7 @@ func (m *matcher) matchStmtSlice(stmts []ast.Stmt) bool {
 }
 
 func (m *matcher) matchExprSlice(exprs []ast.Expr) bool {
-	matched, _ := m.matchNodeList(exprSlice(exprs), false)
+	matched, _ := m.matchNodeList(ExprSlice(exprs), false)
 	return matched != nil
 }
 
@@ -527,8 +527,8 @@ func (m *matcher) matchSpecSlice(specs []ast.Spec) bool {
 
 // matchNodeList matches two lists of nodes. It uses a common algorithm to match
 // wildcard patterns with any number of nodes without recursion.
-func (m *matcher) matchNodeList(nodes nodeSlice, partial bool) (ast.Node, int) {
-	sliceLen := nodes.len()
+func (m *matcher) matchNodeList(nodes NodeSlice, partial bool) (ast.Node, int) {
+	sliceLen := nodes.Len()
 	inst := m.nextInst()
 	if inst.op == opEnd {
 		if sliceLen == 0 {
@@ -615,7 +615,7 @@ func (m *matcher) matchNodeList(nodes nodeSlice, partial bool) (ast.Node, int) {
 				partialStart = j
 				push(j + 1)
 			}
-			if j < sliceLen && wouldMatch() && m.matchNodeWithInst(inst, nodes.at(j)) {
+			if j < sliceLen && wouldMatch() && m.matchNodeWithInst(inst, nodes.At(j)) {
 				// ordinary match
 				wildName = ""
 				j++
@@ -699,8 +699,8 @@ func equalNodes(x, y ast.Node) bool {
 			}
 		}
 		return true
-	case exprSlice:
-		y, ok := y.(exprSlice)
+	case ExprSlice:
+		y, ok := y.(ExprSlice)
 		if !ok || len(x) != len(y) {
 			return false
 		}

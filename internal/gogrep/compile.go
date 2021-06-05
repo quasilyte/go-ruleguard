@@ -112,7 +112,7 @@ func (c *compiler) compileNode(n ast.Node) {
 		c.compileValueSpec(n)
 	case stmtSlice:
 		c.compileStmtSlice(n)
-	case exprSlice:
+	case ExprSlice:
 		c.compileExprSlice(n)
 	default:
 		panic(c.errorf(n, "compileNode: unexpected %T", n))
@@ -971,7 +971,7 @@ func (c *compiler) compileStmtSlice(stmts stmtSlice) {
 	c.emitInstOp(opEnd)
 }
 
-func (c *compiler) compileExprSlice(exprs exprSlice) {
+func (c *compiler) compileExprSlice(exprs ExprSlice) {
 	c.emitInstOp(opMultiExpr)
 	for _, n := range exprs {
 		c.compileExpr(n)

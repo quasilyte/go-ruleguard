@@ -35,6 +35,12 @@ func testRules(m dsl.Matcher) {
 		Where(!m["x"].Type.Is(`int`)).
 		Report(`$x !is(int)`)
 
+	m.Match(`typeTest($*xs, "variadic int")`).Where(m["xs"].Type.Is(`int`)).Report(`true`)
+	m.Match(`typeTest($*xs, "variadic int")`).Where(!m["xs"].Type.Is(`int`)).Report(`false`)
+
+	m.Match(`typeTest($*xs, "variadic underlying int")`).Where(m["xs"].Type.Underlying().Is(`int`)).Report(`true`)
+	m.Match(`typeTest($*xs, "variadic underlying int")`).Where(!m["xs"].Type.Underlying().Is(`int`)).Report(`false`)
+
 	m.Match(`typeTest($x > $y)`).
 		Where(!m["x"].Type.Is(`string`) && m["x"].Pure).
 		Report(`$x !is(string) && pure`)
@@ -53,6 +59,14 @@ func testRules(m dsl.Matcher) {
 		Where(m["x"].Type.Implements(`foolib.Stringer`)).Report(`YES`)
 	m.Match(`typeTest($x, "implements error")`).
 		Where(m["x"].Type.Implements(`error`)).Report(`YES`)
+
+	m.Match(`typeTest($*xs, "variadic implements error")`).
+		Where(m["xs"].Type.Implements(`error`)).Report(`true`)
+	m.Match(`typeTest($*xs, "variadic implements error")`).
+		Where(!m["xs"].Type.Implements(`error`)).Report(`false`)
+
+	m.Match(`typeTest($*xs, "variadic size==4")`).Where(m["xs"].Type.Size == 4).Report(`true`)
+	m.Match(`typeTest($*xs, "variadic size==4")`).Where(!(m["xs"].Type.Size == 4)).Report(`false`)
 
 	m.Match(`typeTest($x, "size>=100")`).Where(m["x"].Type.Size >= 100).Report(`YES`)
 	m.Match(`typeTest($x, "size<=100")`).Where(m["x"].Type.Size <= 100).Report(`YES`)
@@ -78,11 +92,39 @@ func testRules(m dsl.Matcher) {
 
 	m.Match(`pureTest($x)`).
 		Where(m["x"].Pure).
-		Report("pure")
+		Report("true")
 
 	m.Match(`pureTest($x)`).
 		Where(!m["x"].Pure).
-		Report("!pure")
+		Report("false")
+
+	m.Match(`pureTest($*xs, "variadic pure")`).
+		Where(m["xs"].Pure).
+		Report("true")
+
+	m.Match(`pureTest($*xs, "variadic pure")`).
+		Where(!m["xs"].Pure).
+		Report("false")
+
+	m.Match(`constTest($*xs, "variadic const")`).
+		Where(m["xs"].Const).
+		Report("true")
+
+	m.Match(`constTest($*xs, "variadic const")`).
+		Where(!m["xs"].Const).
+		Report("false")
+
+	m.Match(`typeTest($*xs, "variadic addressable")`).Where(m["xs"].Addressable).Report("true")
+	m.Match(`typeTest($*xs, "variadic addressable")`).Where(!m["xs"].Addressable).Report("false")
+
+	m.Match(`typeTest($*xs, "variadic convertible to string")`).Where(m["xs"].Type.ConvertibleTo(`string`)).Report("true")
+	m.Match(`typeTest($*xs, "variadic convertible to string")`).Where(!m["xs"].Type.ConvertibleTo(`string`)).Report("false")
+
+	m.Match(`typeTest($*xs, "variadic assignable to string")`).Where(m["xs"].Type.AssignableTo(`string`)).Report("true")
+	m.Match(`typeTest($*xs, "variadic assignable to string")`).Where(!m["xs"].Type.AssignableTo(`string`)).Report("false")
+
+	m.Match(`valueTest($*xs, "variadic value 5")`).Where(m["xs"].Value.Int() == 5).Report(`true`)
+	m.Match(`valueTest($*xs, "variadic value 5")`).Where(!(m["xs"].Value.Int() == 5)).Report(`false`)
 
 	m.Match(`lineTest($x, "line 4")`).Where(m["x"].Line == 4).Report(`YES`)
 	m.Match(`lineTest($x, $y, "same line")`).Where(m["x"].Line == m["y"].Line).Report(`YES`)

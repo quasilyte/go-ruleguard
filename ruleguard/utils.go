@@ -179,7 +179,7 @@ func isPure(info *types.Info, expr ast.Expr) bool {
 	case *ast.UnaryExpr:
 		return expr.Op != token.ARROW &&
 			isPure(info, expr.X)
-	case *ast.BasicLit, *ast.Ident:
+	case *ast.BasicLit, *ast.Ident, *ast.FuncLit:
 		return true
 	case *ast.IndexExpr:
 		return isPure(info, expr.X) &&
