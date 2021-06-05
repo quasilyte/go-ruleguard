@@ -396,10 +396,24 @@ func (c *compiler) compileIdent(n *ast.Ident) {
 }
 
 func (c *compiler) compileCallExpr(n *ast.CallExpr) {
-	op := opCallExpr
+	canBeVariadic := func(n *ast.CallExpr) bool {
+		if len(n.Args) == 0 {
+			return false
+		}
+		lastArg, ok := n.Args[len(n.Args)-1].(*ast.Ident)
+		if !ok {
+			return false
+		}
+		return isWildName(lastArg.Name) && decodeWildName(lastArg.Name).Seq
+	}
+
+	op := opNonVariadicCallExpr
 	if n.Ellipsis.IsValid() {
 		op = opVariadicCallExpr
+	} else if canBeVariadic(n) {
+		op = opCallExpr
 	}
+
 	c.emitInstOp(op)
 	c.compileExpr(n.Fun)
 	for _, arg := range n.Args {

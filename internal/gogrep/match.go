@@ -166,9 +166,12 @@ func (m *matcher) matchNodeWithInst(inst instruction, n ast.Node) bool {
 	case opVariadicCallExpr:
 		n, ok := n.(*ast.CallExpr)
 		return ok && n.Ellipsis.IsValid() && m.matchNode(n.Fun) && m.matchExprSlice(n.Args)
-	case opCallExpr:
+	case opNonVariadicCallExpr:
 		n, ok := n.(*ast.CallExpr)
 		return ok && !n.Ellipsis.IsValid() && m.matchNode(n.Fun) && m.matchExprSlice(n.Args)
+	case opCallExpr:
+		n, ok := n.(*ast.CallExpr)
+		return ok && m.matchNode(n.Fun) && m.matchExprSlice(n.Args)
 
 	case opSimpleSelectorExpr:
 		n, ok := n.(*ast.SelectorExpr)

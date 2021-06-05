@@ -133,6 +133,13 @@ func TestMatch(t *testing.T) {
 		{`$x.Method()`, 0, `a.b.Method2()`},
 		{`x.Method()`, 0, `y.Method2()`},
 		{`$x.Method()`, 0, `a.Method(1)`},
+		{`f($*_)`, 1, `f(xs...)`},
+		{`f($*_)`, 1, `f(1, xs...)`},
+		{`f($*_)`, 1, `f(1, 2, xs...)`},
+		{`f($_, $*_)`, 1, `f(1, 2, xs...)`},
+		{`f($*_, $_)`, 0, `f(1, 2, xs...)`},
+		{`f($*_, xs)`, 0, `f(1, 2, xs...)`},
+		{`f($*_, xs...)`, 1, `f(1, 2, xs...)`},
 
 		// Selector expr.
 		{`$x.Field`, 1, `a.Field`},

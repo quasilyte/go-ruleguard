@@ -70,7 +70,8 @@ var opPrototypes = []operationProto{
 	{name: "ParenExpr", tag: "ParenExpr", args: "x"},
 
 	{name: "VariadicCallExpr", tag: "CallExpr", args: "fn args...", example: "f(1, xs...)"},
-	{name: "CallExpr", tag: "CallExpr", args: "fn args...", example: "f(1, xs)"},
+	{name: "NonVariadicCallExpr", tag: "CallExpr", args: "fn args...", example: "f(1, xs)"},
+	{name: "CallExpr", tag: "CallExpr", args: "fn args...", example: "f(1, xs) or f(1, xs...)"},
 
 	{name: "AssignStmt", tag: "AssignStmt", args: "lhs rhs", value: "token.Token | ':=' or '='", example: "lhs := rhs()"},
 	{name: "MultiAssignStmt", tag: "AssignStmt", args: "lhs... rhs...", value: "token.Token | ':=' or '='", example: "lhs1, lhs2 := rhs()"},

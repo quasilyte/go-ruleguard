@@ -148,7 +148,7 @@ func badCond(m dsl.Matcher) {
 }
 
 func appendAssign(m dsl.Matcher) {
-	m.Match(`$x = append($y, $_, $*_)`).
+	m.Match(`$x = append($y, $_)`).
 		Where(m["x"].Text != m["y"].Text &&
 			m["x"].Text != "_" &&
 			m["x"].Node.Is(`Ident`) &&
