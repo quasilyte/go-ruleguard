@@ -153,6 +153,7 @@ There can be additional calls in between these two. For example, a [`Where(cond)
 
 * Basic rule set from the ruleguard: [go-ruleguard/rules](rules)
 * Damian Gryski rule set: [github.com/dgryski/semgrep-go/ruleguard.rules.go](https://github.com/dgryski/semgrep-go)
+* Partial [Uber-Go](https://github.com/uber-go/guide) style rule set: [github.com/quasilyte/uber-rules](https://github.com/quasilyte/uber-rules)
 
 ## Extra references
 
