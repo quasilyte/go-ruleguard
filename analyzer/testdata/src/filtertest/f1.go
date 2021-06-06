@@ -24,9 +24,50 @@ type embedImplementsAllPtr struct {
 	*implementsAll
 }
 
+type vector2D struct {
+	X, Y float64
+}
+
+func (v vector2D) String() string {
+	return fmt.Sprintf("{%f, %f}", v.X, v.Y)
+}
+
 func _() {
 	fileTest("with foo prefix")
 	fileTest("f1.go") // want `YES`
+}
+
+func detectObject() {
+	var vec vector2D
+
+	{
+		objectTest(fmt.Println, "object is pkgname") // want `true`
+
+		objectTest(vec.X, "object is pkgname")      // want `false`
+		objectTest(vec.String, "object is pkgname") // want `false`
+	}
+
+	{
+		objectTest(vec, "object is var")         // want `true`
+		objectTest(os.Stdout, "object is var")   // want `true`
+		objectTest(vec.X, "object is var")       // want `true`
+		objectTest((vec), "object is var")       // want `true`
+		objectTest((os.Stdout), "object is var") // want `true`
+		objectTest((vec.X), "object is var")     // want `true`
+
+		objectTest(fmt.Println, "object is var") // want `false`
+		objectTest(vec.X+4, "object is var")     // want `false`
+	}
+
+	{
+		objectTest("variadic object is var")             // want `true`
+		objectTest(vec, "variadic object is var")        // want `true`
+		objectTest(vec, vec.Y, "variadic object is var") // want `true`
+
+		objectTest(1, "variadic object is var")      // want `false`
+		objectTest(vec, 2, "variadic object is var") // want `false`
+		objectTest(1, vec, "variadic object is var") // want `false`
+	}
 }
 
 func convertibleTo() {

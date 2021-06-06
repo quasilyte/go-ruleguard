@@ -1,5 +1,6 @@
 package filtertest
 
+func objectTest(args ...interface{})       {}
 func typeTest(args ...interface{})         {}
 func pureTest(args ...interface{})         {}
 func constTest(args ...interface{})        {}

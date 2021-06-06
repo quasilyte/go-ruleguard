@@ -249,3 +249,16 @@ func isTypeExpr(info *types.Info, x ast.Expr) bool {
 		return false
 	}
 }
+
+func identOf(e ast.Expr) *ast.Ident {
+	switch e := e.(type) {
+	case *ast.ParenExpr:
+		return identOf(e.X)
+	case *ast.Ident:
+		return e
+	case *ast.SelectorExpr:
+		return e.Sel
+	default:
+		return nil
+	}
+}

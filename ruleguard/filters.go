@@ -368,3 +368,68 @@ func makeNodeIsFilter(src, varname string, tag nodetag.Value) filterFunc {
 		return filterFailure(src)
 	}
 }
+
+func makeObjectIsFilter(src, varname, objectName string) filterFunc {
+	var predicate func(types.Object) bool
+	switch objectName {
+	case "Func":
+		predicate = func(x types.Object) bool {
+			_, ok := x.(*types.Func)
+			return ok
+		}
+	case "Var":
+		predicate = func(x types.Object) bool {
+			_, ok := x.(*types.Var)
+			return ok
+		}
+	case "Const":
+		predicate = func(x types.Object) bool {
+			_, ok := x.(*types.Const)
+			return ok
+		}
+	case "TypeName":
+		predicate = func(x types.Object) bool {
+			_, ok := x.(*types.TypeName)
+			return ok
+		}
+	case "Label":
+		predicate = func(x types.Object) bool {
+			_, ok := x.(*types.Label)
+			return ok
+		}
+	case "PkgName":
+		predicate = func(x types.Object) bool {
+			_, ok := x.(*types.PkgName)
+			return ok
+		}
+	case "Builtin":
+		predicate = func(x types.Object) bool {
+			_, ok := x.(*types.Builtin)
+			return ok
+		}
+	case "Nil":
+		predicate = func(x types.Object) bool {
+			_, ok := x.(*types.Nil)
+			return ok
+		}
+	}
+
+	return func(params *filterParams) matchFilterResult {
+		if list, ok := params.subNode(varname).(gogrep.ExprSlice); ok {
+			return exprListFilterApply(src, list, func(x ast.Expr) bool {
+				ident := identOf(x)
+				return ident != nil && predicate(params.ctx.Types.ObjectOf(ident))
+			})
+		}
+
+		ident := identOf(params.subExpr(varname))
+		if ident == nil {
+			return filterFailure(src)
+		}
+		object := params.ctx.Types.ObjectOf(ident)
+		if predicate(object) {
+			return filterSuccess
+		}
+		return filterFailure(src)
+	}
+}
