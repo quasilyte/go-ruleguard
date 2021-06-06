@@ -775,6 +775,19 @@ func (p *rulesParser) parseFilterExpr(e ast.Expr) matchFilter {
 			panic(p.errorf(args[0], fmt.Errorf("%s is not a valid go/ast type name", typeString)))
 		}
 		result.fn = makeNodeIsFilter(result.src, operand.varName, tag)
+
+	case "Object.Is":
+		typeString, ok := p.toStringValue(args[0])
+		if !ok {
+			panic(p.errorf(args[0], errors.New("expected a string literal argument")))
+		}
+		switch typeString {
+		case "Func", "Var", "Const", "TypeName", "Label", "PkgName", "Builtin", "Nil":
+			// OK.
+		default:
+			panic(p.errorf(args[0], fmt.Errorf("%s is not a valid go/types object name", typeString)))
+		}
+		result.fn = makeObjectIsFilter(result.src, operand.varName, typeString)
 	}
 
 	if result.fn == nil {

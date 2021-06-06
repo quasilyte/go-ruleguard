@@ -7,6 +7,15 @@ import "github.com/quasilyte/go-ruleguard/dsl"
 func testRules(m dsl.Matcher) {
 	m.Import(`github.com/quasilyte/go-ruleguard/analyzer/testdata/src/filtertest/foolib`)
 
+	m.Match(`objectTest($pkg.$_, "object is pkgname")`).Where(m["pkg"].Object.Is(`PkgName`)).Report(`true`)
+	m.Match(`objectTest($pkg.$_, "object is pkgname")`).Where(!m["pkg"].Object.Is(`PkgName`)).Report(`false`)
+
+	m.Match(`objectTest($v, "object is var")`).Where(!m["v"].Object.Is(`Var`)).Report(`false`)
+	m.Match(`objectTest($v, "object is var")`).Where(m["v"].Object.Is(`Var`)).Report(`true`)
+
+	m.Match(`objectTest($*xs, "variadic object is var")`).Where(!m["xs"].Object.Is(`Var`)).Report(`false`)
+	m.Match(`objectTest($*xs, "variadic object is var")`).Where(m["xs"].Object.Is(`Var`)).Report(`true`)
+
 	m.Match(`typeTest($x, "contains time.Time")`).
 		Where(m["x"].Type.Underlying().Is(`struct{$*_; time.Time; $*_}`)).
 		Report(`YES`)
