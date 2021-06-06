@@ -1,5 +1,5 @@
 GOPATH_DIR=`go env GOPATH`
-RELEASE=v0.3.6
+RELEASE=v0.3.7
 BUILD_COMMIT=`git rev-parse HEAD`
 
 build:
