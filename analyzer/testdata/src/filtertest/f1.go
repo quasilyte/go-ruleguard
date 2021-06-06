@@ -452,6 +452,13 @@ func detectNode() {
 	var s string
 	var rows [][]byte
 
+	var f func()
+
+	nodeTest("3 identical expr statements in a row") // want `true`
+	f()
+	f()
+	f()
+
 	nodeTest("123", "Expr") // want `YES`
 	nodeTest(`123`, "Expr") // want `YES`
 	nodeTest(12, "Expr")    // want `YES`

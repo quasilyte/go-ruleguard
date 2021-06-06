@@ -167,6 +167,8 @@ func testRules(m dsl.Matcher) {
 	m.Match(`(($x))`).Where(!m.File().PkgPath.Matches(`filtertest`)).Report(`suspicious double parens`)
 	m.Match(`((($x)))`).Where(m.File().PkgPath.Matches(`filtertest`)).Report(`suspicious tripple parens`)
 
+	m.Match(`nodeTest("3 identical expr statements in a row"); $x; $x; $x`).Where(m["x"].Node.Is(`ExprStmt`)).Report(`true`)
+
 	m.Match(`nodeTest($x, "Expr")`).Where(m["x"].Node.Is(`Expr`)).Report(`YES`)
 	m.Match(`nodeTest($x, "BasicLit")`).Where(m["x"].Node.Is(`BasicLit`)).Report(`YES`)
 	m.Match(`nodeTest($x, "Ident")`).Where(m["x"].Node.Is(`Ident`)).Report(`YES`)
