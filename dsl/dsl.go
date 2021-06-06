@@ -112,6 +112,9 @@ type Var struct {
 	//	`$x` m["x"].Type is `a.b()` function call result type
 	Type ExprType
 
+	// Object is an associated "go/types" Object.
+	Object TypesObject
+
 	// Text is a captured node text as in the source code.
 	Text MatchedText
 
@@ -145,6 +148,15 @@ type ExprValue struct{}
 // Int returns compile-time computable int value of the expression.
 // If value can't be computed, condition will fail.
 func (ExprValue) Int() int { return intResult }
+
+// TypesObject is a types.Object mapping.
+type TypesObject struct{}
+
+// Is reports whether an associated types.Object is compatible with the specified type.
+// A valid argument is a types.Object type name from the "go/types" package.
+// Examples: "Func", "Var", "Const", "TypeName", "Label", "PkgName", "Builtin", "Nil"
+// See https://golang.org/pkg/go/types/.
+func (TypesObject) Is(typ string) bool { return boolResult }
 
 // ExprType describes a type of a matcher expr.
 type ExprType struct {
