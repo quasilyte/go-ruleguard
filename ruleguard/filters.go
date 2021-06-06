@@ -350,7 +350,7 @@ func makeNodeIsFilter(src, varname string, tag nodetag.Value) filterFunc {
 	// TODO(quasilyte): add comment nodes support?
 	// TODO(quasilyte): add variadic support.
 	return func(params *filterParams) matchFilterResult {
-		n := params.subExpr(varname)
+		n := params.subNode(varname)
 		var matched bool
 		switch tag {
 		case nodetag.Expr:
