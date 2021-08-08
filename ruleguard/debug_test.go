@@ -159,7 +159,7 @@ func TestDebug(t *testing.T) {
 				%s.Report("$$")
 			}`,
 			s)
-		ctx := &ParseContext{
+		ctx := &LoadContext{
 			Fset: token.NewFileSet(),
 		}
 		err := e.Load(ctx, "rules.go", strings.NewReader(file))

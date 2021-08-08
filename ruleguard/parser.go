@@ -37,7 +37,7 @@ func (e *ImportError) Unwrap() error { return e.err }
 
 type rulesParser struct {
 	state *engineState
-	ctx   *ParseContext
+	ctx   *LoadContext
 
 	prefix      string // For imported packages, a prefix that is added to a rule group name
 	importedPkg string // Package path; only for imported packages
@@ -60,7 +60,7 @@ type rulesParser struct {
 type rulesParserConfig struct {
 	state *engineState
 
-	ctx *ParseContext
+	ctx *LoadContext
 
 	importer *goImporter
 

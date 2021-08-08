@@ -61,7 +61,7 @@ func docCommand(args []string) error {
 
 	e := ruleguard.NewEngine()
 	fset := token.NewFileSet()
-	ctx := &ruleguard.ParseContext{
+	ctx := &ruleguard.LoadContext{
 		Fset: fset,
 	}
 	filenames := strings.Split(*flagRules, ",")

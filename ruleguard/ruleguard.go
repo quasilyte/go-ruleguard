@@ -30,7 +30,7 @@ func NewEngine() *Engine {
 // Load() is not thread-safe, especially if used concurrently with Run() method.
 // It's advised to Load() all ruleguard files under a critical section (like sync.Once)
 // and then use Run() to execute all of them.
-func (e *Engine) Load(ctx *ParseContext, filename string, r io.Reader) error {
+func (e *Engine) Load(ctx *LoadContext, filename string, r io.Reader) error {
 	return e.impl.Load(ctx, filename, r)
 }
 
@@ -48,7 +48,7 @@ func (e *Engine) Run(ctx *RunContext, f *ast.File) error {
 	return e.impl.Run(ctx, f)
 }
 
-type ParseContext struct {
+type LoadContext struct {
 	DebugFilter  string
 	DebugImports bool
 	DebugPrint   func(string)
