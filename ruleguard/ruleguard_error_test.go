@@ -18,7 +18,7 @@ func TestImportError(t *testing.T) {
 	}
 	`
 	e := NewEngine()
-	ctx := &ParseContext{
+	ctx := &LoadContext{
 		Fset: token.NewFileSet(),
 	}
 	err := e.Load(ctx, "rules.go", strings.NewReader(src))
@@ -165,7 +165,7 @@ func TestParseFilterFuncError(t *testing.T) {
 			func g(ctx *dsl.VarFilterContext) bool { return false }
 			` + test.src)
 		e := NewEngine()
-		ctx := &ParseContext{
+		ctx := &LoadContext{
 			Fset: token.NewFileSet(),
 		}
 		err := e.Load(ctx, "rules.go", strings.NewReader(file))
@@ -252,7 +252,7 @@ func TestParseRuleError(t *testing.T) {
 			}`,
 			test.expr)
 		e := NewEngine()
-		ctx := &ParseContext{
+		ctx := &LoadContext{
 			Fset: token.NewFileSet(),
 		}
 		err := e.Load(ctx, "rules.go", strings.NewReader(file))
@@ -347,7 +347,7 @@ func TestParseFilterError(t *testing.T) {
 			}`,
 			test.expr)
 		e := NewEngine()
-		ctx := &ParseContext{
+		ctx := &LoadContext{
 			Fset: token.NewFileSet(),
 		}
 		err := e.Load(ctx, "rules.go", strings.NewReader(file))

@@ -37,7 +37,7 @@ func (e *engine) LoadedGroups() []GoRuleGroup {
 	return result
 }
 
-func (e *engine) Load(ctx *ParseContext, filename string, r io.Reader) error {
+func (e *engine) Load(ctx *LoadContext, filename string, r io.Reader) error {
 	config := rulesParserConfig{
 		state: e.state,
 		ctx:   ctx,

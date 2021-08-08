@@ -174,7 +174,7 @@ func newEngine() (*ruleguard.Engine, error) {
 		}
 	}
 
-	ctx := &ruleguard.ParseContext{
+	ctx := &ruleguard.LoadContext{
 		Fset:         fset,
 		DebugFilter:  flagDebugFilter,
 		DebugImports: flagDebugImports,
