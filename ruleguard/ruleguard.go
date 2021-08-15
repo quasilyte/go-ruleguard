@@ -5,6 +5,8 @@ import (
 	"go/token"
 	"go/types"
 	"io"
+
+	"github.com/quasilyte/go-ruleguard/ruleguard/ir"
 )
 
 // Engine is the main ruleguard package API object.
@@ -32,6 +34,14 @@ func NewEngine() *Engine {
 // and then use Run() to execute all of them.
 func (e *Engine) Load(ctx *LoadContext, filename string, r io.Reader) error {
 	return e.impl.Load(ctx, filename, r)
+}
+
+// LoadFromIR is like Load(), but it takes already parsed IR file as an input.
+//
+// This method can be useful if you're trying to embed a precompiled rules file
+// into your binary.
+func (e *Engine) LoadFromIR(ctx *LoadContext, filename string, f *ir.File) error {
+	return e.impl.LoadFromIR(ctx, filename, f)
 }
 
 // LoadedGroups returns information about all currently loaded rule groups.
@@ -123,3 +133,12 @@ type GoRuleGroup struct {
 	// Filled from the `doc:note` pragma content.
 	DocNote string
 }
+
+// ImportError is returned when a ruleguard file references a package that cannot be imported.
+type ImportError struct {
+	msg string
+	err error
+}
+
+func (e *ImportError) Error() string { return e.msg }
+func (e *ImportError) Unwrap() error { return e.err }

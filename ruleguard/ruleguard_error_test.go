@@ -188,7 +188,7 @@ func TestParseRuleError(t *testing.T) {
 		err  string
 	}{
 		{
-			`m.Match("$x").Where(m["x"].Object.Is("abc"))`,
+			`m.Match("$x").Where(m["x"].Object.Is("abc")).Report("")`,
 			`abc is not a valid go/types object name`,
 		},
 
