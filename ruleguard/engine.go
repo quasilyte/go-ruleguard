@@ -6,10 +6,12 @@ import (
 	"go/ast"
 	"go/types"
 	"io"
+	"io/ioutil"
 	"sort"
 	"strings"
 	"sync"
 
+	"github.com/quasilyte/go-ruleguard/ruleguard/ir"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
 	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
 )
@@ -38,18 +40,59 @@ func (e *engine) LoadedGroups() []GoRuleGroup {
 }
 
 func (e *engine) Load(ctx *LoadContext, filename string, r io.Reader) error {
-	config := rulesParserConfig{
-		state: e.state,
-		ctx:   ctx,
-		importer: newGoImporter(e.state, goImporterConfig{
-			fset:         ctx.Fset,
-			debugImports: ctx.DebugImports,
-			debugPrint:   ctx.DebugPrint,
-		}),
-		itab: typematch.NewImportsTab(stdlibPackages),
+	data, err := ioutil.ReadAll(r)
+	if err != nil {
+		return err
 	}
-	p := newRulesParser(config)
-	rset, err := p.ParseFile(filename, r)
+	imp := newGoImporter(e.state, goImporterConfig{
+		fset:         ctx.Fset,
+		debugImports: ctx.DebugImports,
+		debugPrint:   ctx.DebugPrint,
+	})
+	irfile, pkg, err := convertAST(ctx, imp, filename, data)
+	if err != nil {
+		return err
+	}
+	config := irLoaderConfig{
+		state:    e.state,
+		pkg:      pkg,
+		ctx:      ctx,
+		importer: imp,
+		itab:     typematch.NewImportsTab(stdlibPackages),
+	}
+	l := newIRLoader(config)
+	rset, err := l.LoadFile(filename, irfile)
+	if err != nil {
+		return err
+	}
+
+	if e.ruleSet == nil {
+		e.ruleSet = rset
+	} else {
+		combinedRuleSet, err := mergeRuleSets([]*goRuleSet{e.ruleSet, rset})
+		if err != nil {
+			return err
+		}
+		e.ruleSet = combinedRuleSet
+	}
+
+	return nil
+}
+
+func (e *engine) LoadFromIR(ctx *LoadContext, filename string, f *ir.File) error {
+	imp := newGoImporter(e.state, goImporterConfig{
+		fset:         ctx.Fset,
+		debugImports: ctx.DebugImports,
+		debugPrint:   ctx.DebugPrint,
+	})
+	config := irLoaderConfig{
+		state:    e.state,
+		ctx:      ctx,
+		importer: imp,
+		itab:     typematch.NewImportsTab(stdlibPackages),
+	}
+	l := newIRLoader(config)
+	rset, err := l.LoadFile(filename, f)
 	if err != nil {
 		return err
 	}
@@ -164,9 +207,12 @@ func (state *engineState) findTypeNoCache(importer *goImporter, currentPkg *type
 	pkgPath := fqn[:pos]
 	objectName := fqn[pos+1:]
 	var pkg *types.Package
-	if directDep := findDependency(currentPkg, pkgPath); directDep != nil {
-		pkg = directDep
-	} else {
+	if currentPkg != nil {
+		if directDep := findDependency(currentPkg, pkgPath); directDep != nil {
+			pkg = directDep
+		}
+	}
+	if pkg == nil {
 		loadedPkg, err := importer.Import(pkgPath)
 		if err != nil {
 			return nil, err

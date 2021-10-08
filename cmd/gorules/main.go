@@ -2,10 +2,16 @@ package main
 
 import (
 	"bytes"
+	"os"
+
 	"encoding/json"
 	"flag"
 	"fmt"
+	"go/ast"
+	"go/importer"
+	"go/parser"
 	"go/token"
+	"go/types"
 	"io/ioutil"
 	"log"
 	"path/filepath"
@@ -13,6 +19,8 @@ import (
 
 	"github.com/cespare/subcmd"
 	"github.com/quasilyte/go-ruleguard/ruleguard"
+	"github.com/quasilyte/go-ruleguard/ruleguard/irconv"
+	"github.com/quasilyte/go-ruleguard/ruleguard/irprint"
 )
 
 func main() {
@@ -22,6 +30,11 @@ func main() {
 			Description: "query rules documentation",
 			Do:          docMain,
 		},
+		{
+			Name:        "precompile",
+			Description: "generate a precompiled rules object",
+			Do:          precompileMain,
+		},
 	}
 
 	subcmd.Run(cmds)
@@ -29,6 +42,12 @@ func main() {
 
 func docMain(args []string) {
 	if err := docCommand(args); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func precompileMain(args []string) {
+	if err := precompileCommand(args); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -134,6 +153,50 @@ func docCommand(args []string) error {
 			fmt.Printf("%s:%d: %s\n", filepath.Base(g.Filename), g.Line, g.Name)
 		}
 	}
+
+	return nil
+}
+
+func precompileCommand(args []string) error {
+	fs := flag.NewFlagSet("gorules precompile", flag.ExitOnError)
+	flagRules := fs.String("rules", "", `a single ruleguard file path`)
+	fs.Parse(args)
+
+	fset := token.NewFileSet()
+	filename := strings.TrimSpace(*flagRules)
+	fileData, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return fmt.Errorf("read %s: %v", filename, err)
+	}
+	r := bytes.NewReader(fileData)
+	parserFlags := parser.ParseComments
+	f, err := parser.ParseFile(fset, filename, r, parserFlags)
+	if err != nil {
+		return fmt.Errorf("parse %s: %v", filename, err)
+	}
+	imp := importer.For("source", nil)
+	typechecker := types.Config{Importer: imp}
+	types := &types.Info{
+		Types: map[ast.Expr]types.TypeAndValue{},
+		Uses:  map[*ast.Ident]types.Object{},
+		Defs:  map[*ast.Ident]types.Object{},
+	}
+	pkg, err := typechecker.Check("gorules", fset, []*ast.File{f}, types)
+	if err != nil {
+		return fmt.Errorf("typecheck %s: %v", filename, err)
+	}
+	irconvCtx := &irconv.Context{
+		Pkg:   pkg,
+		Types: types,
+		Fset:  fset,
+		Src:   fileData,
+	}
+	irfile, err := irconv.ConvertFile(irconvCtx, f)
+	if err != nil {
+		return fmt.Errorf("compile %s: %v", filename, err)
+	}
+
+	irprint.File(os.Stdout, irfile)
 
 	return nil
 }
