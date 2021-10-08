@@ -30,7 +30,7 @@ It can also be easily embedded into other static analyzers. [go-critic](https://
 
 ## Quick start
 
-It's advised that you get a binary from the [latest release](https://github.com/quasilyte/go-ruleguard/releases/tag/v0.3.7) {[linux/amd64](https://github.com/quasilyte/go-ruleguard/releases/download/v0.3.7/ruleguard-linux-amd64.zip), [linux/arm64](https://github.com/quasilyte/go-ruleguard/releases/download/v0.3.7/ruleguard-linux-arm64.zip), [darwin/amd64](https://github.com/quasilyte/go-ruleguard/releases/download/v0.3.7/ruleguard-darwin-amd64.zip), [darwin/arm64](https://github.com/quasilyte/go-ruleguard/releases/download/v0.3.7/ruleguard-darwin-arm64.zip), [windows/amd64](https://github.com/quasilyte/go-ruleguard/releases/download/v0.3.7/ruleguard-windows-amd64.zip)}.
+It's advised that you get a binary from the [latest release](https://github.com/quasilyte/go-ruleguard/releases/tag/v0.3.8) {[linux/amd64](https://github.com/quasilyte/go-ruleguard/releases/download/v0.3.8/ruleguard-linux-amd64.zip), [linux/arm64](https://github.com/quasilyte/go-ruleguard/releases/download/v0.3.8/ruleguard-linux-arm64.zip), [darwin/amd64](https://github.com/quasilyte/go-ruleguard/releases/download/v0.3.8/ruleguard-darwin-amd64.zip), [darwin/arm64](https://github.com/quasilyte/go-ruleguard/releases/download/v0.3.8/ruleguard-darwin-arm64.zip), [windows/amd64](https://github.com/quasilyte/go-ruleguard/releases/download/v0.3.8/ruleguard-windows-amd64.zip)}.
 
 If you want to install the ruleguard from source, it's as simple as:
 
