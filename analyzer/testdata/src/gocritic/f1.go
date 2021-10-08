@@ -2,6 +2,7 @@ package gocritic
 
 import (
 	"flag"
+	"fmt"
 	"io"
 	"regexp"
 	"strings"
@@ -470,4 +471,21 @@ func badCond(x, y int) {
 
 	if x < -10 && y > 10 {
 	}
+}
+
+func _(w io.Writer) {
+	w.Write([]byte(fmt.Sprintf("%x", 10)))    // want `\Qfmt.Fprintf(w, "%x", 10) should be preferred`
+	w.Write([]byte(fmt.Sprint(1, 2, 3, 4)))   // want `\Qfmt.Fprint(w, 1, 2, 3, 4) should be preferred`
+	w.Write([]byte(fmt.Sprintln(1, 2, 3, 4))) // want `\Qfmt.Fprintln(w, 1, 2, 3, 4) should be preferred`
+}
+
+type exampleStruct struct{}
+
+func (exampleStruct) Sprintf() string {
+	return "abc"
+}
+
+func _(w io.Writer) {
+	var fmt exampleStruct
+	w.Write([]byte(fmt.Sprintf()))
 }
