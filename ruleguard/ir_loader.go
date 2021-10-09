@@ -518,6 +518,37 @@ func (l *irLoader) newFilter(filter ir.FilterExpr) (matchFilter, error) {
 	case ir.FilterFileImportsOp:
 		result.fn = makeFileImportsFilter(result.src, filter.Value.(string))
 
+	case ir.FilterGoVersionEqOp:
+		version, err := ParseGoVersion(filter.Value.(string))
+		if err != nil {
+			return result, l.errorf(filter.Line, err, "parse Go version")
+		}
+		result.fn = makeGoVersionFilter(result.src, token.EQL, version)
+	case ir.FilterGoVersionLessThanOp:
+		version, err := ParseGoVersion(filter.Value.(string))
+		if err != nil {
+			return result, l.errorf(filter.Line, err, "parse Go version")
+		}
+		result.fn = makeGoVersionFilter(result.src, token.LSS, version)
+	case ir.FilterGoVersionGreaterThanOp:
+		version, err := ParseGoVersion(filter.Value.(string))
+		if err != nil {
+			return result, l.errorf(filter.Line, err, "parse Go version")
+		}
+		result.fn = makeGoVersionFilter(result.src, token.GTR, version)
+	case ir.FilterGoVersionLessEqThanOp:
+		version, err := ParseGoVersion(filter.Value.(string))
+		if err != nil {
+			return result, l.errorf(filter.Line, err, "parse Go version")
+		}
+		result.fn = makeGoVersionFilter(result.src, token.LEQ, version)
+	case ir.FilterGoVersionGreaterEqThanOp:
+		version, err := ParseGoVersion(filter.Value.(string))
+		if err != nil {
+			return result, l.errorf(filter.Line, err, "parse Go version")
+		}
+		result.fn = makeGoVersionFilter(result.src, token.GEQ, version)
+
 	case ir.FilterFilePkgPathMatchesOp:
 		re, err := regexp.Compile(filter.Value.(string))
 		if err != nil {
@@ -542,7 +573,7 @@ func (l *irLoader) newFilter(filter ir.FilterExpr) (matchFilter, error) {
 	}
 
 	if result.fn == nil {
-		return result, l.errorf(filter.Line, nil, "unsupported expr: %s", result.src)
+		return result, l.errorf(filter.Line, nil, "unsupported expr: %s (%s)", result.src, filter.Op)
 	}
 
 	return result, nil

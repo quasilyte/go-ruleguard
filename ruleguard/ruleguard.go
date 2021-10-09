@@ -82,6 +82,8 @@ type RunContext struct {
 	Fset   *token.FileSet
 	Report func(rule GoRuleInfo, n ast.Node, msg string, s *Suggestion)
 	Pkg    *types.Package
+
+	GoVersion GoVersion
 }
 
 type Suggestion struct {

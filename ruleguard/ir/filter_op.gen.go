@@ -96,68 +96,93 @@ const (
 	// $Value type: string
 	FilterVarTextMatchesOp FilterOp = 25
 
+	// m.GoVersion().Eq($Value)
+	// $Value type: string
+	FilterGoVersionEqOp FilterOp = 26
+
+	// m.GoVersion().LessThan($Value)
+	// $Value type: string
+	FilterGoVersionLessThanOp FilterOp = 27
+
+	// m.GoVersion().GreaterThan($Value)
+	// $Value type: string
+	FilterGoVersionGreaterThanOp FilterOp = 28
+
+	// m.GoVersion().LessEqThan($Value)
+	// $Value type: string
+	FilterGoVersionLessEqThanOp FilterOp = 29
+
+	// m.GoVersion().GreaterEqThan($Value)
+	// $Value type: string
+	FilterGoVersionGreaterEqThanOp FilterOp = 30
+
 	// m.File.Imports($Value)
 	// $Value type: string
-	FilterFileImportsOp FilterOp = 26
+	FilterFileImportsOp FilterOp = 31
 
 	// m.File.PkgPath.Matches($Value)
 	// $Value type: string
-	FilterFilePkgPathMatchesOp FilterOp = 27
+	FilterFilePkgPathMatchesOp FilterOp = 32
 
 	// m.File.Name.Matches($Value)
 	// $Value type: string
-	FilterFileNameMatchesOp FilterOp = 28
+	FilterFileNameMatchesOp FilterOp = 33
 
 	// $Value holds a function name
 	// $Value type: string
-	FilterFilterFuncRefOp FilterOp = 29
+	FilterFilterFuncRefOp FilterOp = 34
 
 	// $Value holds a string constant
 	// $Value type: string
-	FilterStringOp FilterOp = 30
+	FilterStringOp FilterOp = 35
 
 	// $Value holds an int64 constant
 	// $Value type: int64
-	FilterIntOp FilterOp = 31
+	FilterIntOp FilterOp = 36
 
 	// m[`$$`].Node.Parent().Is($Args[0])
-	FilterRootNodeParentIsOp FilterOp = 32
+	FilterRootNodeParentIsOp FilterOp = 37
 )
 
 var filterOpNames = map[FilterOp]string{
-	FilterInvalidOp:              `Invalid`,
-	FilterNotOp:                  `Not`,
-	FilterAndOp:                  `And`,
-	FilterOrOp:                   `Or`,
-	FilterEqOp:                   `Eq`,
-	FilterNeqOp:                  `Neq`,
-	FilterGtOp:                   `Gt`,
-	FilterLtOp:                   `Lt`,
-	FilterGtEqOp:                 `GtEq`,
-	FilterLtEqOp:                 `LtEq`,
-	FilterVarAddressableOp:       `VarAddressable`,
-	FilterVarPureOp:              `VarPure`,
-	FilterVarConstOp:             `VarConst`,
-	FilterVarTextOp:              `VarText`,
-	FilterVarLineOp:              `VarLine`,
-	FilterVarValueIntOp:          `VarValueInt`,
-	FilterVarTypeSizeOp:          `VarTypeSize`,
-	FilterVarFilterOp:            `VarFilter`,
-	FilterVarNodeIsOp:            `VarNodeIs`,
-	FilterVarObjectIsOp:          `VarObjectIs`,
-	FilterVarTypeIsOp:            `VarTypeIs`,
-	FilterVarTypeUnderlyingIsOp:  `VarTypeUnderlyingIs`,
-	FilterVarTypeConvertibleToOp: `VarTypeConvertibleTo`,
-	FilterVarTypeAssignableToOp:  `VarTypeAssignableTo`,
-	FilterVarTypeImplementsOp:    `VarTypeImplements`,
-	FilterVarTextMatchesOp:       `VarTextMatches`,
-	FilterFileImportsOp:          `FileImports`,
-	FilterFilePkgPathMatchesOp:   `FilePkgPathMatches`,
-	FilterFileNameMatchesOp:      `FileNameMatches`,
-	FilterFilterFuncRefOp:        `FilterFuncRef`,
-	FilterStringOp:               `String`,
-	FilterIntOp:                  `Int`,
-	FilterRootNodeParentIsOp:     `RootNodeParentIs`,
+	FilterInvalidOp:                `Invalid`,
+	FilterNotOp:                    `Not`,
+	FilterAndOp:                    `And`,
+	FilterOrOp:                     `Or`,
+	FilterEqOp:                     `Eq`,
+	FilterNeqOp:                    `Neq`,
+	FilterGtOp:                     `Gt`,
+	FilterLtOp:                     `Lt`,
+	FilterGtEqOp:                   `GtEq`,
+	FilterLtEqOp:                   `LtEq`,
+	FilterVarAddressableOp:         `VarAddressable`,
+	FilterVarPureOp:                `VarPure`,
+	FilterVarConstOp:               `VarConst`,
+	FilterVarTextOp:                `VarText`,
+	FilterVarLineOp:                `VarLine`,
+	FilterVarValueIntOp:            `VarValueInt`,
+	FilterVarTypeSizeOp:            `VarTypeSize`,
+	FilterVarFilterOp:              `VarFilter`,
+	FilterVarNodeIsOp:              `VarNodeIs`,
+	FilterVarObjectIsOp:            `VarObjectIs`,
+	FilterVarTypeIsOp:              `VarTypeIs`,
+	FilterVarTypeUnderlyingIsOp:    `VarTypeUnderlyingIs`,
+	FilterVarTypeConvertibleToOp:   `VarTypeConvertibleTo`,
+	FilterVarTypeAssignableToOp:    `VarTypeAssignableTo`,
+	FilterVarTypeImplementsOp:      `VarTypeImplements`,
+	FilterVarTextMatchesOp:         `VarTextMatches`,
+	FilterGoVersionEqOp:            `GoVersionEq`,
+	FilterGoVersionLessThanOp:      `GoVersionLessThan`,
+	FilterGoVersionGreaterThanOp:   `GoVersionGreaterThan`,
+	FilterGoVersionLessEqThanOp:    `GoVersionLessEqThan`,
+	FilterGoVersionGreaterEqThanOp: `GoVersionGreaterEqThan`,
+	FilterFileImportsOp:            `FileImports`,
+	FilterFilePkgPathMatchesOp:     `FilePkgPathMatches`,
+	FilterFileNameMatchesOp:        `FileNameMatches`,
+	FilterFilterFuncRefOp:          `FilterFuncRef`,
+	FilterStringOp:                 `String`,
+	FilterIntOp:                    `Int`,
+	FilterRootNodeParentIsOp:       `RootNodeParentIs`,
 }
 var filterOpFlags = map[FilterOp]uint64{
 	FilterAndOp:    flagIsBinaryExpr,

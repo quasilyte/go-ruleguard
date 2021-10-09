@@ -56,6 +56,12 @@ func main() {
 		{name: "VarTypeImplements", comment: "m[$Value].Type.Implements($Args[0])", valueType: "string"},
 		{name: "VarTextMatches", comment: "m[$Value].Text.Matches($Args[0])", valueType: "string"},
 
+		{name: "GoVersionEq", comment: "m.GoVersion().Eq($Value)", valueType: "string"},
+		{name: "GoVersionLessThan", comment: "m.GoVersion().LessThan($Value)", valueType: "string"},
+		{name: "GoVersionGreaterThan", comment: "m.GoVersion().GreaterThan($Value)", valueType: "string"},
+		{name: "GoVersionLessEqThan", comment: "m.GoVersion().LessEqThan($Value)", valueType: "string"},
+		{name: "GoVersionGreaterEqThan", comment: "m.GoVersion().GreaterEqThan($Value)", valueType: "string"},
+
 		{name: "FileImports", comment: "m.File.Imports($Value)", valueType: "string"},
 		{name: "FilePkgPathMatches", comment: "m.File.PkgPath.Matches($Value)", valueType: "string"},
 		{name: "FileNameMatches", comment: "m.File.Name.Matches($Value)", valueType: "string"},
