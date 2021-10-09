@@ -51,6 +51,8 @@ var (
 	flagEnable  string
 	flagDisable string
 
+	flagGoVersion string
+
 	flagDebug              string
 	flagDebugFilter        string
 	flagDebugImports       bool
@@ -62,6 +64,8 @@ func init() {
 	Analyzer.Flags.StringVar(&flagDebug, "debug-group", "", "[experimental!] enable debug for the specified matcher function")
 	Analyzer.Flags.BoolVar(&flagDebugImports, "debug-imports", false, "[experimental!] enable debug for rules compile-time package lookups")
 	Analyzer.Flags.BoolVar(&flagDebugEnableDisable, "debug-enable-disable", false, "[experimental!] enable debug for -enable/-disable related info")
+
+	Analyzer.Flags.StringVar(&flagGoVersion, "go", "", "select the Go version to target; leave as string for the latest")
 
 	Analyzer.Flags.StringVar(&flagRules, "rules", "", "comma-separated list of ruleguard file paths")
 	Analyzer.Flags.StringVar(&flagE, "e", "", "execute a single rule from a given string")
@@ -87,6 +91,11 @@ func runAnalyzer(pass *analysis.Pass) (interface{}, error) {
 
 	printRuleLocation := flagE == ""
 
+	goVersion, err := ruleguard.ParseGoVersion(flagGoVersion)
+	if err != nil {
+		return nil, fmt.Errorf("parse Go version: %w", err)
+	}
+
 	ctx := &ruleguard.RunContext{
 		Debug:        flagDebug,
 		DebugImports: flagDebugImports,
@@ -95,6 +104,7 @@ func runAnalyzer(pass *analysis.Pass) (interface{}, error) {
 		Types:        pass.TypesInfo,
 		Sizes:        pass.TypesSizes,
 		Fset:         pass.Fset,
+		GoVersion:    goVersion,
 		Report: func(info ruleguard.GoRuleInfo, n ast.Node, msg string, s *ruleguard.Suggestion) {
 			fullMessage := msg
 			if printRuleLocation {

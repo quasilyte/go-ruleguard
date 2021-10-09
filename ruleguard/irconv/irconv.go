@@ -414,7 +414,6 @@ func (conv *converter) convertFilterExprImpl(e ast.Expr) ir.FilterExpr {
 			}
 		}
 	}
-
 	convertExprList := func(list []ast.Expr) []ir.FilterExpr {
 		if len(list) == 0 {
 			return nil
@@ -483,6 +482,16 @@ func (conv *converter) convertFilterExprImpl(e ast.Expr) ir.FilterExpr {
 	case *ast.CallExpr:
 		op := conv.inspectFilterSelector(e)
 		switch op.path {
+		case "GoVersion.Eq":
+			return ir.FilterExpr{Op: ir.FilterGoVersionEqOp, Value: conv.parseStringArg(e.Args[0])}
+		case "GoVersion.LessThan":
+			return ir.FilterExpr{Op: ir.FilterGoVersionLessThanOp, Value: conv.parseStringArg(e.Args[0])}
+		case "GoVersion.GreaterThan":
+			return ir.FilterExpr{Op: ir.FilterGoVersionGreaterThanOp, Value: conv.parseStringArg(e.Args[0])}
+		case "GoVersion.LessEqThan":
+			return ir.FilterExpr{Op: ir.FilterGoVersionLessEqThanOp, Value: conv.parseStringArg(e.Args[0])}
+		case "GoVersion.GreaterEqThan":
+			return ir.FilterExpr{Op: ir.FilterGoVersionGreaterEqThanOp, Value: conv.parseStringArg(e.Args[0])}
 		case "File.Imports":
 			return ir.FilterExpr{Op: ir.FilterFileImportsOp, Value: conv.parseStringArg(e.Args[0])}
 		case "File.PkgPath.Matches":

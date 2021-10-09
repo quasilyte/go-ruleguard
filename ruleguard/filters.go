@@ -240,6 +240,15 @@ func makeLineFilter(src, varname string, op token.Token, rhsVarname string) filt
 	}
 }
 
+func makeGoVersionFilter(src string, op token.Token, version GoVersion) filterFunc {
+	return func(params *filterParams) matchFilterResult {
+		if versionCompare(params.ctx.GoVersion, op, version) {
+			return filterSuccess
+		}
+		return filterFailure(src)
+	}
+}
+
 func makeLineConstFilter(src, varname string, op token.Token, rhsValue constant.Value) filterFunc {
 	// TODO(quasilyte): add variadic support.
 	return func(params *filterParams) matchFilterResult {
