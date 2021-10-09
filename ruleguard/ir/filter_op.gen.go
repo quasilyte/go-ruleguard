@@ -119,6 +119,9 @@ const (
 	// $Value holds an int64 constant
 	// $Value type: int64
 	FilterIntOp FilterOp = 31
+
+	// m[`$$`].Node.Parent().Is($Args[0])
+	FilterRootNodeParentIsOp FilterOp = 32
 )
 
 var filterOpNames = map[FilterOp]string{
@@ -154,6 +157,7 @@ var filterOpNames = map[FilterOp]string{
 	FilterFilterFuncRefOp:        `FilterFuncRef`,
 	FilterStringOp:               `String`,
 	FilterIntOp:                  `Int`,
+	FilterRootNodeParentIsOp:     `RootNodeParentIs`,
 }
 var filterOpFlags = map[FilterOp]uint64{
 	FilterAndOp:    flagIsBinaryExpr,

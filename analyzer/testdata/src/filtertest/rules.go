@@ -198,4 +198,8 @@ func testRules(m dsl.Matcher) {
 	m.Match(`typeTest($x, "underlying is interface")`).
 		Where(m["x"].Type.Underlying().Is(`interface{ $*_ }`)).
 		Report(`YES`)
+
+	m.Match(`textTest("", "root text test")`).
+		Where(m["$$"].Text == `textTest("", "root text test")`).
+		Report(`YES`)
 }

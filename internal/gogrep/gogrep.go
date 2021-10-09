@@ -26,6 +26,9 @@ type CapturedNode struct {
 }
 
 func (data MatchData) CapturedByName(name string) (ast.Node, bool) {
+	if name == "$$" {
+		return data.Node, true
+	}
 	return findNamed(data.Capture, name)
 }
 

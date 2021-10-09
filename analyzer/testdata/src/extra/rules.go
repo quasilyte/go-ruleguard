@@ -164,4 +164,14 @@ func testRules(m dsl.Matcher) {
 		Report(`check on $xs is redundant, empty/nil slices and maps can be safely iterated`)
 
 	m.Match(`errors.New("")`).Report(`empty error`)
+
+	m.Match(`context.WithValue($*_)`).
+		Where(m["$$"].Node.Parent().Is(`ExprStmt`)).
+		Report(`context.WithValue result should not be ignored`)
+
+	m.Match(`var $v = $_`).
+		Where(m["$$"].Node.Parent().Is(`File`) &&
+			m["v"].Type.Implements(`error`) &&
+			!m["v"].Text.Matches(`^Err`)).
+		Report(`error vars should be prefixed with Err`)
 }

@@ -509,6 +509,12 @@ func (conv *converter) convertFilterExprImpl(e ast.Expr) ir.FilterExpr {
 			return ir.FilterExpr{Op: ir.FilterVarTextMatchesOp, Value: op.varName, Args: args}
 		case "Node.Is":
 			return ir.FilterExpr{Op: ir.FilterVarNodeIsOp, Value: op.varName, Args: args}
+		case "Node.Parent.Is":
+			if op.varName != "$$" {
+				// TODO: remove this restriction.
+				panic(conv.errorf(e.Args[0], "only $$ parent nodes are implemented"))
+			}
+			return ir.FilterExpr{Op: ir.FilterRootNodeParentIsOp, Args: args}
 		case "Object.Is":
 			return ir.FilterExpr{Op: ir.FilterVarObjectIsOp, Value: op.varName, Args: args}
 		case "Type.Is":

@@ -27,6 +27,21 @@ type rulesRunner struct {
 	filename string
 	src      []byte
 
+	// nodePath is a stack of ast.Nodes we visited to this point.
+	// When we enter a new node, it's placed on the top of the stack.
+	// When we leave that node, it's popped.
+	// The stack is a slice that is allocated only once and reused
+	// for the lifetime of the runner.
+	// The only overhead it has is a slice append and pop operations
+	// that are quire cheap.
+	//
+	// Note: we need this path to get a Node.Parent() for `$$` matches.
+	// So it's used to climb up the tree there.
+	// For named submatches we can't use it as the node can be located
+	// deeper into the tree than the current node.
+	// In those cases we need a more complicated algorithm.
+	nodePath nodePath
+
 	filterParams filterParams
 }
 
@@ -40,6 +55,7 @@ func newRulesRunner(ctx *RunContext, state *engineState, rules *goRuleSet) *rule
 		ctx:      ctx,
 		importer: importer,
 		rules:    rules,
+		nodePath: newNodePath(),
 		filterParams: filterParams{
 			env:      state.env.GetEvalEnv(),
 			importer: importer,
@@ -47,6 +63,7 @@ func newRulesRunner(ctx *RunContext, state *engineState, rules *goRuleSet) *rule
 		},
 	}
 	rr.filterParams.nodeText = rr.nodeText
+	rr.filterParams.nodePath = &rr.nodePath
 	return rr
 }
 
@@ -93,7 +110,11 @@ func (rr *rulesRunner) fileBytes() []byte {
 }
 
 func (rr *rulesRunner) run(f *ast.File) error {
-	// TODO(quasilyte): run local rules as well.
+	// If it's not empty then we're leaking memory.
+	// For every Push() there should be a Pop() call.
+	if rr.nodePath.Len() != 0 {
+		panic("internal error: node path is not empty")
+	}
 
 	rr.filename = rr.ctx.Fset.Position(f.Pos()).Filename
 	rr.filterParams.filename = rr.filename
@@ -102,8 +123,10 @@ func (rr *rulesRunner) run(f *ast.File) error {
 	if rr.rules.universal.categorizedNum != 0 {
 		ast.Inspect(f, func(n ast.Node) bool {
 			if n == nil {
+				rr.nodePath.Pop()
 				return false
 			}
+			rr.nodePath.Push(n)
 			rr.runRules(n)
 			return true
 		})

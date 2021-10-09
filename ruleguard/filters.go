@@ -346,23 +346,22 @@ func makeTextMatchesFilter(src, varname string, re *regexp.Regexp) filterFunc {
 	}
 }
 
+func makeRootParentNodeIsFilter(src string, tag nodetag.Value) filterFunc {
+	return func(params *filterParams) matchFilterResult {
+		parent := params.nodePath.Parent()
+		if nodeIs(parent, tag) {
+			return filterSuccess
+		}
+		return filterFailure(src)
+	}
+}
+
 func makeNodeIsFilter(src, varname string, tag nodetag.Value) filterFunc {
 	// TODO(quasilyte): add comment nodes support?
 	// TODO(quasilyte): add variadic support.
 	return func(params *filterParams) matchFilterResult {
 		n := params.subNode(varname)
-		var matched bool
-		switch tag {
-		case nodetag.Expr:
-			_, matched = n.(ast.Expr)
-		case nodetag.Stmt:
-			_, matched = n.(ast.Stmt)
-		case nodetag.Node:
-			_, matched = n.(ast.Node)
-		default:
-			matched = (tag == nodetag.FromNode(n))
-		}
-		if matched {
+		if nodeIs(n, tag) {
 			return filterSuccess
 		}
 		return filterFailure(src)
@@ -432,4 +431,19 @@ func makeObjectIsFilter(src, varname, objectName string) filterFunc {
 		}
 		return filterFailure(src)
 	}
+}
+
+func nodeIs(n ast.Node, tag nodetag.Value) bool {
+	var matched bool
+	switch tag {
+	case nodetag.Expr:
+		_, matched = n.(ast.Expr)
+	case nodetag.Stmt:
+		_, matched = n.(ast.Stmt)
+	case nodetag.Node:
+		matched = true
+	default:
+		matched = (tag == nodetag.FromNode(n))
+	}
+	return matched
 }

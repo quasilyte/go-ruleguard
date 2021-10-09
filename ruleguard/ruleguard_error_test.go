@@ -336,6 +336,16 @@ func TestParseFilterError(t *testing.T) {
 			`m["x"].Node.Is("abc")`,
 			`abc is not a valid go/ast type name`,
 		},
+
+		{
+			`m["x"].Node.Parent().Is("ExprStmt")`,
+			`only $$ parent nodes are implemented`,
+		},
+
+		{
+			`m["$$"].Node.Parent().Is("foo")`,
+			`foo is not a valid go/ast type name`,
+		},
 	}
 
 	for _, test := range tests {

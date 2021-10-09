@@ -406,6 +406,18 @@ func (l *irLoader) unwrapRegexpExpr(filter ir.FilterExpr) (*regexp.Regexp, error
 	return re, nil
 }
 
+func (l *irLoader) unwrapNodeTagExpr(filter ir.FilterExpr) (nodetag.Value, error) {
+	typeString := l.unwrapStringExpr(filter)
+	if typeString == "" {
+		return nodetag.Unknown, l.errorf(filter.Line, nil, "expected a non-empty string argument")
+	}
+	tag := nodetag.FromString(typeString)
+	if tag == nodetag.Unknown {
+		return tag, l.errorf(filter.Line, nil, "%s is not a valid go/ast type name", typeString)
+	}
+	return tag, nil
+}
+
 func (l *irLoader) unwrapStringExpr(filter ir.FilterExpr) string {
 	if filter.Op == ir.FilterStringOp {
 		return filter.Value.(string)
@@ -448,14 +460,17 @@ func (l *irLoader) newFilter(filter ir.FilterExpr) (matchFilter, error) {
 		}
 		result.fn = makeObjectIsFilter(result.src, filter.Value.(string), typeString)
 
-	case ir.FilterVarNodeIsOp:
-		typeString := l.unwrapStringExpr(filter.Args[0])
-		if typeString == "" {
-			return result, l.errorf(filter.Line, nil, "expected a non-empty string argument")
+	case ir.FilterRootNodeParentIsOp:
+		tag, err := l.unwrapNodeTagExpr(filter.Args[0])
+		if err != nil {
+			return result, err
 		}
-		tag := nodetag.FromString(typeString)
-		if tag == nodetag.Unknown {
-			return result, l.errorf(filter.Line, nil, "%s is not a valid go/ast type name", typeString)
+		result.fn = makeRootParentNodeIsFilter(result.src, tag)
+
+	case ir.FilterVarNodeIsOp:
+		tag, err := l.unwrapNodeTagExpr(filter.Args[0])
+		if err != nil {
+			return result, err
 		}
 		result.fn = makeNodeIsFilter(result.src, filter.Value.(string), tag)
 

@@ -419,6 +419,8 @@ func detectText(foo, bar int) {
 
 	textTest(1, "doesn't match [A-Z]") // want `YES`
 	textTest("ABC", "doesn't match [A-Z]")
+
+	textTest("", "root text test") // want `YES`
 }
 
 func detectParensFilter() {
