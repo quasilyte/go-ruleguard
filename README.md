@@ -156,6 +156,8 @@ There can be additional calls in between these two. For example, a [`Where(cond)
 * [go-critic](https://github.com/go-critic/go-critic) rule set: [github.com/go-critic/go-critic/checkers/rules/rules.go](https://github.com/go-critic/go-critic/blob/master/checkers/rules/rules.go)
 * Partial [Uber-Go](https://github.com/uber-go/guide) style rule set: [github.com/quasilyte/uber-rules](https://github.com/quasilyte/uber-rules)
 
+Note: `go-critic` embeds the rules using the IR precompilation feature.
+
 ## Extra references
 
 * Online ruleguard playground: [go-ruleguard.github.io/play](https://go-ruleguard.github.io/play)
