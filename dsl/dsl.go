@@ -142,6 +142,17 @@ type MatchedNode struct{}
 // See https://golang.org/pkg/go/ast/.
 func (MatchedNode) Is(typ string) bool { return boolResult }
 
+// Parent returns a matched node parent.
+func (MatchedNode) Parent() Node { return Node{} }
+
+// Node represents an AST node somewhere inside a match.
+// Unlike MatchedNode, it doesn't have to be associated with a named submatch.
+type Node struct{}
+
+// Is reports whether a node AST type is compatible with the specified type.
+// See `MatchedNode.Is` for the full reference.
+func (Node) Is(typ string) bool { return boolResult }
+
 // ExprValue describes a compile-time computable value of a matched expr.
 type ExprValue struct{}
 
