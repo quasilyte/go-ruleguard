@@ -87,6 +87,9 @@ func (m Matcher) At(v Var) Matcher {
 // File returns the current file context.
 func (m Matcher) File() File { return File{} }
 
+// GoVersion returns the analyzer associated target Go language version.
+func (m Matcher) GoVersion() GoVersion { return GoVersion{} }
+
 // Var is a pattern variable that describes a named submatch.
 type Var struct {
 	// Pure reports whether expr matched by var is side-effect-free.
@@ -219,6 +222,26 @@ type File struct {
 
 // Imports reports whether the current file imports the given path.
 func (File) Imports(path string) bool { return boolResult }
+
+// GoVersion is an analysis target go language version.
+// It can be compared to Go versions like "1.10", "1.16" using
+// the associated methods.
+type GoVersion struct{}
+
+// Eq asserts that target Go version is equal to (==) specified version.
+func (GoVersion) Eq(version string) bool { return boolResult }
+
+// GreaterEqThan asserts that target Go version is greater or equal than (>=) specified version.
+func (GoVersion) GreaterEqThan(version string) bool { return boolResult }
+
+// GreaterThan asserts that target Go version is greater than (>) specified version.
+func (GoVersion) GreaterThan(version string) bool { return boolResult }
+
+// LessThan asserts that target Go version is less than (<) specified version.
+func (GoVersion) LessThan(version string) bool { return boolResult }
+
+// LessEqThan asserts that target Go version is less or equal than (<=) specified version.
+func (GoVersion) LessEqThan(version string) bool { return boolResult }
 
 // typeName is a helper type used to document function params better.
 //
