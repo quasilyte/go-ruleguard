@@ -439,3 +439,28 @@ func emptyError() {
 	_ = errors.New("") // want `empty error`
 	_ = errors.New(``) // want `empty error`
 }
+
+func contextWithValue(ctx context.Context) {
+	type myKey string
+
+	context.WithValue(ctx, myKey(""), 10) // want `\Qcontext.WithValue result should not be ignored`
+
+	_ = context.WithValue(ctx, myKey("b"), "ok")
+	sinkFunc(context.WithValue(ctx, myKey("b"), "ok"))
+}
+
+var MyGlobalError = errors.New("Bad") // want `\Qerror vars should be prefixed with Err`
+
+var ( // want `\Qerror vars should be prefixed with Err`
+	MyGlobalError2 = errors.New("Bad")
+)
+
+func errorDeclTest() {
+	var MyError = errors.New("OK")
+	sinkFunc(MyError)
+
+	{
+		var MyError2 = errors.New("OK")
+		sinkFunc(MyError2)
+	}
+}

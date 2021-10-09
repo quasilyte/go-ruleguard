@@ -64,6 +64,8 @@ func main() {
 
 		{name: "String", comment: "$Value holds a string constant", valueType: "string", flags: flagIsBasicLit},
 		{name: "Int", comment: "$Value holds an int64 constant", valueType: "int64", flags: flagIsBasicLit},
+
+		{name: "RootNodeParentIs", comment: "m[`$$`].Node.Parent().Is($Args[0])"},
 	}
 
 	var buf bytes.Buffer

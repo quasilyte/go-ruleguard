@@ -60,7 +60,8 @@ type filterParams struct {
 
 	importer *goImporter
 
-	match matchData
+	match    matchData
+	nodePath *nodePath
 
 	nodeText func(n ast.Node) []byte
 
