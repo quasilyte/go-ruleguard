@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+	"go/types"
 	"strconv"
 
 	"github.com/go-toolsmith/astequal"
+	"github.com/quasilyte/go-ruleguard/internal/stdinfo"
 )
 
 type matcher struct {
@@ -18,6 +20,8 @@ type matcher struct {
 	// node values recorded by name, excluding "_" (used only by the
 	// actual matching phase)
 	capture []CapturedNode
+
+	types *types.Info
 }
 
 func newMatcher(prog *program) *matcher {
@@ -42,8 +46,9 @@ func (m *matcher) ifaceValue(inst instruction) interface{} {
 	return m.prog.ifaces[inst.valueIndex]
 }
 
-func (m *matcher) MatchNode(n ast.Node, accept func(MatchData)) {
+func (m *matcher) MatchNode(info *types.Info, n ast.Node, accept func(MatchData)) {
 	m.pc = 0
+	m.types = info
 	inst := m.nextInst()
 	switch inst.op {
 	case opMultiStmt:
@@ -149,6 +154,19 @@ func (m *matcher) matchNodeWithInst(inst instruction, n ast.Node) bool {
 	case opIdent:
 		n, ok := n.(*ast.Ident)
 		return ok && m.stringValue(inst) == n.Name
+
+	case opStdlibPkg:
+		n, ok := n.(*ast.Ident)
+		if !ok {
+			return false
+		}
+		obj := m.types.ObjectOf(n)
+		if obj == nil {
+			return false
+		}
+		pkgName, ok := obj.(*types.PkgName)
+		return ok && m.stringValue(inst) == pkgName.Imported().Name() &&
+			pkgName.Imported().Path() == stdinfo.Packages[pkgName.Imported().Name()]
 
 	case opBinaryExpr:
 		n, ok := n.(*ast.BinaryExpr)

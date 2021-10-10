@@ -790,7 +790,7 @@ func testAllMatches(p *Pattern, target ast.Node, cb func(MatchData)) {
 		if n == nil {
 			return false
 		}
-		p.MatchNode(n, cb)
+		p.MatchNode(nil, n, cb)
 		return true
 	}
 	ast.Inspect(target, visit)
