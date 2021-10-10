@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/quasilyte/go-ruleguard/internal/stdinfo"
 	"github.com/quasilyte/go-ruleguard/ruleguard/ir"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
 	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
@@ -58,7 +59,7 @@ func (e *engine) Load(ctx *LoadContext, filename string, r io.Reader) error {
 		pkg:      pkg,
 		ctx:      ctx,
 		importer: imp,
-		itab:     typematch.NewImportsTab(stdlibPackages),
+		itab:     typematch.NewImportsTab(stdinfo.Packages),
 	}
 	l := newIRLoader(config)
 	rset, err := l.LoadFile(filename, irfile)
@@ -89,7 +90,7 @@ func (e *engine) LoadFromIR(ctx *LoadContext, filename string, f *ir.File) error
 		state:    e.state,
 		ctx:      ctx,
 		importer: imp,
-		itab:     typematch.NewImportsTab(stdlibPackages),
+		itab:     typematch.NewImportsTab(stdinfo.Packages),
 	}
 	l := newIRLoader(config)
 	rset, err := l.LoadFile(filename, f)

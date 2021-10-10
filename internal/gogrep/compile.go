@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"go/ast"
 	"go/token"
+
+	"github.com/quasilyte/go-ruleguard/internal/stdinfo"
 )
 
 type compileError string
@@ -415,11 +417,36 @@ func (c *compiler) compileCallExpr(n *ast.CallExpr) {
 	}
 
 	c.emitInstOp(op)
-	c.compileExpr(n.Fun)
+	c.compileSymbol(n.Fun)
 	for _, arg := range n.Args {
 		c.compileExpr(arg)
 	}
 	c.emitInstOp(opEnd)
+}
+
+// compileSymbol is mostly like a normal compileExpr, but it's used
+// in places where we can find a type/function symbol.
+//
+// For example, in function call expressions a called function expression
+// can look like `fmt.Sprint`. It will be compiled as a special
+// selector expression that requires `fmt` to be a package as opposed
+// to only check that it's an identifier with "fmt" value.
+func (c *compiler) compileSymbol(fn ast.Expr) {
+	if e, ok := fn.(*ast.SelectorExpr); ok {
+		if ident, ok := e.X.(*ast.Ident); ok && stdinfo.Packages[ident.Name] != "" {
+			c.emitInst(instruction{
+				op:         opSimpleSelectorExpr,
+				valueIndex: c.internString(e.Sel, e.Sel.String()),
+			})
+			c.emitInst(instruction{
+				op:         opStdlibPkg,
+				valueIndex: c.internString(ident, ident.Name),
+			})
+			return
+		}
+	}
+
+	c.compileExpr(fn)
 }
 
 func (c *compiler) compileUnaryExpr(n *ast.UnaryExpr) {

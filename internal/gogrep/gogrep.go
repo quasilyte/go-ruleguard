@@ -3,6 +3,7 @@ package gogrep
 import (
 	"go/ast"
 	"go/token"
+	"go/types"
 
 	"github.com/quasilyte/go-ruleguard/nodetag"
 )
@@ -41,8 +42,8 @@ func (p *Pattern) NodeTag() nodetag.Value {
 }
 
 // MatchNode calls cb if n matches a pattern.
-func (p *Pattern) MatchNode(n ast.Node, cb func(MatchData)) {
-	p.m.MatchNode(n, cb)
+func (p *Pattern) MatchNode(info *types.Info, n ast.Node, cb func(MatchData)) {
+	p.m.MatchNode(info, n, cb)
 }
 
 // Clone creates a pattern copy.

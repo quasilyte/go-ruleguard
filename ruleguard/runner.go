@@ -206,7 +206,7 @@ func (rr *rulesRunner) runRules(n ast.Node) {
 	tag := nodetag.FromNode(n)
 	for _, rule := range rr.rules.universal.rulesByTag[tag] {
 		matched := false
-		rule.pat.MatchNode(n, func(m gogrep.MatchData) {
+		rule.pat.MatchNode(rr.ctx.Types, n, func(m gogrep.MatchData) {
 			matched = rr.handleMatch(rule, m)
 		})
 		if matched {

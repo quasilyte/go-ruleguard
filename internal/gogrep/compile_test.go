@@ -882,6 +882,23 @@ func TestCompile(t *testing.T) {
 			` •  • End`,
 			` • End`,
 		},
+
+		`fmt.Println()`: {
+			`NonVariadicCallExpr`,
+			` • SimpleSelectorExpr Println`,
+			` •  • StdlibPkg fmt`,
+			` • End`,
+		},
+
+		`x = fmt.Sprint(y)`: {
+			`AssignStmt =`,
+			` • Ident x`,
+			` • NonVariadicCallExpr`,
+			` •  • SimpleSelectorExpr Sprint`,
+			` •  •  • StdlibPkg fmt`,
+			` •  • Ident y`,
+			` •  • End`,
+		},
 	})
 
 	for i := range tests {
