@@ -178,4 +178,8 @@ func testRules(m dsl.Matcher) {
 	m.Match(`var $v $_; if $cond { $v = $x } else { $v = $y }`).
 		Where(m["y"].Pure).
 		Report(`rewrite as '$v := $y; if $cond { $v = $x }'`)
+
+	m.Match(`$f($*_)`).
+		Where(m["$$"].Type.Is("error") && m["$$"].Node.Parent().Is("ExprStmt")).
+		Report(`don't ignore the $f result`)
 }
