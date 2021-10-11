@@ -56,6 +56,8 @@ func main() {
 		{name: "VarTypeImplements", comment: "m[$Value].Type.Implements($Args[0])", valueType: "string"},
 		{name: "VarTextMatches", comment: "m[$Value].Text.Matches($Args[0])", valueType: "string"},
 
+		{name: "Deadcode", comment: "m.Deadcode()"},
+
 		{name: "GoVersionEq", comment: "m.GoVersion().Eq($Value)", valueType: "string"},
 		{name: "GoVersionLessThan", comment: "m.GoVersion().LessThan($Value)", valueType: "string"},
 		{name: "GoVersionGreaterThan", comment: "m.GoVersion().GreaterThan($Value)", valueType: "string"},

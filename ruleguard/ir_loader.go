@@ -518,6 +518,9 @@ func (l *irLoader) newFilter(filter ir.FilterExpr) (matchFilter, error) {
 	case ir.FilterFileImportsOp:
 		result.fn = makeFileImportsFilter(result.src, filter.Value.(string))
 
+	case ir.FilterDeadcodeOp:
+		result.fn = makeDeadcodeFilter(result.src)
+
 	case ir.FilterGoVersionEqOp:
 		version, err := ParseGoVersion(filter.Value.(string))
 		if err != nil {

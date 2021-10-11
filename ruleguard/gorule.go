@@ -65,6 +65,8 @@ type filterParams struct {
 
 	nodeText func(n ast.Node) []byte
 
+	deadcode bool
+
 	// varname is set only for custom filters before bytecode function is called.
 	varname string
 }

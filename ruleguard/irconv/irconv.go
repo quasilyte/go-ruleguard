@@ -482,6 +482,8 @@ func (conv *converter) convertFilterExprImpl(e ast.Expr) ir.FilterExpr {
 	case *ast.CallExpr:
 		op := conv.inspectFilterSelector(e)
 		switch op.path {
+		case "Deadcode":
+			return ir.FilterExpr{Op: ir.FilterDeadcodeOp}
 		case "GoVersion.Eq":
 			return ir.FilterExpr{Op: ir.FilterGoVersionEqOp, Value: conv.parseStringArg(e.Args[0])}
 		case "GoVersion.LessThan":

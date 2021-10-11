@@ -24,6 +24,15 @@ func TestDebug(t *testing.T) {
 			},
 		},
 
+		`m.Match("f()").Where(!m.Deadcode())`: {
+			`f()`:             nil,
+			`if true { f() }`: nil,
+
+			`if false { f() }`: {
+				`input.go:4: [rules.go:5] rejected by !m.Deadcode()`,
+			},
+		},
+
 		`m.Match("f($x)").Where(m["x"].Type.Is("string"))`: {
 			`f("abc")`: nil,
 
