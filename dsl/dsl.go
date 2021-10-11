@@ -90,6 +90,9 @@ func (m Matcher) File() File { return File{} }
 // GoVersion returns the analyzer associated target Go language version.
 func (m Matcher) GoVersion() GoVersion { return GoVersion{} }
 
+// Deadcode reports whether this match is contained inside a dead code path.
+func (m Matcher) Deadcode() bool { return boolResult }
+
 // Var is a pattern variable that describes a named submatch.
 type Var struct {
 	// Pure reports whether expr matched by var is side-effect-free.
