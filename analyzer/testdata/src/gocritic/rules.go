@@ -200,3 +200,23 @@ func syncMapLoadAndDelete(m dsl.Matcher) {
 			m["m"].Type.Is(`*sync.Map`)).
 		Report(`use $m.LoadAndDelete to perform load+delete operations atomically`)
 }
+
+func argOrder(m dsl.Matcher) {
+	m.Match(
+		`strings.HasPrefix($lit, $s)`,
+		`bytes.HasPrefix($lit, $s)`,
+		`strings.HasSuffix($lit, $s)`,
+		`bytes.HasSuffix($lit, $s)`,
+		`strings.Contains($lit, $s)`,
+		`bytes.Contains($lit, $s)`,
+		`strings.TrimPrefix($lit, $s)`,
+		`bytes.TrimPrefix($lit, $s)`,
+		`strings.TrimSuffix($lit, $s)`,
+		`bytes.TrimSuffix($lit, $s)`,
+		`strings.Split($lit, $s)`,
+		`bytes.Split($lit, $s)`).
+		Where((m["lit"].Const || m["lit"].ConstSlice) &&
+			!(m["s"].Const || m["s"].ConstSlice) &&
+			!m["lit"].Node.Is(`Ident`)).
+		Report(`$lit and $s arguments order looks reversed`)
+}

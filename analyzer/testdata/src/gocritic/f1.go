@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
@@ -614,4 +615,69 @@ func _(cond bool, m, m2 *sync.Map) {
 			sink(v)
 		}
 	}
+}
+
+func argOrder() {
+	var s string
+	var b []byte
+
+	_ = strings.HasPrefix("http://", s) // want `\Q"http://" and s arguments order looks reversed`
+
+	_ = bytes.HasPrefix([]byte("http://"), b)                         // want `\Q[]byte("http://") and b arguments order looks reversed`
+	_ = bytes.HasPrefix([]byte{'h', 't', 't', 'p', ':', '/', '/'}, b) // want `\Q[]byte{'h', 't', 't', 'p', ':', '/', '/'} and b arguments order looks reversed`
+
+	_ = strings.Contains(":", s)       // want `\Q":" and s arguments order looks reversed`
+	_ = bytes.Contains([]byte(":"), b) // want `\Q[]byte(":") and b arguments order looks reversed`
+
+	_ = strings.TrimPrefix(":", s)       // want `\Q":" and s arguments order looks reversed`
+	_ = bytes.TrimPrefix([]byte(":"), b) // want `\Q[]byte(":") and b arguments order looks reversed`
+
+	_ = strings.TrimSuffix(":", s)       // want `\Q":" and s arguments order looks reversed`
+	_ = bytes.TrimSuffix([]byte(":"), b) // want `\Q[]byte(":") and b arguments order looks reversed`
+
+	_ = strings.Split("/", s)       // want `\Q"/" and s arguments order looks reversed`
+	_ = bytes.Split([]byte("/"), b) // want `\Q[]byte("/") and b arguments order looks reversed`
+
+	_ = strings.Contains("uint uint8 uint16 uint32", s) // want `\Q"uint uint8 uint16 uint32" and s arguments order looks reversed`
+	_ = strings.TrimPrefix("optional foo bar", s)       // want `\Q"optional foo bar" and s arguments order looks reversed`
+}
+
+func argOrderNonConstArgs(s1, s2 string, b1, b2 []byte) {
+	_ = strings.HasPrefix(s1, s2)
+	_ = bytes.HasPrefix(b1, b2)
+
+	x := byte('x')
+	_ = bytes.HasPrefix([]byte{x}, b1)
+	_ = bytes.HasPrefix([]byte(s1), b1)
+}
+
+func argOrderConstOnlyArgs() {
+	_ = strings.HasPrefix("", "http://")
+	_ = bytes.HasPrefix([]byte{}, []byte("http://"))
+	_ = bytes.HasPrefix([]byte{}, []byte{'h', 't', 't', 'p', ':', '/', '/'})
+	_ = strings.Contains("", ":")
+	_ = bytes.Contains([]byte{}, []byte(":"))
+	_ = strings.TrimPrefix("", ":")
+	_ = bytes.TrimPrefix([]byte{}, []byte(":"))
+	_ = strings.TrimSuffix("", ":")
+	_ = bytes.TrimSuffix([]byte{}, []byte(":"))
+	_ = strings.Split("", "/")
+	_ = bytes.Split([]byte{}, []byte("/"))
+}
+
+func argOderProperArgsOrder(s string, b []byte) {
+	_ = strings.HasPrefix(s, "http://")
+	_ = bytes.HasPrefix(b, []byte("http://"))
+	_ = bytes.HasPrefix(b, []byte{'h', 't', 't', 'p', ':', '/', '/'})
+	_ = strings.Contains(s, ":")
+	_ = bytes.Contains(b, []byte(":"))
+	_ = strings.TrimPrefix(s, ":")
+	_ = bytes.TrimPrefix(b, []byte(":"))
+	_ = strings.TrimSuffix(s, ":")
+	_ = bytes.TrimSuffix(b, []byte(":"))
+	_ = strings.Split(s, "/")
+	_ = bytes.Split(b, []byte("/"))
+
+	const configFileName = "foo.json"
+	_ = strings.TrimSuffix(configFileName, filepath.Ext(configFileName))
 }

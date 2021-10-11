@@ -44,107 +44,111 @@ const (
 	// $Value type: string
 	FilterVarConstOp FilterOp = 12
 
+	// m[$Value].ConstSlice
+	// $Value type: string
+	FilterVarConstSliceOp FilterOp = 13
+
 	// m[$Value].Text
 	// $Value type: string
-	FilterVarTextOp FilterOp = 13
+	FilterVarTextOp FilterOp = 14
 
 	// m[$Value].Line
 	// $Value type: string
-	FilterVarLineOp FilterOp = 14
+	FilterVarLineOp FilterOp = 15
 
 	// m[$Value].Value.Int()
 	// $Value type: string
-	FilterVarValueIntOp FilterOp = 15
+	FilterVarValueIntOp FilterOp = 16
 
 	// m[$Value].Type.Size
 	// $Value type: string
-	FilterVarTypeSizeOp FilterOp = 16
+	FilterVarTypeSizeOp FilterOp = 17
 
 	// m[$Value].Filter($Args[0])
 	// $Value type: string
-	FilterVarFilterOp FilterOp = 17
+	FilterVarFilterOp FilterOp = 18
 
 	// m[$Value].Node.Is($Args[0])
 	// $Value type: string
-	FilterVarNodeIsOp FilterOp = 18
+	FilterVarNodeIsOp FilterOp = 19
 
 	// m[$Value].Object.Is($Args[0])
 	// $Value type: string
-	FilterVarObjectIsOp FilterOp = 19
+	FilterVarObjectIsOp FilterOp = 20
 
 	// m[$Value].Type.Is($Args[0])
 	// $Value type: string
-	FilterVarTypeIsOp FilterOp = 20
+	FilterVarTypeIsOp FilterOp = 21
 
 	// m[$Value].Type.Underlying().Is($Args[0])
 	// $Value type: string
-	FilterVarTypeUnderlyingIsOp FilterOp = 21
+	FilterVarTypeUnderlyingIsOp FilterOp = 22
 
 	// m[$Value].Type.ConvertibleTo($Args[0])
 	// $Value type: string
-	FilterVarTypeConvertibleToOp FilterOp = 22
+	FilterVarTypeConvertibleToOp FilterOp = 23
 
 	// m[$Value].Type.AssignableTo($Args[0])
 	// $Value type: string
-	FilterVarTypeAssignableToOp FilterOp = 23
+	FilterVarTypeAssignableToOp FilterOp = 24
 
 	// m[$Value].Type.Implements($Args[0])
 	// $Value type: string
-	FilterVarTypeImplementsOp FilterOp = 24
+	FilterVarTypeImplementsOp FilterOp = 25
 
 	// m[$Value].Text.Matches($Args[0])
 	// $Value type: string
-	FilterVarTextMatchesOp FilterOp = 25
+	FilterVarTextMatchesOp FilterOp = 26
 
 	// m.Deadcode()
-	FilterDeadcodeOp FilterOp = 26
+	FilterDeadcodeOp FilterOp = 27
 
 	// m.GoVersion().Eq($Value)
 	// $Value type: string
-	FilterGoVersionEqOp FilterOp = 27
+	FilterGoVersionEqOp FilterOp = 28
 
 	// m.GoVersion().LessThan($Value)
 	// $Value type: string
-	FilterGoVersionLessThanOp FilterOp = 28
+	FilterGoVersionLessThanOp FilterOp = 29
 
 	// m.GoVersion().GreaterThan($Value)
 	// $Value type: string
-	FilterGoVersionGreaterThanOp FilterOp = 29
+	FilterGoVersionGreaterThanOp FilterOp = 30
 
 	// m.GoVersion().LessEqThan($Value)
 	// $Value type: string
-	FilterGoVersionLessEqThanOp FilterOp = 30
+	FilterGoVersionLessEqThanOp FilterOp = 31
 
 	// m.GoVersion().GreaterEqThan($Value)
 	// $Value type: string
-	FilterGoVersionGreaterEqThanOp FilterOp = 31
+	FilterGoVersionGreaterEqThanOp FilterOp = 32
 
 	// m.File.Imports($Value)
 	// $Value type: string
-	FilterFileImportsOp FilterOp = 32
+	FilterFileImportsOp FilterOp = 33
 
 	// m.File.PkgPath.Matches($Value)
 	// $Value type: string
-	FilterFilePkgPathMatchesOp FilterOp = 33
+	FilterFilePkgPathMatchesOp FilterOp = 34
 
 	// m.File.Name.Matches($Value)
 	// $Value type: string
-	FilterFileNameMatchesOp FilterOp = 34
+	FilterFileNameMatchesOp FilterOp = 35
 
 	// $Value holds a function name
 	// $Value type: string
-	FilterFilterFuncRefOp FilterOp = 35
+	FilterFilterFuncRefOp FilterOp = 36
 
 	// $Value holds a string constant
 	// $Value type: string
-	FilterStringOp FilterOp = 36
+	FilterStringOp FilterOp = 37
 
 	// $Value holds an int64 constant
 	// $Value type: int64
-	FilterIntOp FilterOp = 37
+	FilterIntOp FilterOp = 38
 
 	// m[`$$`].Node.Parent().Is($Args[0])
-	FilterRootNodeParentIsOp FilterOp = 38
+	FilterRootNodeParentIsOp FilterOp = 39
 )
 
 var filterOpNames = map[FilterOp]string{
@@ -161,6 +165,7 @@ var filterOpNames = map[FilterOp]string{
 	FilterVarAddressableOp:         `VarAddressable`,
 	FilterVarPureOp:                `VarPure`,
 	FilterVarConstOp:               `VarConst`,
+	FilterVarConstSliceOp:          `VarConstSlice`,
 	FilterVarTextOp:                `VarText`,
 	FilterVarLineOp:                `VarLine`,
 	FilterVarValueIntOp:            `VarValueInt`,

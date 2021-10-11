@@ -473,6 +473,8 @@ func (conv *converter) convertFilterExprImpl(e ast.Expr) ir.FilterExpr {
 			return ir.FilterExpr{Op: ir.FilterVarPureOp, Value: op.varName}
 		case "Const":
 			return ir.FilterExpr{Op: ir.FilterVarConstOp, Value: op.varName}
+		case "ConstSlice":
+			return ir.FilterExpr{Op: ir.FilterVarConstSliceOp, Value: op.varName}
 		case "Addressable":
 			return ir.FilterExpr{Op: ir.FilterVarAddressableOp, Value: op.varName}
 		case "Type.Size":
