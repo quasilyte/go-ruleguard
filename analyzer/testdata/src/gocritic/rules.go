@@ -179,3 +179,10 @@ func preferFprint(m dsl.Matcher) {
 		Suggest("fmt.Fprintln($w, $args)").
 		Report(`fmt.Fprintln($w, $args) should be preferred to the $$`)
 }
+
+func syncMapLoadAndDelete(m dsl.Matcher) {
+	m.Match(`$_, $ok := $m.Load($k); if $ok { $m.Delete($k); $*_ }`).
+		Where(m.GoVersion().GreaterEqThan("1.15") &&
+			m["m"].Type.Is(`*sync.Map`)).
+		Report(`use $m.LoadAndDelete to perform load+delete operations atomically`)
+}
