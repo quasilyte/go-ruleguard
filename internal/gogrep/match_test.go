@@ -609,6 +609,12 @@ func TestMatch(t *testing.T) {
 		{`c($*x, $*y); c($*x, $*y)`, 1, `{ c(x, y); c(x, y) }`},
 		{`$x := $_; $x = $_`, 1, `{ a := n; b := n; b = m }`},
 		{`$x := $_; $*_; $x = $_`, 1, `{ a := n; b := n; b = m }`},
+		{`var x int; if true { f() }`, 1, `{ var x int; if true { f() } }`},
+		{`var $v $_; if true { $_ }`, 1, `{ var x int; if true { x = 10 } }`},
+		{`var $v $_; if $*_ { $_ }`, 1, `{ var x int; if true { x = 10 } }`},
+		{`var $v $_; if $cond { $_ }`, 1, `{ var x int; if true { x = 10 } }`},
+		{`var $v $_; if $cond { $v = $x }`, 1, `{ var x int; if true { x = 10 } }`},
+		{`var $v $_; if $cond { $v = $x } else { $v = $y }`, 1, `{ var x int; if true { x = 10 } else { x = 20 } }`},
 
 		// Expr list (+ partial matches).
 		{`b, c`, 1, `[]int{a, b, c, d}`},
@@ -717,6 +723,8 @@ func TestMatch(t *testing.T) {
 		{`const $x = $y`, 1, `const a = b`},
 		{`const $x = $y`, 1, `const (a = b)`},
 		{`const $x = $y`, 0, "const (a = b\nc = d)"},
+		{`var x $_`, 1, `var x int`},
+		{`var x $_`, 0, `var y int`},
 		{`var $x int`, 1, `var a int`},
 		{`var $x int`, 0, `var a int = 3`},
 		{`var ()`, 1, `var()`},

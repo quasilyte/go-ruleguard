@@ -464,3 +464,13 @@ func errorDeclTest() {
 		sinkFunc(MyError2)
 	}
 }
+
+func unnecessaryElse() {
+	var x int // want `\Qrewrite as 'x := 20; if true { x = 10 }'`
+	if true {
+		x = 10
+	} else {
+		x = 20
+	}
+	sinkFunc(x)
+}

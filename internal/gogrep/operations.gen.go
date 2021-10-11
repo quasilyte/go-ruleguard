@@ -485,21 +485,25 @@ const (
 	// Args: recv name type
 	opMethodProtoDecl operation = 104
 
-	// Tag: GenDecl
-	// Args: valuespecs...
-	opConstDecl operation = 105
+	// Tag: DeclStmt
+	// Args: decl
+	opDeclStmt operation = 105
 
 	// Tag: GenDecl
 	// Args: valuespecs...
-	opVarDecl operation = 106
+	opConstDecl operation = 106
+
+	// Tag: GenDecl
+	// Args: valuespecs...
+	opVarDecl operation = 107
 
 	// Tag: GenDecl
 	// Args: typespecs...
-	opTypeDecl operation = 107
+	opTypeDecl operation = 108
 
 	// Tag: File
 	// Args: name
-	opEmptyPackage operation = 108
+	opEmptyPackage operation = 109
 )
 
 type operationInfo struct {
@@ -1237,6 +1241,13 @@ var operationInfoTable = [256]operationInfo{
 	opMethodProtoDecl: {
 		Tag:            nodetag.FuncDecl,
 		NumArgs:        3,
+		ValueKind:      emptyValue,
+		ExtraValueKind: emptyValue,
+		VariadicMap:    0, // 0
+	},
+	opDeclStmt: {
+		Tag:            nodetag.DeclStmt,
+		NumArgs:        1,
 		ValueKind:      emptyValue,
 		ExtraValueKind: emptyValue,
 		VariadicMap:    0, // 0

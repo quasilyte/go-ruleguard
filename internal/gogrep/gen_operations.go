@@ -33,6 +33,7 @@ var opPrototypes = []operationProto{
 	{name: "StrictComplexLit", tag: "BasicLit", valueIndex: "strings | raw literal value"},
 
 	{name: "Ident", tag: "Ident", valueIndex: "strings | ident name"},
+	{name: "StdlibPkg", tag: "Ident", valueIndex: "strings | package name"},
 
 	{name: "IndexExpr", tag: "IndexExpr", args: "x expr"},
 
@@ -148,6 +149,7 @@ var opPrototypes = []operationProto{
 	{name: "FuncProtoDecl", tag: "FuncDecl", args: "name type"},
 	{name: "MethodProtoDecl", tag: "FuncDecl", args: "recv name type"},
 
+	{name: "DeclStmt", tag: "DeclStmt", args: "decl"},
 	{name: "ConstDecl", tag: "GenDecl", args: "valuespecs..."},
 	{name: "VarDecl", tag: "GenDecl", args: "valuespecs..."},
 	{name: "TypeDecl", tag: "GenDecl", args: "typespecs..."},

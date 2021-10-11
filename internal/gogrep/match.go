@@ -498,6 +498,10 @@ func (m *matcher) matchNodeWithInst(inst instruction, n ast.Node) bool {
 		n, ok := n.(*ast.TypeSpec)
 		return ok && n.Assign.IsValid() && m.matchNode(n.Name) && m.matchNode(n.Type)
 
+	case opDeclStmt:
+		n, ok := n.(*ast.DeclStmt)
+		return ok && m.matchNode(n.Decl)
+
 	case opConstDecl:
 		n, ok := n.(*ast.GenDecl)
 		return ok && n.Tok == token.CONST && m.matchSpecSlice(n.Specs)

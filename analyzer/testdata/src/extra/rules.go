@@ -174,4 +174,8 @@ func testRules(m dsl.Matcher) {
 			m["v"].Type.Implements(`error`) &&
 			!m["v"].Text.Matches(`^Err`)).
 		Report(`error vars should be prefixed with Err`)
+
+	m.Match(`var $v $_; if $cond { $v = $x } else { $v = $y }`).
+		Where(m["y"].Pure).
+		Report(`rewrite as '$v := $y; if $cond { $v = $x }'`)
 }

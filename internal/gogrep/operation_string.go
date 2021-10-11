@@ -113,15 +113,16 @@ func _() {
 	_ = x[opMethodDecl-102]
 	_ = x[opFuncProtoDecl-103]
 	_ = x[opMethodProtoDecl-104]
-	_ = x[opConstDecl-105]
-	_ = x[opVarDecl-106]
-	_ = x[opTypeDecl-107]
-	_ = x[opEmptyPackage-108]
+	_ = x[opDeclStmt-105]
+	_ = x[opConstDecl-106]
+	_ = x[opVarDecl-107]
+	_ = x[opTypeDecl-108]
+	_ = x[opEmptyPackage-109]
 }
 
-const _operation_name = "InvalidNodeNamedNodeNodeSeqNamedNodeSeqOptNodeNamedOptNodeMultiStmtMultiExprEndBasicLitStrictIntLitStrictFloatLitStrictCharLitStrictStringLitStrictComplexLitIdentStdlibPkgIndexExprSliceExprSliceFromExprSliceToExprSliceFromToExprSliceToCapExprSliceFromToCapExprFuncLitCompositeLitTypedCompositeLitSimpleSelectorExprSelectorExprTypeAssertExprTypeSwitchAssertExprVoidFuncTypeFuncTypeArrayTypeSliceTypeMapTypeChanTypeKeyValueExprEllipsisTypedEllipsisStarExprUnaryExprBinaryExprParenExprVariadicCallExprNonVariadicCallExprCallExprAssignStmtMultiAssignStmtBranchStmtSimpleLabeledBranchStmtLabeledBranchStmtSimpleLabeledStmtLabeledStmtBlockStmtExprStmtGoStmtDeferStmtSendStmtEmptyStmtIncDecStmtReturnStmtIfStmtIfInitStmtIfElseStmtIfInitElseStmtIfNamedOptStmtIfNamedOptElseStmtSwitchStmtSwitchTagStmtSwitchInitStmtSwitchInitTagStmtSelectStmtTypeSwitchStmtTypeSwitchInitStmtCaseClauseDefaultCaseClauseCommClauseDefaultCommClauseForStmtForPostStmtForCondStmtForCondPostStmtForInitStmtForInitPostStmtForInitCondStmtForInitCondPostStmtRangeStmtRangeKeyStmtRangeKeyValueStmtFieldListUnnamedFieldSimpleFieldFieldMultiFieldValueInitSpecTypedValueInitSpecTypedValueSpecTypeSpecTypeAliasSpecFuncDeclMethodDeclFuncProtoDeclMethodProtoDeclConstDeclVarDeclTypeDeclEmptyPackage"
+const _operation_name = "InvalidNodeNamedNodeNodeSeqNamedNodeSeqOptNodeNamedOptNodeMultiStmtMultiExprEndBasicLitStrictIntLitStrictFloatLitStrictCharLitStrictStringLitStrictComplexLitIdentStdlibPkgIndexExprSliceExprSliceFromExprSliceToExprSliceFromToExprSliceToCapExprSliceFromToCapExprFuncLitCompositeLitTypedCompositeLitSimpleSelectorExprSelectorExprTypeAssertExprTypeSwitchAssertExprVoidFuncTypeFuncTypeArrayTypeSliceTypeMapTypeChanTypeKeyValueExprEllipsisTypedEllipsisStarExprUnaryExprBinaryExprParenExprVariadicCallExprNonVariadicCallExprCallExprAssignStmtMultiAssignStmtBranchStmtSimpleLabeledBranchStmtLabeledBranchStmtSimpleLabeledStmtLabeledStmtBlockStmtExprStmtGoStmtDeferStmtSendStmtEmptyStmtIncDecStmtReturnStmtIfStmtIfInitStmtIfElseStmtIfInitElseStmtIfNamedOptStmtIfNamedOptElseStmtSwitchStmtSwitchTagStmtSwitchInitStmtSwitchInitTagStmtSelectStmtTypeSwitchStmtTypeSwitchInitStmtCaseClauseDefaultCaseClauseCommClauseDefaultCommClauseForStmtForPostStmtForCondStmtForCondPostStmtForInitStmtForInitPostStmtForInitCondStmtForInitCondPostStmtRangeStmtRangeKeyStmtRangeKeyValueStmtFieldListUnnamedFieldSimpleFieldFieldMultiFieldValueInitSpecTypedValueInitSpecTypedValueSpecTypeSpecTypeAliasSpecFuncDeclMethodDeclFuncProtoDeclMethodProtoDeclDeclStmtConstDeclVarDeclTypeDeclEmptyPackage"
 
-var _operation_index = [...]uint16{0, 7, 11, 20, 27, 39, 46, 58, 67, 76, 79, 87, 99, 113, 126, 141, 157, 162, 171, 180, 189, 202, 213, 228, 242, 260, 267, 279, 296, 314, 326, 340, 360, 372, 380, 389, 398, 405, 413, 425, 433, 446, 454, 463, 473, 482, 498, 517, 525, 535, 550, 560, 583, 600, 617, 628, 637, 645, 651, 660, 668, 677, 687, 697, 703, 713, 723, 737, 751, 769, 779, 792, 806, 823, 833, 847, 865, 875, 892, 902, 919, 926, 937, 948, 963, 974, 989, 1004, 1023, 1032, 1044, 1061, 1070, 1082, 1093, 1098, 1108, 1121, 1139, 1153, 1161, 1174, 1182, 1192, 1205, 1220, 1229, 1236, 1244, 1256}
+var _operation_index = [...]uint16{0, 7, 11, 20, 27, 39, 46, 58, 67, 76, 79, 87, 99, 113, 126, 141, 157, 162, 171, 180, 189, 202, 213, 228, 242, 260, 267, 279, 296, 314, 326, 340, 360, 372, 380, 389, 398, 405, 413, 425, 433, 446, 454, 463, 473, 482, 498, 517, 525, 535, 550, 560, 583, 600, 617, 628, 637, 645, 651, 660, 668, 677, 687, 697, 703, 713, 723, 737, 751, 769, 779, 792, 806, 823, 833, 847, 865, 875, 892, 902, 919, 926, 937, 948, 963, 974, 989, 1004, 1023, 1032, 1044, 1061, 1070, 1082, 1093, 1098, 1108, 1121, 1139, 1153, 1161, 1174, 1182, 1192, 1205, 1220, 1228, 1237, 1244, 1252, 1264}
 
 func (i operation) String() string {
 	if i >= operation(len(_operation_index)-1) {

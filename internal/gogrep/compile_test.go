@@ -289,6 +289,26 @@ func TestCompileWildcard(t *testing.T) {
 			` • Node`,
 			` • End`,
 		},
+
+		`var x int; if true { f() }`: {
+			`MultiStmt`,
+			` • DeclStmt`,
+			` •  • VarDecl`,
+			` •  •  • TypedValueSpec`,
+			` •  •  •  • Ident x`,
+			` •  •  •  • End`,
+			` •  •  •  • Ident int`,
+			` •  •  • End`,
+			` • IfStmt`,
+			` •  • Ident true`,
+			` •  • BlockStmt`,
+			` •  •  • ExprStmt`,
+			` •  •  •  • NonVariadicCallExpr`,
+			` •  •  •  •  • Ident f`,
+			` •  •  •  •  • End`,
+			` •  •  • End`,
+			` • End`,
+		},
 	})
 
 	for i := range tests {

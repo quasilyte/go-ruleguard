@@ -18,6 +18,8 @@ type compiler struct {
 	ifaceIndexes  map[interface{}]uint8
 	strict        bool
 	fset          *token.FileSet
+
+	insideStmtList bool
 }
 
 func (c *compiler) Compile(fset *token.FileSet, root ast.Node, strict bool) (p *program, err error) {
@@ -257,6 +259,10 @@ func (c *compiler) compileFuncDecl(n *ast.FuncDecl) {
 }
 
 func (c *compiler) compileGenDecl(n *ast.GenDecl) {
+	if c.insideStmtList {
+		c.emitInstOp(opDeclStmt)
+	}
+
 	switch n.Tok {
 	case token.CONST, token.VAR:
 		c.emitInstOp(pickOp(n.Tok == token.CONST, opConstDecl, opVarDecl))
@@ -1006,9 +1012,12 @@ func (c *compiler) compileSendStmt(n *ast.SendStmt) {
 
 func (c *compiler) compileStmtSlice(stmts stmtSlice) {
 	c.emitInstOp(opMultiStmt)
+	insideStmtList := c.insideStmtList
+	c.insideStmtList = true
 	for _, n := range stmts {
 		c.compileStmt(n)
 	}
+	c.insideStmtList = insideStmtList
 	c.emitInstOp(opEnd)
 }
 
