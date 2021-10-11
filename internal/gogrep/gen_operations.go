@@ -137,6 +137,7 @@ var opPrototypes = []operationProto{
 	{name: "Field", args: "name typ", example: "$name type"},
 	{name: "MultiField", args: "names... typ", example: "name1, name2 type"},
 
+	{name: "ValueSpec", tag: "ValueSpec", args: "value"},
 	{name: "ValueInitSpec", tag: "ValueSpec", args: "lhs... rhs...", example: "lhs = rhs"},
 	{name: "TypedValueInitSpec", tag: "ValueSpec", args: "lhs... type rhs...", example: "lhs typ = rhs"},
 	{name: "TypedValueSpec", tag: "ValueSpec", args: "lhs... type", example: "lhs typ"},

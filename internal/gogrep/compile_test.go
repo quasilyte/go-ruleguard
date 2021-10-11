@@ -183,6 +183,19 @@ func TestCompileWildcard(t *testing.T) {
 			` • End`,
 		},
 
+		`const ($_ $_ = iota; $_; $*_)`: {
+			`ConstDecl`,
+			` • TypedValueInitSpec`,
+			` •  • Node`,
+			` •  • End`,
+			` •  • Node`,
+			` •  • Ident iota`,
+			` •  • End`,
+			` • Node`,
+			` • NodeSeq`,
+			` • End`,
+		},
+
 		`$_ int`: {
 			`TypedValueSpec`,
 			` • Node`,
@@ -918,6 +931,33 @@ func TestCompile(t *testing.T) {
 			` •  •  • StdlibPkg fmt`,
 			` •  • Ident y`,
 			` •  • End`,
+		},
+
+		`const (x = 1; y = 2)`: {
+			`ConstDecl`,
+			` • ValueInitSpec`,
+			` •  • Ident x`,
+			` •  • End`,
+			` •  • BasicLit 1`,
+			` •  • End`,
+			` • ValueInitSpec`,
+			` •  • Ident y`,
+			` •  • End`,
+			` •  • BasicLit 2`,
+			` •  • End`,
+			` • End`,
+		},
+
+		`const (x = iota; y)`: {
+			`ConstDecl`,
+			` • ValueInitSpec`,
+			` •  • Ident x`,
+			` •  • End`,
+			` •  • Ident iota`,
+			` •  • End`,
+			` • ValueSpec`,
+			` •  • Ident y`,
+			` • End`,
 		},
 	})
 

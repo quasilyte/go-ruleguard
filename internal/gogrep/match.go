@@ -478,6 +478,10 @@ func (m *matcher) matchNodeWithInst(inst instruction, n ast.Node) bool {
 		return ok && n.Recv != nil && n.Body == nil &&
 			m.matchNode(n.Recv) && m.matchNode(n.Name) && m.matchNode(n.Type)
 
+	case opValueSpec:
+		n, ok := n.(*ast.ValueSpec)
+		return ok && len(n.Values) == 0 && n.Type == nil &&
+			len(n.Names) == 1 && m.matchNode(n.Names[0])
 	case opValueInitSpec:
 		n, ok := n.(*ast.ValueSpec)
 		return ok && len(n.Values) != 0 && n.Type == nil &&
