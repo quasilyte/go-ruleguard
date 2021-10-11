@@ -101,6 +101,21 @@ type Var struct {
 	// Const reports whether expr matched by var is a constant value.
 	Const bool
 
+	// ConstSlice reports whether expr matched by var is a slice literal
+	// consisting of contant elements.
+	//
+	// We need a separate Const-like predicate here because Go doesn't
+	// treat slices of const elements as constants, so including
+	// them in Const would be incorrect.
+	// Use `m["x"].Const || m["x"].ConstSlice` when you need
+	// to have extended definition of "constant value".
+	//
+	// Some examples:
+	//     []byte("foo") -- constant byte slice
+	//     []byte{'f', 'o', 'o'} -- same constant byte slice
+	//     []int{1, 2} -- constant int slice
+	ConstSlice bool
+
 	// Value is a compile-time computable value of the expression.
 	Value ExprValue
 
