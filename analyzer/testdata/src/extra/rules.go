@@ -182,4 +182,9 @@ func testRules(m dsl.Matcher) {
 	m.Match(`$f($*_)`).
 		Where(m["$$"].Type.Is("error") && m["$$"].Node.Parent().Is("ExprStmt")).
 		Report(`don't ignore the $f result`)
+
+	m.Match(`fmt.Sprintf($s, $*_)`).
+		Where(m["s"].Text.Matches("^`.*\"%s\".*`$") ||
+			m["s"].Text.Matches(`^".*\\"%s\\".*"$`)).
+		Report(`use %q instead of "%s" for quoted strings`)
 }

@@ -491,3 +491,19 @@ func _() {
 
 	}
 }
+
+func quotedStringSprint(s string) {
+	_ = fmt.Sprintf(`"%s"`, s)         // want `\Quse %q instead of "%s" for quoted strings`
+	_ = fmt.Sprintf(`foo "%s" bar`, s) // want `\Quse %q instead of "%s" for quoted strings`
+
+	_ = fmt.Sprintf("\"%s\"", s)         // want `\Quse %q instead of "%s" for quoted strings`
+	_ = fmt.Sprintf("foo \"%s\" bar", s) // want `\Quse %q instead of "%s" for quoted strings`
+
+	_ = fmt.Sprintf(`%q`, s)
+	_ = fmt.Sprintf(`foo %q bar`, s)
+
+	_ = fmt.Sprintf("%q", s)
+	_ = fmt.Sprintf("foo %q bar", s)
+
+	_ = fmt.Sprintf("%s", s)
+}
