@@ -251,6 +251,9 @@ func makeLineFilter(src, varname string, op token.Token, rhsVarname string) filt
 
 func makeGoVersionFilter(src string, op token.Token, version GoVersion) filterFunc {
 	return func(params *filterParams) matchFilterResult {
+		if params.ctx.GoVersion.IsAny() {
+			return filterSuccess
+		}
 		if versionCompare(params.ctx.GoVersion, op, version) {
 			return filterSuccess
 		}

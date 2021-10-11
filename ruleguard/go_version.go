@@ -12,6 +12,8 @@ type GoVersion struct {
 	Minor int
 }
 
+func (ver GoVersion) IsAny() bool { return ver.Major == 0 }
+
 func ParseGoVersion(version string) (GoVersion, error) {
 	var result GoVersion
 	if version == "" {

@@ -394,6 +394,8 @@ func TestMatch(t *testing.T) {
 		{`if $*_ {} else {}`, 1, `if a(); b {} else {}`},
 		{`if $*_ {} else {}`, 1, `if a() {} else {}`},
 		{`if a(); $*_ {}`, 0, `if b {}`},
+		{`if $_ { $*_ }`, 1, `if cond {}`},
+		{`if $_ { $*_ }`, 1, `if cond { f() }`},
 
 		// Switch stmt.
 		{`switch {}`, 1, `switch {}`},
@@ -615,6 +617,12 @@ func TestMatch(t *testing.T) {
 		{`var $v $_; if $cond { $_ }`, 1, `{ var x int; if true { x = 10 } }`},
 		{`var $v $_; if $cond { $v = $x }`, 1, `{ var x int; if true { x = 10 } }`},
 		{`var $v $_; if $cond { $v = $x } else { $v = $y }`, 1, `{ var x int; if true { x = 10 } else { x = 20 } }`},
+		{`f(); if $ok { $*_; }`, 1, `{ f(); if ok {} }`},
+		{`$_, $ok := $m.Load($k); if $ok {}`, 1, `{ v, ok := m.Load(k); if ok {} }`},
+		{`$_, $ok := $m.Load($k); if $ok { $*_ }`, 1, `{ v, ok := m.Load(k); if ok {} }`},
+		{`$_, $ok := $m.Load($k); if $ok { $*_ }`, 1, `{ v, ok := m.Load(k); if ok { f() } }`},
+		{`$_, $ok := $m.Load($k); if $ok { $*_ }`, 0, `{ v, ok1 := m.Load(k); if ok2 { f() } }`},
+		{`$_, $ok := $m.Load($k); if $ok { $*_ }`, 0, `{ v, ok := m.Load(k) }`},
 
 		// Expr list (+ partial matches).
 		{`b, c`, 1, `[]int{a, b, c, d}`},

@@ -716,15 +716,17 @@ func (c *compiler) compileIfStmt(n *ast.IfStmt) {
 			return
 		}
 		// Named $* is harder and slower.
-		c.prog.insts = append(c.prog.insts, instruction{
-			op:         pickOp(n.Else == nil, opIfNamedOptStmt, opIfNamedOptElseStmt),
-			valueIndex: c.internString(ident, info.Name),
-		})
-		c.compileStmt(n.Body)
-		if n.Else != nil {
-			c.compileStmt(n.Else)
+		if info.Seq {
+			c.prog.insts = append(c.prog.insts, instruction{
+				op:         pickOp(n.Else == nil, opIfNamedOptStmt, opIfNamedOptElseStmt),
+				valueIndex: c.internString(ident, info.Name),
+			})
+			c.compileStmt(n.Body)
+			if n.Else != nil {
+				c.compileStmt(n.Else)
+			}
+			return
 		}
-		return
 	}
 
 	switch {
