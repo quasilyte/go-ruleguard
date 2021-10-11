@@ -474,3 +474,20 @@ func unnecessaryElse() {
 	}
 	sinkFunc(x)
 }
+
+type nodiscard struct{}
+
+func getError() error { return nil }
+
+func _() {
+	getError() // want `\Q don't ignore the getError result`
+
+	_ = getError()                     // OK: conventional ignore
+	sinkFunc(getError())               // OK: used
+	if err := getError(); err != nil { // OK: used
+	}
+	err := getError() // OK: used
+	if err != nil {
+
+	}
+}
