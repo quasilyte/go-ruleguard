@@ -115,6 +115,20 @@ func testRules(m dsl.Matcher) {
 		Where(m["s"].Type.Is(`[]$elem`) && m["s"].Pure).
 		Report(`index expr always panics; maybe you wanted $s[len($s)-1]?`)
 
+	m.Match(
+		`$i := strings.Index($s, $_); $_ := $slicing[$i:]`,
+		`$i := strings.Index($s, $_); $_ = $slicing[$i:]`,
+		`$i := bytes.Index($s, $_); $_ := $slicing[$i:]`,
+		`$i := bytes.Index($s, $_); $_ = $slicing[$i:]`).
+		Where(m["s"].Text == m["slicing"].Text).
+		Report(`Index() can return -1; maybe you wanted to do $s[$i+1:]`).
+		At(m["slicing"])
+
+	m.Match(
+		`$s[strings.Index($s, $_):]`,
+		`$s[bytes.Index($s, $_):]`).
+		Report(`Index() can return -1; maybe you wanted to do Index()+1`)
+
 	m.Match(`*flag.Bool($*_)`,
 		`*flag.Float64($*_)`,
 		`*flag.Duration($*_)`,
