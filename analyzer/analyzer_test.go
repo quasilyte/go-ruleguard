@@ -37,6 +37,7 @@ var tests = []struct {
 	{name: "dgryski"},
 	{name: "comments"},
 	{name: "stdlib"},
+	{name: "uber"},
 	{name: "goversion", flags: map[string]string{"go": "1.16"}},
 }
 
