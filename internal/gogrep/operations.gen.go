@@ -445,65 +445,69 @@ const (
 	opMultiField operation = 95
 
 	// Tag: ValueSpec
+	// Args: value
+	opValueSpec operation = 96
+
+	// Tag: ValueSpec
 	// Args: lhs... rhs...
 	// Example: lhs = rhs
-	opValueInitSpec operation = 96
+	opValueInitSpec operation = 97
 
 	// Tag: ValueSpec
 	// Args: lhs... type rhs...
 	// Example: lhs typ = rhs
-	opTypedValueInitSpec operation = 97
+	opTypedValueInitSpec operation = 98
 
 	// Tag: ValueSpec
 	// Args: lhs... type
 	// Example: lhs typ
-	opTypedValueSpec operation = 98
+	opTypedValueSpec operation = 99
 
 	// Tag: TypeSpec
 	// Args: name type
 	// Example: name type
-	opTypeSpec operation = 99
+	opTypeSpec operation = 100
 
 	// Tag: TypeSpec
 	// Args: name type
 	// Example: name = type
-	opTypeAliasSpec operation = 100
+	opTypeAliasSpec operation = 101
 
 	// Tag: FuncDecl
 	// Args: name type block
-	opFuncDecl operation = 101
+	opFuncDecl operation = 102
 
 	// Tag: FuncDecl
 	// Args: recv name type block
-	opMethodDecl operation = 102
+	opMethodDecl operation = 103
 
 	// Tag: FuncDecl
 	// Args: name type
-	opFuncProtoDecl operation = 103
+	opFuncProtoDecl operation = 104
 
 	// Tag: FuncDecl
 	// Args: recv name type
-	opMethodProtoDecl operation = 104
+	opMethodProtoDecl operation = 105
 
 	// Tag: DeclStmt
 	// Args: decl
-	opDeclStmt operation = 105
+	opDeclStmt operation = 106
 
 	// Tag: GenDecl
 	// Args: valuespecs...
-	opConstDecl operation = 106
+	opConstDecl operation = 107
 
 	// Tag: GenDecl
 	// Args: valuespecs...
-	opVarDecl operation = 107
+	opVarDecl operation = 108
 
 	// Tag: GenDecl
 	// Args: typespecs...
-	opTypeDecl operation = 108
+	opTypeDecl operation = 109
 
 	// Tag: File
 	// Args: name
-	opEmptyPackage operation = 109
+	opEmptyPackage operation = 110
 )
 
 type operationInfo struct {
@@ -1181,6 +1185,13 @@ var operationInfoTable = [256]operationInfo{
 		ValueKind:      emptyValue,
 		ExtraValueKind: emptyValue,
 		VariadicMap:    1, // 1
+	},
+	opValueSpec: {
+		Tag:            nodetag.ValueSpec,
+		NumArgs:        1,
+		ValueKind:      emptyValue,
+		ExtraValueKind: emptyValue,
+		VariadicMap:    0, // 0
 	},
 	opValueInitSpec: {
 		Tag:            nodetag.ValueSpec,

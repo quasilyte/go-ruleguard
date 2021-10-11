@@ -191,6 +191,12 @@ func (c *compiler) compileField(n *ast.Field) {
 
 func (c *compiler) compileValueSpec(spec *ast.ValueSpec) {
 	switch {
+	case spec.Type == nil && len(spec.Values) == 0:
+		if isWildName(spec.Names[0].String()) {
+			c.compileIdent(spec.Names[0])
+			return
+		}
+		c.emitInstOp(opValueSpec)
 	case spec.Type == nil:
 		c.emitInstOp(opValueInitSpec)
 	case len(spec.Values) == 0:
