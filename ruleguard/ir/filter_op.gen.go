@@ -96,52 +96,55 @@ const (
 	// $Value type: string
 	FilterVarTextMatchesOp FilterOp = 25
 
+	// m.Deadcode()
+	FilterDeadcodeOp FilterOp = 26
+
 	// m.GoVersion().Eq($Value)
 	// $Value type: string
-	FilterGoVersionEqOp FilterOp = 26
+	FilterGoVersionEqOp FilterOp = 27
 
 	// m.GoVersion().LessThan($Value)
 	// $Value type: string
-	FilterGoVersionLessThanOp FilterOp = 27
+	FilterGoVersionLessThanOp FilterOp = 28
 
 	// m.GoVersion().GreaterThan($Value)
 	// $Value type: string
-	FilterGoVersionGreaterThanOp FilterOp = 28
+	FilterGoVersionGreaterThanOp FilterOp = 29
 
 	// m.GoVersion().LessEqThan($Value)
 	// $Value type: string
-	FilterGoVersionLessEqThanOp FilterOp = 29
+	FilterGoVersionLessEqThanOp FilterOp = 30
 
 	// m.GoVersion().GreaterEqThan($Value)
 	// $Value type: string
-	FilterGoVersionGreaterEqThanOp FilterOp = 30
+	FilterGoVersionGreaterEqThanOp FilterOp = 31
 
 	// m.File.Imports($Value)
 	// $Value type: string
-	FilterFileImportsOp FilterOp = 31
+	FilterFileImportsOp FilterOp = 32
 
 	// m.File.PkgPath.Matches($Value)
 	// $Value type: string
-	FilterFilePkgPathMatchesOp FilterOp = 32
+	FilterFilePkgPathMatchesOp FilterOp = 33
 
 	// m.File.Name.Matches($Value)
 	// $Value type: string
-	FilterFileNameMatchesOp FilterOp = 33
+	FilterFileNameMatchesOp FilterOp = 34
 
 	// $Value holds a function name
 	// $Value type: string
-	FilterFilterFuncRefOp FilterOp = 34
+	FilterFilterFuncRefOp FilterOp = 35
 
 	// $Value holds a string constant
 	// $Value type: string
-	FilterStringOp FilterOp = 35
+	FilterStringOp FilterOp = 36
 
 	// $Value holds an int64 constant
 	// $Value type: int64
-	FilterIntOp FilterOp = 36
+	FilterIntOp FilterOp = 37
 
 	// m[`$$`].Node.Parent().Is($Args[0])
-	FilterRootNodeParentIsOp FilterOp = 37
+	FilterRootNodeParentIsOp FilterOp = 38
 )
 
 var filterOpNames = map[FilterOp]string{
@@ -171,6 +174,7 @@ var filterOpNames = map[FilterOp]string{
 	FilterVarTypeAssignableToOp:    `VarTypeAssignableTo`,
 	FilterVarTypeImplementsOp:      `VarTypeImplements`,
 	FilterVarTextMatchesOp:         `VarTextMatches`,
+	FilterDeadcodeOp:               `Deadcode`,
 	FilterGoVersionEqOp:            `GoVersionEq`,
 	FilterGoVersionLessThanOp:      `GoVersionLessThan`,
 	FilterGoVersionGreaterThanOp:   `GoVersionGreaterThan`,

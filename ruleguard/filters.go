@@ -57,6 +57,15 @@ func makeOrFilter(lhs, rhs matchFilter) filterFunc {
 	}
 }
 
+func makeDeadcodeFilter(src string) filterFunc {
+	return func(params *filterParams) matchFilterResult {
+		if params.deadcode {
+			return filterSuccess
+		}
+		return filterFailure(src)
+	}
+}
+
 func makeFileImportsFilter(src, pkgPath string) filterFunc {
 	return func(params *filterParams) matchFilterResult {
 		_, imported := params.imports[pkgPath]

@@ -30,6 +30,7 @@ var tests = []struct {
 	{name: "namedtype"},
 	{name: "revive"},
 	{name: "golint"},
+	{name: "govet"},
 	{name: "regression"},
 	{name: "testvendored"},
 	{name: "quasigo"},

@@ -121,14 +121,11 @@ func (rr *rulesRunner) run(f *ast.File) error {
 	rr.collectImports(f)
 
 	if rr.rules.universal.categorizedNum != 0 {
-		ast.Inspect(f, func(n ast.Node) bool {
-			if n == nil {
-				rr.nodePath.Pop()
-				return false
-			}
-			rr.nodePath.Push(n)
+		var inspector astWalker
+		inspector.nodePath = &rr.nodePath
+		inspector.filterParams = &rr.filterParams
+		inspector.Walk(f, func(n ast.Node) {
 			rr.runRules(n)
-			return true
 		})
 	}
 
