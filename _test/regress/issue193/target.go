@@ -32,6 +32,7 @@ func main() {
 	var err error
 	sugar.Info(err)
 	sugar.Info(err, "")
+	sugar.Info(err.Error(), "")
 
 	var w rg1.Worker = &Bar{}
 	w.Run()

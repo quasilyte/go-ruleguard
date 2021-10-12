@@ -1,4 +1,5 @@
 /root/target.go:29:8: stringerLiteral: Foo implements stringer (string-rule.go:17)
-/root/target.go:33:2: logWithUnstructuredError: Errors must be logged as a structured field. Use zap.Error(err) or With(zap.Error(err)) (log-rule.go:17)
-/root/target.go:34:2: logWithUnstructuredError: Errors must be logged as a structured field. Use zap.Error(err) or With(zap.Error(err)) (log-rule.go:17)
-/root/target.go:36:22: workerLiteral: Bar implements worker (worker-rule.go:17)
+/root/target.go:33:2: logWithUnstructuredError: Errors must be logged as a structured field. Use zap.Error(err) or With(zap.Error(err)) (log-rule.go:18)
+/root/target.go:34:2: logWithUnstructuredError: Errors must be logged as a structured field. Use zap.Error(err) or With(zap.Error(err)) (log-rule.go:18)
+/root/target.go:35:2: logWithUnstructuredError: Errors must be logged as a structured field. Use zap.Error(err) or With(zap.Error(err)) (log-rule.go:19)
+/root/target.go:37:22: workerLiteral: Bar implements worker (worker-rule.go:17)
