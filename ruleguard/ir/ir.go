@@ -46,8 +46,8 @@ type PackageImport struct {
 type Rule struct {
 	Line int
 
-	SyntaxPattern  string
-	CommentPattern string
+	SyntaxPatterns  []PatternString
+	CommentPatterns []PatternString
 
 	ReportTemplate  string
 	SuggestTemplate string
@@ -55,6 +55,11 @@ type Rule struct {
 	WhereExpr FilterExpr
 
 	LocationVar string
+}
+
+type PatternString struct {
+	Line  int
+	Value string
 }
 
 // stringer -type=FilterOp -trimprefix=Filter
