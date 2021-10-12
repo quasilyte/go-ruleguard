@@ -129,6 +129,11 @@ func parseType(fset *token.FileSet, src string) (ast.Expr, *ast.File, error) {
 // It also returns the *ast.File used for the parsing, so that the returned node
 // can be easily type-checked.
 func parseDetectingNode(fset *token.FileSet, src string) (ast.Node, *ast.File, error) {
+	defer func() {
+		if p := recover(); p != nil {
+			panic(fmt.Sprintf("Failed to parse ast.Node: %s. Source: %s", p, src))
+		}
+	}()
 	file := fset.AddFile("", fset.Base(), len(src))
 	scan := scanner.Scanner{}
 	scan.Init(file, []byte(src), nil, 0)
