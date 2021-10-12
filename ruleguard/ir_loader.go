@@ -30,6 +30,8 @@ type irLoaderConfig struct {
 
 	pkg *types.Package
 
+	gogrepFset *token.FileSet
+
 	prefix      string
 	importedPkg string
 }
@@ -41,7 +43,8 @@ type irLoader struct {
 
 	pkg *types.Package
 
-	file *ir.File
+	file       *ir.File
+	gogrepFset *token.FileSet
 
 	filename string
 	res      *goRuleSet
@@ -58,12 +61,13 @@ type irLoader struct {
 
 func newIRLoader(config irLoaderConfig) *irLoader {
 	return &irLoader{
-		state:    config.state,
-		ctx:      config.ctx,
-		importer: config.importer,
-		itab:     config.itab,
-		pkg:      config.pkg,
-		prefix:   config.prefix,
+		state:      config.state,
+		ctx:        config.ctx,
+		importer:   config.importer,
+		itab:       config.itab,
+		pkg:        config.pkg,
+		prefix:     config.prefix,
+		gogrepFset: config.gogrepFset,
 	}
 }
 
@@ -154,6 +158,7 @@ func (l *irLoader) loadExternFile(prefix, pkgPath, filename string) (*goRuleSet,
 		pkg:         pkg,
 		importedPkg: pkgPath,
 		itab:        l.itab,
+		gogrepFset:  l.gogrepFset,
 	}
 	rset, err := newIRLoader(config).LoadFile(filename, irfile)
 	if err != nil {
@@ -297,7 +302,7 @@ func (l *irLoader) loadCommentRule(resultProto goRule, rule ir.Rule) error {
 func (l *irLoader) loadSyntaxRule(resultProto goRule, rule ir.Rule) error {
 	result := resultProto
 
-	pat, err := gogrep.Compile(l.ctx.Fset, rule.SyntaxPattern, false)
+	pat, err := gogrep.Compile(l.gogrepFset, rule.SyntaxPattern, false)
 	if err != nil {
 		return l.errorf(rule.Line, err, "parse match pattern")
 	}

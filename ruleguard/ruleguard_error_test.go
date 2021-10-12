@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"go/token"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -189,57 +190,57 @@ func TestParseRuleError(t *testing.T) {
 	}{
 		{
 			`m.Match("$x").Where(m["x"].Object.Is("abc")).Report("")`,
-			`abc is not a valid go/types object name`,
+			`\Qabc is not a valid go/types object name`,
 		},
 
 		{
 			`m.Match("$x").MatchComment("").Report("")`,
-			`Match() and MatchComment() can't be combined`,
+			`\QMatch() and MatchComment() can't be combined`,
 		},
 
 		{
 			`m.MatchComment("").Match("$x").Report("")`,
-			`Match() and MatchComment() can't be combined`,
+			`\QMatch() and MatchComment() can't be combined`,
 		},
 
 		{
 			`m.Where(m.File().Imports("strings")).Report("no match call")`,
-			`missing Match() or MatchComment() call`,
+			`\Qmissing Match() or MatchComment() call`,
 		},
 
 		{
 			`m.Match("$x").Where(m["x"].Pure)`,
-			`missing Report() or Suggest() call`,
+			`\Qmissing Report() or Suggest() call`,
 		},
 
 		{
 			`m.Match("$x").Match("$x")`,
-			`Match() can't be repeated`,
+			`\QMatch() can't be repeated`,
 		},
 
 		{
 			`m.MatchComment("").MatchComment("")`,
-			`MatchComment() can't be repeated`,
+			`\QMatchComment() can't be repeated`,
 		},
 
 		{
 			`m.Match().Report("$$")`,
-			`too few arguments in call to m.Match`,
+			`(?:too few|not enough) arguments in call to m\.Match`,
 		},
 
 		{
 			`m.MatchComment().Report("$$")`,
-			`too few arguments in call to m.MatchComment`,
+			`(?:too few|not enough) arguments in call to m\.MatchComment`,
 		},
 
 		{
 			`m.MatchComment("(").Report("")`,
-			`error parsing regexp: missing closing )`,
+			`\Qerror parsing regexp: missing closing )`,
 		},
 
 		{
 			`m.Match("func[]").Report("$$")`,
-			`parse match pattern: cannot parse expr: 1:5: expected '(', found '['`,
+			`\Qparse match pattern: cannot parse expr: 1:5: expected '(', found '['`,
 		},
 	}
 
@@ -261,9 +262,9 @@ func TestParseRuleError(t *testing.T) {
 			continue
 		}
 		have := err.Error()
-		want := test.err
-		if !strings.Contains(have, want) {
-			t.Errorf("parse %s: errors mismatch:\nhave: %s\nwant: %s", test.expr, have, want)
+		wantRE := regexp.MustCompile(test.err)
+		if !wantRE.MatchString(have) {
+			t.Errorf("parse %s: errors mismatch:\nhave: %s\nwant: %s", test.expr, have, test.err)
 			continue
 		}
 	}

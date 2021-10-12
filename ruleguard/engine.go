@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
+	"go/token"
 	"go/types"
 	"io"
 	"io/ioutil"
@@ -55,11 +56,12 @@ func (e *engine) Load(ctx *LoadContext, filename string, r io.Reader) error {
 		return err
 	}
 	config := irLoaderConfig{
-		state:    e.state,
-		pkg:      pkg,
-		ctx:      ctx,
-		importer: imp,
-		itab:     typematch.NewImportsTab(stdinfo.Packages),
+		state:      e.state,
+		pkg:        pkg,
+		ctx:        ctx,
+		importer:   imp,
+		itab:       typematch.NewImportsTab(stdinfo.Packages),
+		gogrepFset: token.NewFileSet(),
 	}
 	l := newIRLoader(config)
 	rset, err := l.LoadFile(filename, irfile)
@@ -87,10 +89,11 @@ func (e *engine) LoadFromIR(ctx *LoadContext, filename string, f *ir.File) error
 		debugPrint:   ctx.DebugPrint,
 	})
 	config := irLoaderConfig{
-		state:    e.state,
-		ctx:      ctx,
-		importer: imp,
-		itab:     typematch.NewImportsTab(stdinfo.Packages),
+		state:      e.state,
+		ctx:        ctx,
+		importer:   imp,
+		itab:       typematch.NewImportsTab(stdinfo.Packages),
+		gogrepFset: token.NewFileSet(),
 	}
 	l := newIRLoader(config)
 	rset, err := l.LoadFile(filename, f)
