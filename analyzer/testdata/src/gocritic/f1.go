@@ -681,3 +681,55 @@ func argOderProperArgsOrder(s string, b []byte) {
 	const configFileName = "foo.json"
 	_ = strings.TrimSuffix(configFileName, filepath.Ext(configFileName))
 }
+
+func equalFold(s1, s2 string, b1, b2 []byte) {
+	_ = strings.ToLower(s1) == s2                  // want `\Qconsider replacing with strings.EqualFold(s1, s2)`
+	_ = s1 == strings.ToLower(s2)                  // want `\Qconsider replacing with strings.EqualFold(s1, s2)`
+	_ = strings.ToLower(s1) == strings.ToLower(s2) // want `\Qconsider replacing with strings.EqualFold(s1, s2)`
+	_ = strings.ToLower(s1) == "select"            // want `\Qconsider replacing with strings.EqualFold(s1, "select")`
+	_ = "select" == strings.ToLower(s1)            // want `\Qconsider replacing with strings.EqualFold("select", s1)`
+	_ = strings.ToUpper(s1) == s2                  // want `\Qconsider replacing with strings.EqualFold(s1, s2)`
+	_ = s1 == strings.ToUpper(s2)                  // want `\Qconsider replacing with strings.EqualFold(s1, s2)`
+	_ = strings.ToUpper(s1) == strings.ToUpper(s2) // want `\Qconsider replacing with strings.EqualFold(s1, s2)`
+
+	_ = strings.ToLower(s1) != s2                  // want `\Qconsider replacing with !strings.EqualFold(s1, s2)`
+	_ = s1 != strings.ToLower(s2)                  // want `\Qconsider replacing with !strings.EqualFold(s1, s2)`
+	_ = strings.ToLower(s1) != strings.ToLower(s2) // want `\Qconsider replacing with !strings.EqualFold(s1, s2)`
+	_ = strings.ToLower(s1) != "select"            // want `\Qconsider replacing with !strings.EqualFold(s1, "select")`
+	_ = "select" != strings.ToLower(s1)            // want `\Qconsider replacing with !strings.EqualFold("select", s1)`
+	_ = strings.ToUpper(s1) != s2                  // want `\Qconsider replacing with !strings.EqualFold(s1, s2)`
+	_ = s1 != strings.ToUpper(s2)                  // want `\Qconsider replacing with !strings.EqualFold(s1, s2)`
+	_ = strings.ToUpper(s1) != strings.ToUpper(s2) // want `\Qconsider replacing with !strings.EqualFold(s1, s2)`
+
+	_ = bytes.Equal(bytes.ToLower(b1), b2)                // want `\Qconsider replacing with bytes.EqualFold(b1, b2)`
+	_ = bytes.Equal(b1, bytes.ToLower(b2))                // want `\Qconsider replacing with bytes.EqualFold(b1, b2)`
+	_ = bytes.Equal(bytes.ToLower(b1), bytes.ToLower(b2)) // want `\Qconsider replacing with bytes.EqualFold(b1, b2)`
+	_ = bytes.Equal(bytes.ToLower(b1), []byte("select"))  // want `\Qconsider replacing with bytes.EqualFold(b1, []byte("select"))`
+	_ = bytes.Equal([]byte("select"), bytes.ToLower(b1))  // want `\Qconsider replacing with bytes.EqualFold([]byte("select"), b1)`
+	_ = bytes.Equal(bytes.ToUpper(b1), b2)                // want `\Qconsider replacing with bytes.EqualFold(b1, b2)`
+	_ = bytes.Equal(b1, bytes.ToUpper(b2))                // want `\Qconsider replacing with bytes.EqualFold(b1, b2)`
+	_ = bytes.Equal(bytes.ToUpper(b1), bytes.ToUpper(b2)) // want `\Qconsider replacing with bytes.EqualFold(b1, b2)`
+
+	_ = !bytes.Equal(bytes.ToLower(b1), b2)                // want `\Qconsider replacing with bytes.EqualFold(b1, b2)`
+	_ = !bytes.Equal(b1, bytes.ToLower(b2))                // want `\Qconsider replacing with bytes.EqualFold(b1, b2)`
+	_ = !bytes.Equal(bytes.ToLower(b1), bytes.ToLower(b2)) // want `\Qconsider replacing with bytes.EqualFold(b1, b2)`
+	_ = !bytes.Equal(bytes.ToLower(b1), []byte("select"))  // want `\Qconsider replacing with bytes.EqualFold(b1, []byte("select"))`
+	_ = !bytes.Equal([]byte("select"), bytes.ToLower(b1))  // want `\Qconsider replacing with bytes.EqualFold([]byte("select"), b1)`
+	_ = !bytes.Equal(bytes.ToUpper(b1), b2)                // want `\Qconsider replacing with bytes.EqualFold(b1, b2)`
+	_ = !bytes.Equal(b1, bytes.ToUpper(b2))                // want `\Qconsider replacing with bytes.EqualFold(b1, b2)`
+	_ = !bytes.Equal(bytes.ToUpper(b1), bytes.ToUpper(b2)) // want `\Qconsider replacing with bytes.EqualFold(b1, b2)`
+
+	_ = strings.ToLower(s1) == strings.ToLower(strings.ToUpper(s2))
+	_ = strings.ToUpper(s1) == strings.ToLower(s2)
+	_ = strings.ToUpper(s1) == strings.ToUpper(s1)
+	_ = strings.ToLower(s1) != strings.ToLower(strings.ToUpper(s2))
+	_ = strings.ToUpper(s1) != strings.ToLower(s2)
+	_ = strings.ToUpper(s1) != strings.ToUpper(s1)
+
+	_ = bytes.Equal(bytes.ToLower(b1), bytes.ToLower(bytes.ToUpper(b2)))
+	_ = bytes.Equal(bytes.ToUpper(b1), bytes.ToLower(b2))
+	_ = bytes.Equal(bytes.ToUpper(b1), bytes.ToUpper(b1))
+	_ = !bytes.Equal(bytes.ToLower(b1), bytes.ToLower(bytes.ToUpper(b2)))
+	_ = !bytes.Equal(bytes.ToUpper(b1), bytes.ToLower(b2))
+	_ = !bytes.Equal(bytes.ToUpper(b1), bytes.ToUpper(b1))
+}

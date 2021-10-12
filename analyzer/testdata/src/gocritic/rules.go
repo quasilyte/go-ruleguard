@@ -220,3 +220,51 @@ func argOrder(m dsl.Matcher) {
 			!m["lit"].Node.Is(`Ident`)).
 		Report(`$lit and $s arguments order looks reversed`)
 }
+
+func equalFold(m dsl.Matcher) {
+	// We specify so many patterns to avoid too generic
+	// patterns that would match things like
+	// `strings.ToLower(x) == strings.ToUpper(y)`
+	// While it could be an EqualFold candidate,
+	// it just looks wrong and should probably be
+	// marked by some other checker.
+
+	// string== patterns
+	m.Match(
+		`strings.ToLower($x) == $y`,
+		`strings.ToLower($x) == strings.ToLower($y)`,
+		`$x == strings.ToLower($y)`,
+		`strings.ToUpper($x) == $y`,
+		`strings.ToUpper($x) == strings.ToUpper($y)`,
+		`$x == strings.ToUpper($y)`,
+	).
+		Where(m["x"].Pure && m["y"].Pure && m["x"].Text != m["y"].Text).
+		Suggest(`strings.EqualFold($x, $y)]`).
+		Report(`consider replacing with strings.EqualFold($x, $y)`)
+
+	// string!= patterns
+	m.Match(
+		`strings.ToLower($x) != $y`,
+		`strings.ToLower($x) != strings.ToLower($y)`,
+		`$x != strings.ToLower($y)`,
+		`strings.ToUpper($x) != $y`,
+		`strings.ToUpper($x) != strings.ToUpper($y)`,
+		`$x != strings.ToUpper($y)`,
+	).
+		Where(m["x"].Pure && m["y"].Pure && m["x"].Text != m["y"].Text).
+		Suggest(`!strings.EqualFold($x, $y)]`).
+		Report(`consider replacing with !strings.EqualFold($x, $y)`)
+
+	// bytes.Equal patterns
+	m.Match(
+		`bytes.Equal(bytes.ToLower($x), $y)`,
+		`bytes.Equal(bytes.ToLower($x), bytes.ToLower($y))`,
+		`bytes.Equal($x, bytes.ToLower($y))`,
+		`bytes.Equal(bytes.ToUpper($x), $y)`,
+		`bytes.Equal(bytes.ToUpper($x), bytes.ToUpper($y))`,
+		`bytes.Equal($x, bytes.ToUpper($y))`,
+	).
+		Where(m["x"].Pure && m["y"].Pure && m["x"].Text != m["y"].Text).
+		Suggest(`bytes.EqualFold($x, $y)]`).
+		Report(`consider replacing with bytes.EqualFold($x, $y)`)
+}

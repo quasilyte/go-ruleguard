@@ -336,6 +336,7 @@ func (conv *converter) convertRuleExpr(call *ast.CallExpr) {
 
 	// AST patterns for Match() or regexp patterns for MatchComment().
 	var alternatives []string
+	var alternativeLines []int
 
 	if matchArgs == nil && matchCommentArgs == nil {
 		panic(conv.errorf(origCall, "missing Match() or MatchComment() call"))
@@ -344,16 +345,16 @@ func (conv *converter) convertRuleExpr(call *ast.CallExpr) {
 	if matchArgs != nil {
 		for _, arg := range *matchArgs {
 			alternatives = append(alternatives, conv.parseStringArg(arg))
+			alternativeLines = append(alternativeLines, conv.fset.Position(arg.Pos()).Line)
 		}
 	} else {
 		for _, arg := range *matchCommentArgs {
 			alternatives = append(alternatives, conv.parseStringArg(arg))
+			alternativeLines = append(alternativeLines, conv.fset.Position(arg.Pos()).Line)
 		}
 	}
 
-	proto := ir.Rule{
-		Line: conv.fset.Position(origCall.Pos()).Line,
-	}
+	proto := ir.Rule{}
 
 	if atArgs != nil {
 		index, ok := (*atArgs)[0].(*ast.IndexExpr)
@@ -380,8 +381,9 @@ func (conv *converter) convertRuleExpr(call *ast.CallExpr) {
 		proto.ReportTemplate = conv.parseStringArg((*reportArgs)[0])
 	}
 
-	for _, alt := range alternatives {
+	for i, alt := range alternatives {
 		rule := proto
+		rule.Line = alternativeLines[i]
 		if matchArgs != nil {
 			rule.SyntaxPattern = alt
 		} else {
