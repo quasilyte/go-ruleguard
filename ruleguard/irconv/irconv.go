@@ -354,43 +354,45 @@ func (conv *converter) convertRuleExpr(call *ast.CallExpr) {
 		}
 	}
 
-	proto := ir.Rule{}
+	rule := ir.Rule{Line: conv.fset.Position(origCall.Pos()).Line}
 
 	if atArgs != nil {
 		index, ok := (*atArgs)[0].(*ast.IndexExpr)
 		if !ok {
 			panic(conv.errorf((*atArgs)[0], "expected %s[`varname`] expression", conv.group.MatcherName))
 		}
-		proto.LocationVar = conv.parseStringArg(index.Index)
+		rule.LocationVar = conv.parseStringArg(index.Index)
 	}
 
 	if whereArgs != nil {
-		proto.WhereExpr = conv.convertFilterExpr((*whereArgs)[0])
+		rule.WhereExpr = conv.convertFilterExpr((*whereArgs)[0])
 	}
 
 	if suggestArgs != nil {
-		proto.SuggestTemplate = conv.parseStringArg((*suggestArgs)[0])
+		rule.SuggestTemplate = conv.parseStringArg((*suggestArgs)[0])
 	}
 
 	if suggestArgs == nil && reportArgs == nil {
 		panic(conv.errorf(origCall, "missing Report() or Suggest() call"))
 	}
 	if reportArgs == nil {
-		proto.ReportTemplate = "suggestion: " + proto.SuggestTemplate
+		rule.ReportTemplate = "suggestion: " + rule.SuggestTemplate
 	} else {
-		proto.ReportTemplate = conv.parseStringArg((*reportArgs)[0])
+		rule.ReportTemplate = conv.parseStringArg((*reportArgs)[0])
 	}
 
 	for i, alt := range alternatives {
-		rule := proto
-		rule.Line = alternativeLines[i]
-		if matchArgs != nil {
-			rule.SyntaxPattern = alt
-		} else {
-			rule.CommentPattern = alt
+		pat := ir.PatternString{
+			Line:  alternativeLines[i],
+			Value: alt,
 		}
-		conv.group.Rules = append(conv.group.Rules, rule)
+		if matchArgs != nil {
+			rule.SyntaxPatterns = append(rule.SyntaxPatterns, pat)
+		} else {
+			rule.CommentPatterns = append(rule.CommentPatterns, pat)
+		}
 	}
+	conv.group.Rules = append(conv.group.Rules, rule)
 }
 
 func (conv *converter) convertFilterExpr(e ast.Expr) ir.FilterExpr {

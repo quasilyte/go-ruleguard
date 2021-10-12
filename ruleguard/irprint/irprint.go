@@ -67,6 +67,22 @@ func (p *printer) printReflectElem(key string, v reflect.Value) {
 		return
 	}
 
+	// There are tons of this, print it in a compact way.
+	if v.Type().Name() == "PatternString" {
+		v := v.Interface().(ir.PatternString)
+		p.writef("ir.PatternString{Line: %d, Value: %#v},\n", v.Line, v.Value)
+		return
+	}
+
+	if v.Type().Name() == "FilterExpr" {
+		v := v.Interface().(ir.FilterExpr)
+		if v.Op == ir.FilterStringOp || v.Op == ir.FilterVarPureOp || v.Op == ir.FilterVarTextOp {
+			p.writef("ir.FilterExpr{Line: %d, Op: ir.Filter%sOp, Src: %#v, Value: %#v},\n",
+				v.Line, v.Op.String(), v.Src, v.Value.(string))
+			return
+		}
+	}
+
 	if v.Type().Kind() == reflect.Struct {
 		p.writef("%s{\n", v.Type().String())
 		for i := 0; i < v.NumField(); i++ {

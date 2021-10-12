@@ -277,32 +277,42 @@ func (l *irLoader) loadRule(rule ir.Rule) error {
 		proto.filter = filter
 	}
 
-	if rule.SyntaxPattern != "" {
-		return l.loadSyntaxRule(proto, rule)
+	for _, pat := range rule.SyntaxPatterns {
+		if err := l.loadSyntaxRule(proto, rule, pat.Value, pat.Line); err != nil {
+			return err
+		}
 	}
-	return l.loadCommentRule(proto, rule)
+	for _, pat := range rule.CommentPatterns {
+		if err := l.loadCommentRule(proto, rule, pat.Value, pat.Line); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func (l *irLoader) loadCommentRule(resultProto goRule, rule ir.Rule) error {
+func (l *irLoader) loadCommentRule(resultProto goRule, rule ir.Rule, src string, line int) error {
 	dst := l.res.universal
-	pat, err := regexp.Compile(rule.CommentPattern)
+	pat, err := regexp.Compile(src)
 	if err != nil {
 		return l.errorf(rule.Line, err, "compile regexp")
 	}
+	resultBase := resultProto
+	resultBase.line = line
 	result := goCommentRule{
 		base:          resultProto,
 		pat:           pat,
-		captureGroups: regexpHasCaptureGroups(rule.CommentPattern),
+		captureGroups: regexpHasCaptureGroups(src),
 	}
 	dst.commentRules = append(dst.commentRules, result)
 
 	return nil
 }
 
-func (l *irLoader) loadSyntaxRule(resultProto goRule, rule ir.Rule) error {
+func (l *irLoader) loadSyntaxRule(resultProto goRule, rule ir.Rule, src string, line int) error {
 	result := resultProto
+	result.line = line
 
-	pat, err := gogrep.Compile(l.gogrepFset, rule.SyntaxPattern, false)
+	pat, err := gogrep.Compile(l.gogrepFset, src, false)
 	if err != nil {
 		return l.errorf(rule.Line, err, "parse match pattern")
 	}
@@ -312,9 +322,9 @@ func (l *irLoader) loadSyntaxRule(resultProto goRule, rule ir.Rule) error {
 	var dstTags []nodetag.Value
 	switch tag := pat.NodeTag(); tag {
 	case nodetag.Unknown:
-		return l.errorf(rule.Line, nil, "can't infer a tag of %s", rule.SyntaxPattern)
+		return l.errorf(rule.Line, nil, "can't infer a tag of %s", src)
 	case nodetag.Node:
-		return l.errorf(rule.Line, nil, "%s pattern is too general", rule.SyntaxPattern)
+		return l.errorf(rule.Line, nil, "%s pattern is too general", src)
 	case nodetag.StmtList:
 		dstTags = []nodetag.Value{
 			nodetag.BlockStmt,
