@@ -127,6 +127,22 @@ func makeConstFilter(src, varname string) filterFunc {
 	}
 }
 
+func makeConstSliceFilter(src, varname string) filterFunc {
+	return func(params *filterParams) matchFilterResult {
+		if list, ok := params.subNode(varname).(gogrep.ExprSlice); ok {
+			return exprListFilterApply(src, list, func(x ast.Expr) bool {
+				return isConstantSlice(params.ctx.Types, x)
+			})
+		}
+
+		n := params.subExpr(varname)
+		if isConstantSlice(params.ctx.Types, n) {
+			return filterSuccess
+		}
+		return filterFailure(src)
+	}
+}
+
 func makeAddressableFilter(src, varname string) filterFunc {
 	return func(params *filterParams) matchFilterResult {
 		if list, ok := params.subNode(varname).(gogrep.ExprSlice); ok {

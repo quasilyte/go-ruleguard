@@ -512,6 +512,8 @@ func (l *irLoader) newFilter(filter ir.FilterExpr) (matchFilter, error) {
 		result.fn = makePureFilter(result.src, filter.Value.(string))
 	case ir.FilterVarConstOp:
 		result.fn = makeConstFilter(result.src, filter.Value.(string))
+	case ir.FilterVarConstSliceOp:
+		result.fn = makeConstSliceFilter(result.src, filter.Value.(string))
 	case ir.FilterVarAddressableOp:
 		result.fn = makeAddressableFilter(result.src, filter.Value.(string))
 

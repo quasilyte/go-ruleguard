@@ -41,6 +41,7 @@ func main() {
 		{name: "VarAddressable", comment: "m[$Value].Addressable", valueType: "string"},
 		{name: "VarPure", comment: "m[$Value].Pure", valueType: "string"},
 		{name: "VarConst", comment: "m[$Value].Const", valueType: "string"},
+		{name: "VarConstSlice", comment: "m[$Value].ConstSlice", valueType: "string"},
 		{name: "VarText", comment: "m[$Value].Text", valueType: "string"},
 		{name: "VarLine", comment: "m[$Value].Line", valueType: "string"},
 		{name: "VarValueInt", comment: "m[$Value].Value.Int()", valueType: "string"},

@@ -220,6 +220,37 @@ func isConstant(info *types.Info, expr ast.Expr) bool {
 	return ok && tv.Value != nil
 }
 
+func isConstantSlice(info *types.Info, expr ast.Expr) bool {
+	switch expr := expr.(type) {
+	case *ast.CallExpr:
+		// Matches []byte("string").
+		if len(expr.Args) != 1 {
+			return false
+		}
+		lit, ok := expr.Args[0].(*ast.BasicLit)
+		if !ok || lit.Kind != token.STRING {
+			return false
+		}
+		typ, ok := info.TypeOf(expr.Fun).(*types.Slice)
+		if !ok {
+			return false
+		}
+		basicType, ok := typ.Elem().(*types.Basic)
+		return ok && basicType.Kind() == types.Uint8
+
+	case *ast.CompositeLit:
+		for _, elt := range expr.Elts {
+			if !isConstant(info, elt) {
+				return false
+			}
+		}
+		return true
+
+	default:
+		return false
+	}
+}
+
 // isTypeExpr reports whether x represents a type expression.
 //
 // Type expression does not evaluate to any run time value,
