@@ -70,9 +70,22 @@ var opPrototypes = []operationProto{
 	{name: "BinaryExpr", tag: "BinaryExpr", args: "x y", value: "token.Token | binary operator"},
 	{name: "ParenExpr", tag: "ParenExpr", args: "x"},
 
-	{name: "VariadicCallExpr", tag: "CallExpr", args: "fn args...", example: "f(1, xs...)"},
-	{name: "NonVariadicCallExpr", tag: "CallExpr", args: "fn args...", example: "f(1, xs)"},
-	{name: "CallExpr", tag: "CallExpr", args: "fn args...", example: "f(1, xs) or f(1, xs...)"},
+	{
+		name: "ArgList",
+		args: "exprs...",
+		example: "1, 2, 3",
+	},
+	{
+		name: "SimpleArgList",
+		note: "Like ArgList, but pattern contains no $*",
+		args: "exprs[]",
+		value: "int | slice len",
+		example: "1, 2, 3",
+	},
+
+	{name: "VariadicCallExpr", tag: "CallExpr", args: "fn args", example: "f(1, xs...)"},
+	{name: "NonVariadicCallExpr", tag: "CallExpr", args: "fn args", example: "f(1, xs)"},
+	{name: "CallExpr", tag: "CallExpr", args: "fn args", example: "f(1, xs) or f(1, xs...)"},
 
 	{name: "AssignStmt", tag: "AssignStmt", args: "lhs rhs", value: "token.Token | ':=' or '='", example: "lhs := rhs()"},
 	{name: "MultiAssignStmt", tag: "AssignStmt", args: "lhs... rhs...", value: "token.Token | ':=' or '='", example: "lhs1, lhs2 := rhs()"},
@@ -165,10 +178,12 @@ type operationProto struct {
 	tag        string
 	example    string
 	args       string
+	note       string
 }
 
 type operationInfo struct {
 	Example            string
+	Note               string
 	Args               string
 	Enum               uint8
 	TagName            string
@@ -179,6 +194,7 @@ type operationInfo struct {
 	ValueKindName      string
 	VariadicMap        uint64
 	NumArgs            int
+	SliceIndex         int
 }
 
 const stackUnchanged = ""
@@ -198,6 +214,7 @@ const (
 	opInvalid operation = 0
 {{ range .Operations }}
 	// Tag: {{.TagName}}
+	{{- if .Note}}{{print "\n"}}// {{.Note}}{{end}}
 	{{- if .Args}}{{print "\n"}}// Args: {{.Args}}{{end}}
 	{{- if .Example}}{{print "\n"}}// Example: {{.Example}}{{end}}
 	{{- if .ValueDoc}}{{print "\n"}}// Value: {{.ValueDoc}}{{end}}
@@ -212,6 +229,7 @@ type operationInfo struct {
 	ValueKind valueKind
 	ExtraValueKind valueKind
 	VariadicMap bitmap64
+	SliceIndex int
 }
 
 var operationInfoTable = [256]operationInfo{
@@ -224,6 +242,7 @@ var operationInfoTable = [256]operationInfo{
 		ValueKind: {{.ValueKindName}},
 		ExtraValueKind: {{.ExtraValueKindName}},
 		VariadicMap: {{.VariadicMap}}, // {{printf "%b" .VariadicMap}}
+		SliceIndex: {{.SliceIndex}},
 	},
 {{ end }}
 }
@@ -241,6 +260,7 @@ func main() {
 
 		variadicMap := uint64(0)
 		numArgs := 0
+		sliceLenIndex := -1
 		if proto.args != "" {
 			args := strings.Split(proto.args, " ")
 			numArgs = len(args)
@@ -248,6 +268,9 @@ func main() {
 				isVariadic := strings.HasSuffix(arg, "...")
 				if isVariadic {
 					variadicMap |= 1 << i
+				}
+				if strings.HasSuffix(arg, "[]") {
+					sliceLenIndex = i
 				}
 			}
 		}
@@ -274,6 +297,8 @@ func main() {
 				valueKindName = "tokenValue"
 			case "ast.ChanDir":
 				valueKindName = "chandirValue"
+			case "int":
+				valueKindName = "intValue"
 			default:
 				panic(fmt.Sprintf("%s: unexpected %s type", proto.name, typ))
 			}
@@ -281,6 +306,7 @@ func main() {
 
 		operations[i] = operationInfo{
 			Example:            proto.example,
+			Note:               proto.note,
 			Args:               proto.args,
 			Enum:               enum,
 			TagName:            tagName,
@@ -288,9 +314,10 @@ func main() {
 			ValueDoc:           proto.value,
 			ValueIndexDoc:      proto.valueIndex,
 			NumArgs:            numArgs,
-			VariadicMap: variadicMap,
+			VariadicMap:        variadicMap,
 			ExtraValueKindName: extraValueKindName,
 			ValueKindName:      valueKindName,
+			SliceIndex:         sliceLenIndex,
 		}
 	}
 

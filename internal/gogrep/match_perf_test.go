@@ -19,8 +19,13 @@ func BenchmarkMatch(b *testing.B) {
 		},
 		{
 			name:  `failCall`,
+			pat:   `f(1, 2, 3, 4)`,
+			input: `f(1, 2, 3, _)`,
+		},
+		{
+			name:  `failCallFast`,
 			pat:   `f(1, 2, 3)`,
-			input: `f(1, 2, _)`,
+			input: `f()`,
 		},
 		{
 			name:  `assign`,
@@ -48,6 +53,11 @@ func BenchmarkMatch(b *testing.B) {
 			input: `x.y.z`,
 		},
 		{
+			name:  `simpleCall`,
+			pat:   `f(1, 2)`,
+			input: `f(1, 2)`,
+		},
+		{
 			name:  `selectorExpr`,
 			pat:   `a.$x`,
 			input: `a.b.c`,
@@ -61,6 +71,11 @@ func BenchmarkMatch(b *testing.B) {
 			name:  `any`,
 			pat:   `$_`,
 			input: `x + y`,
+		},
+		{
+			name:  `anyCall`,
+			pat:   `$_($*_)`,
+			input: `f(1, "2", '3',)`,
 		},
 		{
 			name:  `ifStmt`,

@@ -128,10 +128,11 @@ func TestCompileWildcard(t *testing.T) {
 		`print($*_, x, $*_)`: {
 			`CallExpr`,
 			` • Ident print`,
-			` • NodeSeq`,
-			` • Ident x`,
-			` • NodeSeq`,
-			` • End`,
+			` • ArgList`,
+			` •  • NodeSeq`,
+			` •  • Ident x`,
+			` •  • NodeSeq`,
+			` •  • End`,
 		},
 
 		`{ $*_; x; $*_ }`: {
@@ -284,23 +285,25 @@ func TestCompileWildcard(t *testing.T) {
 		`f($*_)`: {
 			`CallExpr`,
 			` • Ident f`,
-			` • NodeSeq`,
-			` • End`,
+			` • ArgList`,
+			` •  • NodeSeq`,
+			` •  • End`,
 		},
 
 		`f(1, $*_)`: {
 			`CallExpr`,
 			` • Ident f`,
-			` • BasicLit 1`,
-			` • NodeSeq`,
-			` • End`,
+			` • ArgList`,
+			` •  • BasicLit 1`,
+			` •  • NodeSeq`,
+			` •  • End`,
 		},
 
 		`f($_)`: {
 			`NonVariadicCallExpr`,
 			` • Ident f`,
-			` • Node`,
-			` • End`,
+			` • SimpleArgList 1`,
+			` •  • Node`,
 		},
 
 		`var x int; if true { f() }`: {
@@ -318,7 +321,7 @@ func TestCompileWildcard(t *testing.T) {
 			` •  •  • ExprStmt`,
 			` •  •  •  • NonVariadicCallExpr`,
 			` •  •  •  •  • Ident f`,
-			` •  •  •  •  • End`,
+			` •  •  •  •  • SimpleArgList 0`,
 			` •  •  • End`,
 			` • End`,
 		},
@@ -471,19 +474,19 @@ func TestCompile(t *testing.T) {
 		`f(1, 2)`: {
 			`NonVariadicCallExpr`,
 			` • Ident f`,
-			` • BasicLit 1`,
-			` • BasicLit 2`,
-			` • End`,
+			` • SimpleArgList 2`,
+			` •  • BasicLit 1`,
+			` •  • BasicLit 2`,
 		},
 
 		`f(g(), xs...)`: {
 			`VariadicCallExpr`,
 			` • Ident f`,
-			` • NonVariadicCallExpr`,
-			` •  • Ident g`,
-			` •  • End`,
-			` • Ident xs`,
-			` • End`,
+			` • SimpleArgList 2`,
+			` •  • NonVariadicCallExpr`,
+			` •  •  • Ident g`,
+			` •  •  • SimpleArgList 0`,
+			` •  • Ident xs`,
 		},
 
 		`x[0]`: {
@@ -532,16 +535,16 @@ func TestCompile(t *testing.T) {
 			` •  • ArrayType`,
 			` •  •  • BasicLit 2`,
 			` •  •  • Ident int`,
-			` • Ident x`,
-			` • End`,
+			` • SimpleArgList 1`,
+			` •  • Ident x`,
 		},
 		`([]int)(x)`: {
 			`NonVariadicCallExpr`,
 			` • ParenExpr`,
 			` •  • SliceType`,
 			` •  •  • Ident int`,
-			` • Ident x`,
-			` • End`,
+			` • SimpleArgList 1`,
+			` •  • Ident x`,
 		},
 
 		`[]int{1, 2}`: {
@@ -589,14 +592,14 @@ func TestCompile(t *testing.T) {
 			`GoStmt`,
 			` • NonVariadicCallExpr`,
 			` •  • Ident f`,
-			` •  • End`,
+			` •  • SimpleArgList 0`,
 		},
 
 		`defer f()`: {
 			`DeferStmt`,
 			` • NonVariadicCallExpr`,
 			` •  • Ident f`,
-			` •  • End`,
+			` •  • SimpleArgList 0`,
 		},
 
 		`ch <- 1`: {
@@ -633,11 +636,11 @@ func TestCompile(t *testing.T) {
 			` • ExprStmt`,
 			` •  • NonVariadicCallExpr`,
 			` •  •  • Ident f`,
-			` •  •  • End`,
+			` •  •  • SimpleArgList 0`,
 			` • ExprStmt`,
 			` •  • NonVariadicCallExpr`,
 			` •  •  • Ident g`,
-			` •  •  • End`,
+			` •  •  • SimpleArgList 0`,
 			` • End`,
 		},
 
@@ -664,7 +667,7 @@ func TestCompile(t *testing.T) {
 			` •  • ExprStmt`,
 			` •  •  • NonVariadicCallExpr`,
 			` •  •  •  • Ident f`,
-			` •  •  •  • End`,
+			` •  •  •  • SimpleArgList 0`,
 			` •  • End`,
 		},
 		`if cond {} else if cond2 { f() } else {}`: {
@@ -678,7 +681,7 @@ func TestCompile(t *testing.T) {
 			` •  •  • ExprStmt`,
 			` •  •  •  • NonVariadicCallExpr`,
 			` •  •  •  •  • Ident f`,
-			` •  •  •  •  • End`,
+			` •  •  •  •  • SimpleArgList 0`,
 			` •  •  • End`,
 			` •  • BlockStmt`,
 			` •  •  • End`,
@@ -698,7 +701,7 @@ func TestCompile(t *testing.T) {
 			` •  •  • ExprStmt`,
 			` •  •  •  • NonVariadicCallExpr`,
 			` •  •  •  •  • Ident f`,
-			` •  •  •  •  • End`,
+			` •  •  •  •  • SimpleArgList 0`,
 			` •  •  • End`,
 			` •  • BlockStmt`,
 			` •  •  • End`,
@@ -741,7 +744,7 @@ func TestCompile(t *testing.T) {
 			` • End`,
 			` • NonVariadicCallExpr`,
 			` •  • Ident f`,
-			` •  • End`,
+			` •  • SimpleArgList 0`,
 			` • End`,
 		},
 
@@ -750,24 +753,24 @@ func TestCompile(t *testing.T) {
 			` • ParenExpr`,
 			` •  • ChanType send recv`,
 			` •  •  • Ident int`,
-			` • Ident nil`,
-			` • End`,
+			` • SimpleArgList 1`,
+			` •  • Ident nil`,
 		},
 		`(chan<- int)(nil)`: {
 			`NonVariadicCallExpr`,
 			` • ParenExpr`,
 			` •  • ChanType send`,
 			` •  •  • Ident int`,
-			` • Ident nil`,
-			` • End`,
+			` • SimpleArgList 1`,
+			` •  • Ident nil`,
 		},
 		`(<-chan int)(nil)`: {
 			`NonVariadicCallExpr`,
 			` • ParenExpr`,
 			` •  • ChanType recv`,
 			` •  •  • Ident int`,
-			` • Ident nil`,
-			` • End`,
+			` • SimpleArgList 1`,
+			` •  • Ident nil`,
 		},
 
 		`for range xs {}`: {
@@ -905,22 +908,24 @@ func TestCompile(t *testing.T) {
 			` •  • ExprStmt`,
 			` •  •  • NonVariadicCallExpr`,
 			` •  •  •  • Ident f`,
-			` •  •  •  • End`,
+			` •  •  •  • SimpleArgList 0`,
 			` •  • End`,
 			` • DefaultCaseClause`,
 			` •  • ExprStmt`,
 			` •  •  • NonVariadicCallExpr`,
 			` •  •  •  • Ident g`,
-			` •  •  •  • End`,
+			` •  •  •  • SimpleArgList 0`,
 			` •  • End`,
 			` • End`,
 		},
 
-		`fmt.Println()`: {
+		`fmt.Println(5, 6)`: {
 			`NonVariadicCallExpr`,
 			` • SimpleSelectorExpr Println`,
 			` •  • StdlibPkg fmt`,
-			` • End`,
+			` • SimpleArgList 2`,
+			` •  • BasicLit 5`,
+			` •  • BasicLit 6`,
 		},
 
 		`x = fmt.Sprint(y)`: {
@@ -929,8 +934,8 @@ func TestCompile(t *testing.T) {
 			` • NonVariadicCallExpr`,
 			` •  • SimpleSelectorExpr Sprint`,
 			` •  •  • StdlibPkg fmt`,
-			` •  • Ident y`,
-			` •  • End`,
+			` •  • SimpleArgList 1`,
+			` •  •  • Ident y`,
 		},
 
 		`const (x = 1; y = 2)`: {
