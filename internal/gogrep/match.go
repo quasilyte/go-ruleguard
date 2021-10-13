@@ -183,13 +183,13 @@ func (m *matcher) matchNodeWithInst(inst instruction, n ast.Node) bool {
 
 	case opVariadicCallExpr:
 		n, ok := n.(*ast.CallExpr)
-		return ok && n.Ellipsis.IsValid() && m.matchNode(n.Fun) && m.matchExprSlice(n.Args)
+		return ok && n.Ellipsis.IsValid() && m.matchNode(n.Fun) && m.matchArgList(n.Args)
 	case opNonVariadicCallExpr:
 		n, ok := n.(*ast.CallExpr)
-		return ok && !n.Ellipsis.IsValid() && m.matchNode(n.Fun) && m.matchExprSlice(n.Args)
+		return ok && !n.Ellipsis.IsValid() && m.matchNode(n.Fun) && m.matchArgList(n.Args)
 	case opCallExpr:
 		n, ok := n.(*ast.CallExpr)
-		return ok && m.matchNode(n.Fun) && m.matchExprSlice(n.Args)
+		return ok && m.matchNode(n.Fun) && m.matchArgList(n.Args)
 
 	case opSimpleSelectorExpr:
 		n, ok := n.(*ast.SelectorExpr)
@@ -527,6 +527,22 @@ func (m *matcher) matchNodeWithInst(inst instruction, n ast.Node) bool {
 
 func (m *matcher) matchNode(n ast.Node) bool {
 	return m.matchNodeWithInst(m.nextInst(), n)
+}
+
+func (m *matcher) matchArgList(exprs []ast.Expr) bool {
+	inst := m.nextInst()
+	if inst.op != opSimpleArgList {
+		return m.matchExprSlice(exprs)
+	}
+	if len(exprs) != int(inst.value) {
+		return false
+	}
+	for _, x := range exprs {
+		if !m.matchNode(x) {
+			return false
+		}
+	}
+	return true
 }
 
 func (m *matcher) matchStmtSlice(stmts []ast.Stmt) bool {

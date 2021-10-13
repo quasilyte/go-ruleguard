@@ -409,6 +409,34 @@ func (c *compiler) compileIdent(n *ast.Ident) {
 	})
 }
 
+func (c *compiler) compileExprMembers(list []ast.Expr) {
+	isSimple := len(list) <= 255
+	if isSimple {
+		for _, x := range list {
+			if decodeWildNode(x).Seq {
+				isSimple = false
+				break
+			}
+		}
+	}
+
+	if isSimple {
+		c.emitInst(instruction{
+			op:    opSimpleArgList,
+			value: uint8(len(list)),
+		})
+		for _, x := range list {
+			c.compileExpr(x)
+		}
+	} else {
+		c.emitInstOp(opArgList)
+		for _, x := range list {
+			c.compileExpr(x)
+		}
+		c.emitInstOp(opEnd)
+	}
+}
+
 func (c *compiler) compileCallExpr(n *ast.CallExpr) {
 	canBeVariadic := func(n *ast.CallExpr) bool {
 		if len(n.Args) == 0 {
@@ -430,10 +458,7 @@ func (c *compiler) compileCallExpr(n *ast.CallExpr) {
 
 	c.emitInstOp(op)
 	c.compileSymbol(n.Fun)
-	for _, arg := range n.Args {
-		c.compileExpr(arg)
-	}
-	c.emitInstOp(opEnd)
+	c.compileExprMembers(n.Args)
 }
 
 // compileSymbol is mostly like a normal compileExpr, but it's used
