@@ -37,6 +37,10 @@ type Pattern struct {
 	m *matcher
 }
 
+type PatternInfo struct {
+	Vars map[string]struct{}
+}
+
 func (p *Pattern) NodeTag() nodetag.Value {
 	return operationInfoTable[p.m.prog.insts[0].op].Tag
 }
@@ -55,16 +59,23 @@ func (p *Pattern) Clone() *Pattern {
 	return &clone
 }
 
-func Compile(fset *token.FileSet, src string, strict bool) (*Pattern, error) {
+func Compile(fset *token.FileSet, src string, strict bool) (*Pattern, PatternInfo, error) {
+	info := newPatternInfo()
 	n, err := parseExpr(fset, src)
 	if err != nil {
-		return nil, err
+		return nil, info, err
 	}
 	var c compiler
-	prog, err := c.Compile(fset, n, strict)
+	prog, err := c.Compile(fset, n, &info, strict)
 	if err != nil {
-		return nil, err
+		return nil, info, err
 	}
 	m := newMatcher(prog)
-	return &Pattern{m: m}, nil
+	return &Pattern{m: m}, info, nil
+}
+
+func newPatternInfo() PatternInfo {
+	return PatternInfo{
+		Vars: map[string]struct{}{},
+	}
 }

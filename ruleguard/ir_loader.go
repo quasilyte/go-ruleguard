@@ -270,8 +270,11 @@ func (l *irLoader) loadRule(rule ir.Rule) error {
 		location:   rule.LocationVar,
 	}
 
+	info := filterInfo{
+		Vars: make(map[string]struct{}),
+	}
 	if rule.WhereExpr.IsValid() {
-		filter, err := l.newFilter(rule.WhereExpr)
+		filter, err := l.newFilter(rule.WhereExpr, &info)
 		if err != nil {
 			return err
 		}
@@ -279,7 +282,7 @@ func (l *irLoader) loadRule(rule ir.Rule) error {
 	}
 
 	for _, pat := range rule.SyntaxPatterns {
-		if err := l.loadSyntaxRule(proto, rule, pat.Value, pat.Line); err != nil {
+		if err := l.loadSyntaxRule(proto, info, rule, pat.Value, pat.Line); err != nil {
 			return err
 		}
 	}
@@ -309,15 +312,25 @@ func (l *irLoader) loadCommentRule(resultProto goRule, rule ir.Rule, src string,
 	return nil
 }
 
-func (l *irLoader) loadSyntaxRule(resultProto goRule, rule ir.Rule, src string, line int) error {
+func (l *irLoader) loadSyntaxRule(resultProto goRule, filterInfo filterInfo, rule ir.Rule, src string, line int) error {
 	result := resultProto
 	result.line = line
 
-	pat, err := gogrep.Compile(l.gogrepFset, src, false)
+	pat, info, err := gogrep.Compile(l.gogrepFset, src, false)
 	if err != nil {
 		return l.errorf(rule.Line, err, "parse match pattern")
 	}
 	result.pat = pat
+
+	for filterVar := range filterInfo.Vars {
+		if filterVar == "$$" {
+			continue // OK: a predefined var for the "entire match"
+		}
+		_, ok := info.Vars[filterVar]
+		if !ok {
+			return l.errorf(rule.Line, nil, "filter refers to a non-existing var %s", filterVar)
+		}
+	}
 
 	dst := l.res.universal
 	var dstTags []nodetag.Value
@@ -441,16 +454,20 @@ func (l *irLoader) unwrapStringExpr(filter ir.FilterExpr) string {
 	return ""
 }
 
-func (l *irLoader) newFilter(filter ir.FilterExpr) (matchFilter, error) {
+func (l *irLoader) newFilter(filter ir.FilterExpr, info *filterInfo) (matchFilter, error) {
+	if filter.HasVar() {
+		info.Vars[filter.Value.(string)] = struct{}{}
+	}
+
 	if filter.IsBinaryExpr() {
-		return l.newBinaryExprFilter(filter)
+		return l.newBinaryExprFilter(filter, info)
 	}
 
 	result := matchFilter{src: filter.Src}
 
 	switch filter.Op {
 	case ir.FilterNotOp:
-		x, err := l.newFilter(filter.Args[0])
+		x, err := l.newFilter(filter.Args[0], info)
 		if err != nil {
 			return result, err
 		}
@@ -600,14 +617,14 @@ func (l *irLoader) newFilter(filter ir.FilterExpr) (matchFilter, error) {
 	return result, nil
 }
 
-func (l *irLoader) newBinaryExprFilter(filter ir.FilterExpr) (matchFilter, error) {
+func (l *irLoader) newBinaryExprFilter(filter ir.FilterExpr, info *filterInfo) (matchFilter, error) {
 	if filter.Op == ir.FilterAndOp || filter.Op == ir.FilterOrOp {
 		result := matchFilter{src: filter.Src}
-		lhs, err := l.newFilter(filter.Args[0])
+		lhs, err := l.newFilter(filter.Args[0], info)
 		if err != nil {
 			return result, err
 		}
-		rhs, err := l.newFilter(filter.Args[1])
+		rhs, err := l.newFilter(filter.Args[1], info)
 		if err != nil {
 			return result, err
 		}
@@ -631,7 +648,7 @@ func (l *irLoader) newBinaryExprFilter(filter ir.FilterExpr) (matchFilter, error
 				// Simple commutative ops. Just swap the args.
 				newFilter := filter
 				newFilter.Args = []ir.FilterExpr{filter.Args[1], filter.Args[0]}
-				return l.newBinaryExprFilter(newFilter)
+				return l.newBinaryExprFilter(newFilter, info)
 			}
 		}
 	}
@@ -696,4 +713,8 @@ func (l *irLoader) newBinaryExprFilter(filter ir.FilterExpr) (matchFilter, error
 	}
 
 	return result, nil
+}
+
+type filterInfo struct {
+	Vars map[string]struct{}
 }

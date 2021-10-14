@@ -351,7 +351,7 @@ func TestCompileWildcard(t *testing.T) {
 			input := test.input
 			want := test.output
 			fset := token.NewFileSet()
-			p, err := Compile(fset, input, false)
+			p, _, err := Compile(fset, input, false)
 			if err != nil {
 				t.Errorf("compile `%s`: %v", input, err)
 				return
@@ -992,7 +992,8 @@ func TestCompile(t *testing.T) {
 			fset := token.NewFileSet()
 			n := testParseNode(t, fset, input)
 			var c compiler
-			p, err := c.Compile(fset, n, false)
+			info := newPatternInfo()
+			p, err := c.Compile(fset, n, &info, false)
 			if err != nil {
 				t.Errorf("compile `%s`: %v", input, err)
 				return

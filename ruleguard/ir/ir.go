@@ -82,6 +82,7 @@ func (e FilterExpr) IsValid() bool { return e.Op != FilterInvalidOp }
 
 func (e FilterExpr) IsBinaryExpr() bool { return filterOpFlags[e.Op]&flagIsBinaryExpr != 0 }
 func (e FilterExpr) IsBasicLit() bool   { return filterOpFlags[e.Op]&flagIsBasicLit != 0 }
+func (e FilterExpr) HasVar() bool       { return filterOpFlags[e.Op]&flagHasVar != 0 }
 
 func (e FilterExpr) String() string {
 	switch e.Op {
@@ -107,4 +108,5 @@ func (e FilterExpr) String() string {
 const (
 	flagIsBinaryExpr uint64 = 1 << iota
 	flagIsBasicLit
+	flagHasVar
 )
