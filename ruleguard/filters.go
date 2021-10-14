@@ -6,12 +6,12 @@ import (
 	"go/token"
 	"go/types"
 	"path/filepath"
-	"regexp"
 
 	"github.com/quasilyte/go-ruleguard/internal/gogrep"
 	"github.com/quasilyte/go-ruleguard/internal/xtypes"
 	"github.com/quasilyte/go-ruleguard/nodetag"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
+	"github.com/quasilyte/go-ruleguard/ruleguard/textmatch"
 	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
 )
 
@@ -76,7 +76,7 @@ func makeFileImportsFilter(src, pkgPath string) filterFunc {
 	}
 }
 
-func makeFilePkgPathMatchesFilter(src string, re *regexp.Regexp) filterFunc {
+func makeFilePkgPathMatchesFilter(src string, re textmatch.Pattern) filterFunc {
 	return func(params *filterParams) matchFilterResult {
 		pkgPath := params.ctx.Pkg.Path()
 		if re.MatchString(pkgPath) {
@@ -86,7 +86,7 @@ func makeFilePkgPathMatchesFilter(src string, re *regexp.Regexp) filterFunc {
 	}
 }
 
-func makeFileNameMatchesFilter(src string, re *regexp.Regexp) filterFunc {
+func makeFileNameMatchesFilter(src string, re textmatch.Pattern) filterFunc {
 	return func(params *filterParams) matchFilterResult {
 		if re.MatchString(filepath.Base(params.filename)) {
 			return filterSuccess
@@ -373,7 +373,7 @@ func makeTextFilter(src, varname string, op token.Token, rhsVarname string) filt
 	}
 }
 
-func makeTextMatchesFilter(src, varname string, re *regexp.Regexp) filterFunc {
+func makeTextMatchesFilter(src, varname string, re textmatch.Pattern) filterFunc {
 	// TODO(quasilyte): add variadic support.
 	return func(params *filterParams) matchFilterResult {
 		if re.Match(params.nodeText(params.subNode(varname))) {
