@@ -20,6 +20,7 @@ type opInfo struct {
 const (
 	flagIsBinaryExpr uint64 = 1 << iota
 	flagIsBasicLit
+	flagHasVar
 )
 
 func main() {
@@ -38,24 +39,24 @@ func main() {
 		{name: "GtEq", comment: "$Args[0] >= $Args[1]", flags: flagIsBinaryExpr},
 		{name: "LtEq", comment: "$Args[0] <= $Args[1]", flags: flagIsBinaryExpr},
 
-		{name: "VarAddressable", comment: "m[$Value].Addressable", valueType: "string"},
-		{name: "VarPure", comment: "m[$Value].Pure", valueType: "string"},
-		{name: "VarConst", comment: "m[$Value].Const", valueType: "string"},
-		{name: "VarConstSlice", comment: "m[$Value].ConstSlice", valueType: "string"},
-		{name: "VarText", comment: "m[$Value].Text", valueType: "string"},
-		{name: "VarLine", comment: "m[$Value].Line", valueType: "string"},
-		{name: "VarValueInt", comment: "m[$Value].Value.Int()", valueType: "string"},
-		{name: "VarTypeSize", comment: "m[$Value].Type.Size", valueType: "string"},
+		{name: "VarAddressable", comment: "m[$Value].Addressable", valueType: "string", flags: flagHasVar},
+		{name: "VarPure", comment: "m[$Value].Pure", valueType: "string", flags: flagHasVar},
+		{name: "VarConst", comment: "m[$Value].Const", valueType: "string", flags: flagHasVar},
+		{name: "VarConstSlice", comment: "m[$Value].ConstSlice", valueType: "string", flags: flagHasVar},
+		{name: "VarText", comment: "m[$Value].Text", valueType: "string", flags: flagHasVar},
+		{name: "VarLine", comment: "m[$Value].Line", valueType: "string", flags: flagHasVar},
+		{name: "VarValueInt", comment: "m[$Value].Value.Int()", valueType: "string", flags: flagHasVar},
+		{name: "VarTypeSize", comment: "m[$Value].Type.Size", valueType: "string", flags: flagHasVar},
 
-		{name: "VarFilter", comment: "m[$Value].Filter($Args[0])", valueType: "string"},
-		{name: "VarNodeIs", comment: "m[$Value].Node.Is($Args[0])", valueType: "string"},
-		{name: "VarObjectIs", comment: "m[$Value].Object.Is($Args[0])", valueType: "string"},
-		{name: "VarTypeIs", comment: "m[$Value].Type.Is($Args[0])", valueType: "string"},
-		{name: "VarTypeUnderlyingIs", comment: "m[$Value].Type.Underlying().Is($Args[0])", valueType: "string"},
-		{name: "VarTypeConvertibleTo", comment: "m[$Value].Type.ConvertibleTo($Args[0])", valueType: "string"},
-		{name: "VarTypeAssignableTo", comment: "m[$Value].Type.AssignableTo($Args[0])", valueType: "string"},
-		{name: "VarTypeImplements", comment: "m[$Value].Type.Implements($Args[0])", valueType: "string"},
-		{name: "VarTextMatches", comment: "m[$Value].Text.Matches($Args[0])", valueType: "string"},
+		{name: "VarFilter", comment: "m[$Value].Filter($Args[0])", valueType: "string", flags: flagHasVar},
+		{name: "VarNodeIs", comment: "m[$Value].Node.Is($Args[0])", valueType: "string", flags: flagHasVar},
+		{name: "VarObjectIs", comment: "m[$Value].Object.Is($Args[0])", valueType: "string", flags: flagHasVar},
+		{name: "VarTypeIs", comment: "m[$Value].Type.Is($Args[0])", valueType: "string", flags: flagHasVar},
+		{name: "VarTypeUnderlyingIs", comment: "m[$Value].Type.Underlying().Is($Args[0])", valueType: "string", flags: flagHasVar},
+		{name: "VarTypeConvertibleTo", comment: "m[$Value].Type.ConvertibleTo($Args[0])", valueType: "string", flags: flagHasVar},
+		{name: "VarTypeAssignableTo", comment: "m[$Value].Type.AssignableTo($Args[0])", valueType: "string", flags: flagHasVar},
+		{name: "VarTypeImplements", comment: "m[$Value].Type.Implements($Args[0])", valueType: "string", flags: flagHasVar},
+		{name: "VarTextMatches", comment: "m[$Value].Text.Matches($Args[0])", valueType: "string", flags: flagHasVar},
 
 		{name: "Deadcode", comment: "m.Deadcode()"},
 
@@ -116,6 +117,9 @@ func main() {
 		}
 		if op.flags&flagIsBasicLit != 0 {
 			parts = append(parts, "flagIsBasicLit")
+		}
+		if op.flags&flagHasVar != 0 {
+			parts = append(parts, "flagHasVar")
 		}
 		fmt.Fprintf(&buf, "Filter%sOp: %s,\n", op.name, strings.Join(parts, " | "))
 	}

@@ -163,7 +163,7 @@ func BenchmarkMatch(b *testing.B) {
 		test := tests[i]
 		b.Run(test.name, func(b *testing.B) {
 			fset := token.NewFileSet()
-			pat, err := Compile(fset, test.pat, true)
+			pat, _, err := Compile(fset, test.pat, true)
 			if err != nil {
 				b.Errorf("parse `%s`: %v", test.pat, err)
 				return

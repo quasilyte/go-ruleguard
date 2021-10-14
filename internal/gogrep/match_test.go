@@ -852,7 +852,7 @@ func TestMatch(t *testing.T) {
 		t.Run(fmt.Sprintf("test%d", i), func(t *testing.T) {
 			fset := token.NewFileSet()
 			testPattern := unwrapPattern(test.pat)
-			pat, err := Compile(fset, testPattern, isStrict(test.pat))
+			pat, _, err := Compile(fset, testPattern, isStrict(test.pat))
 			if err != nil {
 				t.Errorf("compile `%s`: %v", test.pat, err)
 				return

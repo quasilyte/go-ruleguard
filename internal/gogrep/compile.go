@@ -19,10 +19,12 @@ type compiler struct {
 	strict        bool
 	fset          *token.FileSet
 
+	info *PatternInfo
+
 	insideStmtList bool
 }
 
-func (c *compiler) Compile(fset *token.FileSet, root ast.Node, strict bool) (p *program, err error) {
+func (c *compiler) Compile(fset *token.FileSet, root ast.Node, info *PatternInfo, strict bool) (p *program, err error) {
 	defer func() {
 		if err != nil {
 			return
@@ -38,6 +40,7 @@ func (c *compiler) Compile(fset *token.FileSet, root ast.Node, strict bool) (p *
 		panic(rv) // Not our panic
 	}()
 
+	c.info = info
 	c.fset = fset
 	c.strict = strict
 	c.prog = &program{
@@ -66,6 +69,12 @@ func (c *compiler) toUint8(n ast.Node, v int) uint8 {
 		panic(c.errorf(n, "implementation error: %v can't be converted to uint8", v))
 	}
 	return uint8(v)
+}
+
+func (c *compiler) internVar(n ast.Node, s string) uint8 {
+	c.info.Vars[s] = struct{}{}
+	index := c.internString(n, s)
+	return index
 }
 
 func (c *compiler) internString(n ast.Node, s string) uint8 {
@@ -156,7 +165,7 @@ func (c *compiler) compileOptFieldList(n *ast.FieldList) {
 			} else {
 				c.emitInst(instruction{
 					op:         opNamedFieldNode,
-					valueIndex: c.internString(n, info.Name),
+					valueIndex: c.internVar(n, info.Name),
 				})
 			}
 			return
@@ -406,10 +415,10 @@ func (c *compiler) compileWildIdent(n *ast.Ident, optional bool) {
 		inst.op = pickOp(optional, opOptNode, opNodeSeq)
 	case info.Name != "_" && !info.Seq:
 		inst.op = opNamedNode
-		inst.valueIndex = c.internString(n, info.Name)
+		inst.valueIndex = c.internVar(n, info.Name)
 	default:
 		inst.op = pickOp(optional, opNamedOptNode, opNamedNodeSeq)
-		inst.valueIndex = c.internString(n, info.Name)
+		inst.valueIndex = c.internVar(n, info.Name)
 	}
 	c.prog.insts = append(c.prog.insts, inst)
 }
@@ -771,7 +780,7 @@ func (c *compiler) compileIfStmt(n *ast.IfStmt) {
 		if info.Seq {
 			c.prog.insts = append(c.prog.insts, instruction{
 				op:         pickOp(n.Else == nil, opIfNamedOptStmt, opIfNamedOptElseStmt),
-				valueIndex: c.internString(ident, info.Name),
+				valueIndex: c.internVar(ident, info.Name),
 			})
 			c.compileStmt(n.Body)
 			if n.Else != nil {

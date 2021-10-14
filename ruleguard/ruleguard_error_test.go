@@ -189,6 +189,21 @@ func TestParseRuleError(t *testing.T) {
 		err  string
 	}{
 		{
+			`m.Match("foo($x)").Where(m["y"].Pure).Report("")`,
+			`\Qfilter refers to a non-existing var y`,
+		},
+
+		{
+			`m.Match("foo($x)", "foo($y)").Where(m["y"].Pure).Report("")`,
+			`\Qfilter refers to a non-existing var y`,
+		},
+
+		{
+			`m.Match("foo($x)", "foo($z)").Where(m["y"].Pure).Report("")`,
+			`\Qfilter refers to a non-existing var y`,
+		},
+
+		{
 			`m.Match("$x").Where(m["x"].Object.Is("abc")).Report("")`,
 			`\Qabc is not a valid go/types object name`,
 		},

@@ -49,7 +49,7 @@ func TestCompileError(t *testing.T) {
 	for input, want := range tests {
 		fset := token.NewFileSet()
 		testPattern := unwrapPattern(input)
-		_, err := Compile(fset, testPattern, isStrict(input))
+		_, _, err := Compile(fset, testPattern, isStrict(input))
 		if err == nil {
 			t.Errorf("compile `%s`: expected error, got none", input)
 			continue
