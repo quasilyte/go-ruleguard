@@ -18,7 +18,7 @@ func f() {
 	//go:noinline
 	//go:generate foo bar
 
-	//nolint:gocritic // want `hey, this is kinda upsetting`
+	//nolint:gocritic // want `\Qhey, this is kinda upsetting`
 
 	// This is a begining // want `\Q"begining" may contain a typo`
 	// Of a bizzare text with typos. // want `\Q"bizzare" may contain a typo`

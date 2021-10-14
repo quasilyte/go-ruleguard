@@ -179,7 +179,7 @@ func learnFlowControl() {
 	}
 	// Use switch in preference to chained if statements.
 	x := 42.0
-	switch x { // want `floating point as switch expression`
+	switch x { // want `\Qfloating point as switch expression`
 	case 0:
 	case 1, 2: // Can have multiple matches on one case
 	case 42:

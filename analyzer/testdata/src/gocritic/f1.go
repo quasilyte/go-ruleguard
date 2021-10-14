@@ -12,12 +12,12 @@ import (
 )
 
 func selfAssign(x int, ys []string) {
-	x = x         // want `suspicious self-assignment in x = x`
+	x = x         // want `\Qsuspicious self-assignment in x = x`
 	ys[0] = ys[0] // want `\Qsuspicious self-assignment in ys[0] = ys[0]`
 }
 
 func valSwap1(x, y int) (int, int) {
-	tmp := x // want `can use parallel assignment like x,y=y,x`
+	tmp := x // want `\Qcan use parallel assignment like x,y=y,x`
 	x = y
 	y = tmp
 	return x, y
@@ -61,7 +61,7 @@ func appendCombine2(xs []int, aa []int, bb []int) []int {
 
 func badCall(s string, xs []int) {
 	_ = strings.Replace(s, "a", "b", 0) // want `\Qn=0 argument does nothing, maybe n=-1 is indended?`
-	_ = append(xs)                      // want `append called with 1 argument does nothing`
+	_ = append(xs)                      // want `\Qappend called with 1 argument does nothing`
 }
 
 func stringXbytes(s string, b []byte) {
@@ -76,53 +76,53 @@ func assignOp(x, y int) {
 }
 
 func boolExprSimplify(a, b bool, i1, i2 int) {
-	_ = !!a         // want `can simplify !!a to a`
+	_ = !!a         // want `\Qcan simplify !!a to a`
 	_ = !(i1 != i2) // want `\Qcan simplify !(i1!=i2) to i1==i2`
 	_ = !(i1 == i2) // want `\Qcan simplify !(i1==i2) to i1!=i2`
 }
 
 func dupSubExprBad(i1, i2 int) {
-	_ = i1 != 0 && i1 != 1 && i1 != 0 // want `suspicious duplicated i1 != 0 in condition`
-	_ = i1 == 0 || i1 == 0            // want `suspicious identical LHS and RHS`
-	_ = i1 == i1                      // want `suspicious identical LHS and RHS`
-	_ = i1 != i1                      // want `suspicious identical LHS and RHS`
-	_ = i1 - i1                       // want `suspicious identical LHS and RHS`
+	_ = i1 != 0 && i1 != 1 && i1 != 0 // want `\Qsuspicious duplicated i1 != 0 in condition`
+	_ = i1 == 0 || i1 == 0            // want `\Qsuspicious identical LHS and RHS`
+	_ = i1 == i1                      // want `\Qsuspicious identical LHS and RHS`
+	_ = i1 != i1                      // want `\Qsuspicious identical LHS and RHS`
+	_ = i1 - i1                       // want `\Qsuspicious identical LHS and RHS`
 }
 
 func mapKey(x, y int) {
 	_ = map[int]int{}
 	_ = map[int]int{x + 1: 1, x + 2: 2}
-	_ = map[int]int{x: 1, x: 2} // want `suspicious duplicate key x`
+	_ = map[int]int{x: 1, x: 2} // want `\Qsuspicious duplicate key x`
 	_ = map[int]int{
 		10: 1,
-		x:  2, // want `suspicious duplicate key x`
+		x:  2, // want `\Qsuspicious duplicate key x`
 		30: 3,
 		x:  4,
 		50: 5,
 	}
-	_ = map[int]int{y: 1, x: 2, y: 3} // want `suspicious duplicate key y`
+	_ = map[int]int{y: 1, x: 2, y: 3} // want `\Qsuspicious duplicate key y`
 }
 
 func regexpMust(pat string) {
 	regexp.Compile(pat)   // OK: dynamic pattern
-	regexp.Compile("123") // want `can use MustCompile for const patterns`
+	regexp.Compile("123") // want `\Qcan use MustCompile for const patterns`
 
 	const constPat = `hello`
-	regexp.CompilePOSIX(constPat) // want `can use MustCompile for const patterns`
+	regexp.CompilePOSIX(constPat) // want `\Qcan use MustCompile for const patterns`
 }
 
 func yodaStyleExpr(p *int) {
-	_ = nil != p // want `yoda-style expression`
+	_ = nil != p // want `\Qyoda-style expression`
 }
 
 func underef() {
 	var k *[5]int
-	(*k)[2] = 3 // want `explicit array deref is redundant`
+	(*k)[2] = 3 // want `\Qexplicit array deref is redundant`
 
 	var k2 **[2]int
-	_ = (**k2)[0] // want `explicit array deref is redundant`
+	_ = (**k2)[0] // want `\Qexplicit array deref is redundant`
 	k2ptr := &k2
-	_ = (***k2ptr)[1] // want `explicit array deref is redundant`
+	_ = (***k2ptr)[1] // want `\Qexplicit array deref is redundant`
 }
 
 func unslice() {
@@ -177,21 +177,21 @@ func unslice() {
 }
 
 func switchWithOneCase1(x int) {
-	switch x { // want `should rewrite switch statement to if statement`
+	switch x { // want `\Qshould rewrite switch statement to if statement`
 	case 1:
 		println("ok")
 	}
 }
 
 func switchWithOneCase2(x int) {
-	switch { // want `should rewrite switch statement to if statement`
+	switch { // want `\Qshould rewrite switch statement to if statement`
 	case x == 1:
 		println("ok")
 	}
 }
 
 func typeSwitchOneCase1(x interface{}) int {
-	switch x := x.(type) { // want `should rewrite switch statement to if statement`
+	switch x := x.(type) { // want `\Qshould rewrite switch statement to if statement`
 	case int:
 		return x
 	}
@@ -199,7 +199,7 @@ func typeSwitchOneCase1(x interface{}) int {
 }
 
 func typeSwitchOneCase2(x interface{}) int {
-	switch x.(type) { // want `should rewrite switch statement to if statement`
+	switch x.(type) { // want `\Qshould rewrite switch statement to if statement`
 	case int:
 		return 1
 	}
@@ -207,7 +207,7 @@ func typeSwitchOneCase2(x interface{}) int {
 }
 
 func switchTrue(b bool) {
-	switch true { // want `can omit true in switch`
+	switch true { // want `\Qcan omit true in switch`
 	case b:
 		return
 	case !b:
@@ -353,8 +353,8 @@ func offBy1(xs []int, ys []string) {
 }
 
 func wrapperFunc(s string) {
-	_ = strings.SplitN(s, ".", -1)       // want `use Split`
-	_ = strings.Replace(s, "a", "b", -1) // want `use Replace`
+	_ = strings.SplitN(s, ".", -1)       // want `\Quse Split`
+	_ = strings.Replace(s, "a", "b", -1) // want `\Quse Replace`
 
 	_ = strings.Split(s, ".")
 	_ = strings.ReplaceAll(s, "a", "b")
@@ -377,21 +377,21 @@ type object struct {
 
 func suspiciousReturns() {
 	_ = func(err error) error {
-		if err == nil { // want `returned expr is always nil; replace err with nil`
+		if err == nil { // want `\Qreturned expr is always nil; replace err with nil`
 			return err
 		}
 		return nil
 	}
 
 	_ = func(o *object) *object {
-		if o == nil { // want `returned expr is always nil; replace o with nil`
+		if o == nil { // want `\Qreturned expr is always nil; replace o with nil`
 			return o
 		}
 		return &object{}
 	}
 
 	_ = func(o *object) *byte {
-		if o.data == nil { // want `returned expr is always nil; replace o.data with nil`
+		if o.data == nil { // want `\Qreturned expr is always nil; replace o.data with nil`
 			return o.data
 		}
 		return nil
@@ -401,7 +401,7 @@ func suspiciousReturns() {
 		if pointers[0][1][2]["ptr"] == nil { // want `\Qreturned expr is always nil; replace pointers[0][1][2]["ptr"] with nil`
 			return pointers[0][1][2]["ptr"]
 		}
-		if ptr := pointers[0][1][2]["ptr"]; ptr == nil { // want `returned expr is always nil; replace ptr with nil`
+		if ptr := pointers[0][1][2]["ptr"]; ptr == nil { // want `\Qreturned expr is always nil; replace ptr with nil`
 			return ptr
 		}
 		return nil
@@ -505,7 +505,7 @@ func rangeExprCopy() {
 
 	{
 		var xs [777]byte
-		for _, x := range xs { // want `xs copy can be avoided with &xs`
+		for _, x := range xs { // want `\Qxs copy can be avoided with &xs`
 			_ = x
 		}
 	}

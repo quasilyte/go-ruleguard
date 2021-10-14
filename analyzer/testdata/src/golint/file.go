@@ -59,7 +59,7 @@ func golintIfreturn() {
 	_ = func() {
 		if conds[0] {
 			println("ok")
-		} else if conds[1] { // want `if block ends with a return statement, so drop this else and outdent its block`
+		} else if conds[1] { // want `\Qif block ends with a return statement, so drop this else and outdent its block`
 			return
 		} else {
 			println("bad")
@@ -67,7 +67,7 @@ func golintIfreturn() {
 	}
 
 	_ = func() {
-		if conds[0] { // want `if block ends with a return statement, so drop this else and outdent its block`
+		if conds[0] { // want `\Qif block ends with a return statement, so drop this else and outdent its block`
 			return
 		} else {
 			println("bad")
@@ -75,7 +75,7 @@ func golintIfreturn() {
 	}
 
 	_ = func(cond bool) int {
-		if cond { // want `if block ends with a return statement, so drop this else and outdent its block`
+		if cond { // want `\Qif block ends with a return statement, so drop this else and outdent its block`
 			return 10
 		} else {
 			return 20

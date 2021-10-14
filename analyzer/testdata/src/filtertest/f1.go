@@ -34,7 +34,7 @@ func (v vector2D) String() string {
 
 func _() {
 	fileTest("with foo prefix")
-	fileTest("f1.go") // want `YES`
+	fileTest("f1.go") // want `true`
 }
 
 func detectObject() {
@@ -72,23 +72,23 @@ func detectObject() {
 
 func convertibleTo() {
 	type myInt2Array [2]int
-	typeTest([2]int{}, "convertible to ([2]int)")      // want `YES`
-	typeTest(myInt2Array{}, "convertible to ([2]int)") // want `YES`
+	typeTest([2]int{}, "convertible to ([2]int)")      // want `true`
+	typeTest(myInt2Array{}, "convertible to ([2]int)") // want `true`
 	typeTest([3]int{}, "convertible to ([2]int)")
 
 	type myIntSlice2 [][]int
-	typeTest([][]int{{1}}, "convertible to [][]int")     // want `YES`
-	typeTest(myIntSlice2(nil), "convertible to [][]int") // want `YES`
+	typeTest([][]int{{1}}, "convertible to [][]int")     // want `true`
+	typeTest(myIntSlice2(nil), "convertible to [][]int") // want `true`
 	typeTest([]int{}, "convertible to [][]int")
 }
 
 func assignableTo() {
-	typeTest(map[*string]error{}, "assignable to map[*string]error") // want `YES`
+	typeTest(map[*string]error{}, "assignable to map[*string]error") // want `true`
 	typeTest(map[*string]int{}, "assignable to map[*string]error")
 
-	typeTest(0, "assignable to interface{}")   // want `YES`
-	typeTest(5.6, "assignable to interface{}") // want `YES`
-	typeTest("", "assignable to interface{}")  // want `YES`
+	typeTest(0, "assignable to interface{}")   // want `true`
+	typeTest(5.6, "assignable to interface{}") // want `true`
+	typeTest("", "assignable to interface{}")  // want `true`
 }
 
 func detectValue() {
@@ -107,14 +107,14 @@ func detectType() {
 		var s fmt.Stringer
 
 		typeTest(s, "is interface")
-		typeTest(interface{}(nil), "is interface") // want `YES`
+		typeTest(interface{}(nil), "is interface") // want `true`
 		typeTest(implementsAll{}, "is interface")
 		typeTest(&implementsAll{}, "is interface")
 		typeTest(4, "is interface")
 		typeTest("", "is interface")
 
-		typeTest(s, "underlying is interface")                // want `YES`
-		typeTest(interface{}(nil), "underlying is interface") // want `YES`
+		typeTest(s, "underlying is interface")                // want `true`
+		typeTest(interface{}(nil), "underlying is interface") // want `true`
 		typeTest(implementsAll{}, "underlying is interface")
 		typeTest(&implementsAll{}, "underlying is interface")
 		typeTest(4, "underlying is interface")
@@ -132,10 +132,10 @@ func detectType() {
 		var bar withNamedTime
 		type indirectFoo1 withNamedTime
 		type indirectFoo2 indirectFoo1
-		typeTest(withNamedTime{}, "contains time.Time") // want `YES`
-		typeTest(foo, "contains time.Time")             // want `YES`
-		typeTest(bar, "contains time.Time")             // want `YES`
-		typeTest(indirectFoo2{}, "contains time.Time")  // want `YES`
+		typeTest(withNamedTime{}, "contains time.Time") // want `true`
+		typeTest(foo, "contains time.Time")             // want `true`
+		typeTest(bar, "contains time.Time")             // want `true`
+		typeTest(indirectFoo2{}, "contains time.Time")  // want `true`
 	}
 
 	{
@@ -147,9 +147,9 @@ func detectType() {
 			x time.Time
 		}
 		var bar timeFirst
-		typeTest(timeFirst{}, "starts with time.Time") // want `YES`
-		typeTest(foo, "starts with time.Time")         // want `YES`
-		typeTest(bar, "starts with time.Time")         // want `YES`
+		typeTest(timeFirst{}, "starts with time.Time") // want `true`
+		typeTest(foo, "starts with time.Time")         // want `true`
+		typeTest(bar, "starts with time.Time")         // want `true`
 	}
 
 	{
@@ -162,12 +162,12 @@ func detectType() {
 			y float32
 		}
 		var bar intPair
-		typeTest(struct { // want `YES`
+		typeTest(struct { // want `true`
 			_ string
 			_ string
 		}{}, "non-underlying type test; T + T")
 		typeTest(intPair{}, "non-underlying type test; T + T") // type is Named, not struct
-		typeTest(foo, "non-underlying type test; T + T")       // want `YES`
+		typeTest(foo, "non-underlying type test; T + T")       // want `true`
 		typeTest(bar, "non-underlying type test; T + T")       // type is Named, not struct
 	}
 
@@ -175,8 +175,8 @@ func detectType() {
 	var ii []int
 	var s1, s2 string
 	var ss []string
-	typeTest(s1 + s2) // want `concat`
-	typeTest(i1 + i2) // want `addition`
+	typeTest(s1 + s2) // want `\Qconcat`
+	typeTest(i1 + i2) // want `\Qaddition`
 	typeTest(s1 > s2) // want `\Qs1 !is(int)`
 	typeTest(i1 > i2) // want `\Qi1 !is(string) && pure`
 	typeTest(random() > i2)
@@ -186,23 +186,23 @@ func detectType() {
 	typeTest("2 type filters", s1)
 	typeTest("2 type filters", ii) // want `\Qii !is(string) && !is(int)`
 
-	typeTest(implementsAll{}, "implements io.Reader") // want `YES`
+	typeTest(implementsAll{}, "implements io.Reader") // want `true`
 	typeTest(i1, "implements io.Reader")
 	typeTest(ss, "implements io.Reader")
-	typeTest(implementsAll{}, "implements foolib.Stringer") // want `YES`
+	typeTest(implementsAll{}, "implements foolib.Stringer") // want `true`
 	typeTest(i1, "implements foolib.Stringer")
 	typeTest(ss, "implements foolib.Stringer")
 	typeTest(implementsAll{}, "implements error")
-	typeTest(&implementsAll{}, "implements error") // want `YES`
+	typeTest(&implementsAll{}, "implements error") // want `true`
 	typeTest(i1, "implements error")
-	typeTest(error(nil), "implements error")            // want `YES`
-	typeTest(errors.New("example"), "implements error") // want `YES`
+	typeTest(error(nil), "implements error")            // want `true`
+	typeTest(errors.New("example"), "implements error") // want `true`
 	typeTest(implementsAllNewtype{}, "implements error")
 	typeTest(&implementsAllNewtype{}, "implements error")
 	typeTest(embedImplementsAll{}, "implements error")
-	typeTest(&embedImplementsAll{}, "implements error")    // want `YES`
-	typeTest(embedImplementsAllPtr{}, "implements error")  // want `YES`
-	typeTest(&embedImplementsAllPtr{}, "implements error") // want `YES`
+	typeTest(&embedImplementsAll{}, "implements error")    // want `true`
+	typeTest(embedImplementsAllPtr{}, "implements error")  // want `true`
+	typeTest(&embedImplementsAllPtr{}, "implements error") // want `true`
 
 	typeTest(&implementsAll{}, "variadic implements error")                 // want `true`
 	typeTest(&implementsAll{}, error(nil), "variadic implements error")     // want `true`
@@ -220,24 +220,24 @@ func detectType() {
 	typeTest(embedImplementsAll{}, 1, "variadic implements error")          // want `false`
 	typeTest(embedImplementsAll{}, error(nil), "variadic implements error") // want `false`
 
-	typeTest([100]byte{}, "size>=100") // want `YES`
-	typeTest([105]byte{}, "size>=100") // want `YES`
+	typeTest([100]byte{}, "size>=100") // want `true`
+	typeTest([105]byte{}, "size>=100") // want `true`
 	typeTest([10]byte{}, "size>=100")
-	typeTest([100]byte{}, "size<=100") // want `YES`
+	typeTest([100]byte{}, "size<=100") // want `true`
 	typeTest([105]byte{}, "size<=100")
-	typeTest([10]byte{}, "size<=100") // want `YES`
+	typeTest([10]byte{}, "size<=100") // want `true`
 	typeTest([100]byte{}, "size>100")
-	typeTest([105]byte{}, "size>100") // want `YES`
+	typeTest([105]byte{}, "size>100") // want `true`
 	typeTest([10]byte{}, "size>100")
 	typeTest([100]byte{}, "size<100")
 	typeTest([105]byte{}, "size<100")
-	typeTest([10]byte{}, "size<100")   // want `YES`
-	typeTest([100]byte{}, "size==100") // want `YES`
+	typeTest([10]byte{}, "size<100")   // want `true`
+	typeTest([100]byte{}, "size==100") // want `true`
 	typeTest([105]byte{}, "size==100")
 	typeTest([10]byte{}, "size==100")
 	typeTest([100]byte{}, "size!=100")
-	typeTest([105]byte{}, "size!=100") // want `YES`
-	typeTest([10]byte{}, "size!=100")  // want `YES`
+	typeTest([105]byte{}, "size!=100") // want `true`
+	typeTest([10]byte{}, "size!=100")  // want `true`
 
 	typeTest("variadic size==4")                                 // want `true`
 	typeTest([4]byte{}, "variadic size==4")                      // want `true`
@@ -249,26 +249,26 @@ func detectType() {
 
 	var time1, time2 time.Time
 	var err error
-	typeTest(time1 == time2, "time==time") // want `YES`
+	typeTest(time1 == time2, "time==time") // want `true`
 	typeTest(err == nil, "time==time")
 	typeTest(nil == err, "time==time")
-	typeTest(time1 != time2, "time!=time") // want `YES`
+	typeTest(time1 != time2, "time!=time") // want `true`
 	typeTest(err != nil, "time!=time")
 	typeTest(nil != err, "time!=time")
 
 	intFunc := func() int { return 10 }
 	intToIntFunc := func(x int) int { return x }
-	typeTest(intFunc(), "func() int")                 // want `YES`
-	typeTest(func() int { return 0 }(), "func() int") // want `YES`
+	typeTest(intFunc(), "func() int")                 // want `true`
+	typeTest(func() int { return 0 }(), "func() int") // want `true`
 	typeTest(func() string { return "" }(), "func() int")
 	typeTest(intToIntFunc(1), "func() int")
 
-	typeTest(intToIntFunc(2), "func(int) int") // want `YES`
+	typeTest(intToIntFunc(2), "func(int) int") // want `true`
 	typeTest(intToIntFunc, "func(int) int")
 	typeTest(intFunc, "func(int) int")
 
 	var v implementsAll
-	typeTest(v.String(), "func() string") // want `YES`
+	typeTest(v.String(), "func() string") // want `true`
 	typeTest(implementsAll.String(v), "func() string")
 	typeTest(implementsAll.String, "func() string")
 
@@ -404,28 +404,28 @@ func detectPure(x int, xs []int) {
 }
 
 func detectText(foo, bar int) {
-	textTest(foo, "text=foo") // want `YES`
+	textTest(foo, "text=foo") // want `true`
 	textTest(bar, "text=foo")
 
-	textTest("foo", "text='foo'") // want `YES`
+	textTest("foo", "text='foo'") // want `true`
 	textTest("bar", "text='foo'")
 
-	textTest("bar", "text!='foo'") // want `YES`
+	textTest("bar", "text!='foo'") // want `true`
 	textTest("foo", "text!='foo'")
 
-	textTest(32, "matches d+") // want `YES`
+	textTest(32, "matches d+") // want `true`
 	textTest(0x32, "matches d+")
 	textTest("foo", "matches d+")
 
-	textTest(1, "doesn't match [A-Z]") // want `YES`
+	textTest(1, "doesn't match [A-Z]") // want `true`
 	textTest("ABC", "doesn't match [A-Z]")
 
-	textTest("", "root text test") // want `YES`
+	textTest("", "root text test") // want `true`
 }
 
 func detectParensFilter() {
 	var err error
-	parensFilterTest(err, "type is error") // want `YES`
+	parensFilterTest(err, "type is error") // want `true`
 }
 
 func fileFilters1() {
@@ -435,11 +435,11 @@ func fileFilters1() {
 }
 
 func detectLine() {
-	lineTest(1, 2, "same line") // want `YES`
+	lineTest(1, 2, "same line") // want `true`
 	lineTest(1,
 		2, "same line")
 
-	lineTest( // want `YES`
+	lineTest( // want `true`
 		1,
 		2,
 		"different line",
@@ -461,34 +461,34 @@ func detectNode() {
 	f()
 	f()
 
-	nodeTest("123", "Expr") // want `YES`
-	nodeTest(`123`, "Expr") // want `YES`
-	nodeTest(12, "Expr")    // want `YES`
-	nodeTest(1.56, "Expr")  // want `YES`
-	nodeTest(1+2, "Expr")   // want `YES`
-	nodeTest(i, "Expr")     // want `YES`
-	nodeTest(s, "Expr")     // want `YES`
+	nodeTest("123", "Expr") // want `true`
+	nodeTest(`123`, "Expr") // want `true`
+	nodeTest(12, "Expr")    // want `true`
+	nodeTest(1.56, "Expr")  // want `true`
+	nodeTest(1+2, "Expr")   // want `true`
+	nodeTest(i, "Expr")     // want `true`
+	nodeTest(s, "Expr")     // want `true`
 
-	nodeTest("123", "BasicLit") // want `YES`
-	nodeTest(`123`, "BasicLit") // want `YES`
-	nodeTest(12, "BasicLit")    // want `YES`
-	nodeTest(1.56, "BasicLit")  // want `YES`
+	nodeTest("123", "BasicLit") // want `true`
+	nodeTest(`123`, "BasicLit") // want `true`
+	nodeTest(12, "BasicLit")    // want `true`
+	nodeTest(1.56, "BasicLit")  // want `true`
 	nodeTest(1+2, "BasicLit")
 	nodeTest(i, "BasicLit")
 	nodeTest(s, "BasicLit")
 
 	nodeTest("123", "Ident")
 	nodeTest(12, "Ident")
-	nodeTest(i, "Ident") // want `YES`
-	nodeTest(s, "Ident") // want `YES`
+	nodeTest(i, "Ident") // want `true`
+	nodeTest(s, "Ident") // want `true`
 
-	nodeTest("42", "!Ident") // want `YES`
-	nodeTest(12, "!Ident")   // want `YES`
-	nodeTest(s[0], "!Ident") // want `YES`
+	nodeTest("42", "!Ident") // want `true`
+	nodeTest(12, "!Ident")   // want `true`
+	nodeTest(s[0], "!Ident") // want `true`
 	nodeTest(i, "!Ident")
 	nodeTest(s, "!Ident")
 
-	nodeTest(s[0], "IndexExpr")       // want `YES`
-	nodeTest(rows[0][5], "IndexExpr") // want `YES`
+	nodeTest(s[0], "IndexExpr")       // want `true`
+	nodeTest(rows[0][5], "IndexExpr") // want `true`
 	nodeTest("42", "IndexExpr")
 }
