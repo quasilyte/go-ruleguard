@@ -116,6 +116,8 @@ func (c *compiler) compileNode(n ast.Node) {
 		c.compileValueSpec(n)
 	case stmtSlice:
 		c.compileStmtSlice(n)
+	case declSlice:
+		c.compileDeclSlice(n)
 	case ExprSlice:
 		c.compileExprSlice(n)
 	default:
@@ -143,14 +145,21 @@ func (c *compiler) compileOptExpr(n ast.Expr) {
 
 func (c *compiler) compileOptFieldList(n *ast.FieldList) {
 	if len(n.List) == 1 {
-		if ident, ok := n.List[0].Type.(*ast.Ident); ok && isWildName(ident.Name) {
+		if ident, ok := n.List[0].Type.(*ast.Ident); ok && isWildName(ident.Name) && len(n.List[0].Names) == 0 {
 			// `func (...) $*result` - result could be anything
 			// `func (...) $result`  - result is a field list of 1 element
 			info := decodeWildName(ident.Name)
 			if info.Seq {
 				c.compileWildIdent(ident, true)
-				return
+			} else if info.Name == "_" {
+				c.emitInstOp(opFieldNode)
+			} else {
+				c.emitInst(instruction{
+					op:         opNamedFieldNode,
+					valueIndex: c.internString(n, info.Name),
+				})
 			}
+			return
 		}
 	}
 	c.compileFieldList(n)
@@ -167,6 +176,10 @@ func (c *compiler) compileFieldList(n *ast.FieldList) {
 func (c *compiler) compileField(n *ast.Field) {
 	switch {
 	case len(n.Names) == 0:
+		if ident, ok := n.Type.(*ast.Ident); ok && isWildName(ident.Name) {
+			c.compileWildIdent(ident, false)
+			return
+		}
 		c.emitInstOp(opUnnamedField)
 	case len(n.Names) == 1:
 		name := n.Names[0]
@@ -308,6 +321,10 @@ func (c *compiler) compileExpr(n ast.Expr) {
 		c.compileParenExpr(n)
 	case *ast.SliceExpr:
 		c.compileSliceExpr(n)
+	case *ast.StructType:
+		c.compileStructType(n)
+	case *ast.InterfaceType:
+		c.compileInterfaceType(n)
 	case *ast.FuncType:
 		c.compileFuncType(n)
 	case *ast.ArrayType:
@@ -536,6 +553,16 @@ func (c *compiler) compileSliceExpr(n *ast.SliceExpr) {
 	default:
 		panic(c.errorf(n, "unexpected slice expr"))
 	}
+}
+
+func (c *compiler) compileStructType(n *ast.StructType) {
+	c.emitInstOp(opStructType)
+	c.compileOptFieldList(n.Fields)
+}
+
+func (c *compiler) compileInterfaceType(n *ast.InterfaceType) {
+	c.emitInstOp(opInterfaceType)
+	c.compileOptFieldList(n.Methods)
 }
 
 func (c *compiler) compileFuncType(n *ast.FuncType) {
@@ -1041,6 +1068,14 @@ func (c *compiler) compileSendStmt(n *ast.SendStmt) {
 	c.emitInstOp(opSendStmt)
 	c.compileExpr(n.Chan)
 	c.compileExpr(n.Value)
+}
+
+func (c *compiler) compileDeclSlice(decls declSlice) {
+	c.emitInstOp(opMultiDecl)
+	for _, n := range decls {
+		c.compileDecl(n)
+	}
+	c.emitInstOp(opEnd)
 }
 
 func (c *compiler) compileStmtSlice(stmts stmtSlice) {

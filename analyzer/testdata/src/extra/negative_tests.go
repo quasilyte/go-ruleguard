@@ -83,3 +83,41 @@ func usefulLenCheck(xs, ys []int, v int, op func()) {
 		}
 	}
 }
+
+type noMutexEmbed1 struct {
+	mu sync.Mutex
+}
+
+type noMutexEmbed2 struct {
+	mu *sync.Mutex
+}
+
+type noRWMutexEmbed1 struct {
+	mu sync.RWMutex
+}
+
+type noRWMutexEmbed2 struct {
+	mu *sync.RWMutex
+}
+
+type noMutexEmbed3 struct {
+	x  int
+	mu sync.Mutex
+}
+
+type noMutexEmbed4 struct {
+	mu *sync.Mutex
+	x  int
+	y  int
+}
+
+type noRWMutexEmbed3 struct {
+	x  int
+	y  int
+	mu sync.RWMutex
+}
+
+type noRWMutexEmbed4 struct {
+	mu *sync.RWMutex
+	x  int
+}

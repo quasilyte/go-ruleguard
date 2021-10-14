@@ -18,6 +18,7 @@ type (
 	fieldSlice []*ast.Field
 	identSlice []*ast.Ident
 	specSlice  []ast.Spec
+	declSlice  []ast.Decl
 )
 
 func (l ExprSlice) Len() int                 { return len(l) }
@@ -49,3 +50,9 @@ func (l specSlice) At(i int) ast.Node        { return l[i] }
 func (l specSlice) slice(i, j int) NodeSlice { return l[i:j] }
 func (l specSlice) Pos() token.Pos           { return l[0].Pos() }
 func (l specSlice) End() token.Pos           { return l[len(l)-1].End() }
+
+func (l declSlice) Len() int                 { return len(l) }
+func (l declSlice) At(i int) ast.Node        { return l[i] }
+func (l declSlice) slice(i, j int) NodeSlice { return l[i:j] }
+func (l declSlice) Pos() token.Pos           { return l[0].Pos() }
+func (l declSlice) End() token.Pos           { return l[len(l)-1].End() }

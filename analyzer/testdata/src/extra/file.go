@@ -507,3 +507,87 @@ func quotedStringSprint(s string) {
 
 	_ = fmt.Sprintf("%s", s)
 }
+
+type withMutex1 struct { // want `\Qdon't embed sync.Mutex`
+	sync.Mutex
+}
+
+type withMutex2 struct { // want `\Qdon't embed sync.Mutex`
+	x int
+	sync.Mutex
+}
+
+type withMutex3 struct { // want `\Qdon't embed sync.Mutex`
+	sync.Mutex
+	x int
+}
+
+type withMutex4 struct { // want `\Qdon't embed sync.Mutex`
+	x int
+	y string
+	sync.Mutex
+	z float64
+}
+
+type withMutexPtr1 struct { // want `\Qdon't embed *sync.Mutex`
+	*sync.Mutex
+}
+
+type withMutexPtr2 struct { // want `\Qdon't embed *sync.Mutex`
+	x int
+	*sync.Mutex
+}
+
+type withMutexPtr3 struct { // want `\Qdon't embed *sync.Mutex`
+	*sync.Mutex
+	x int
+}
+
+type withMutexPtr4 struct { // want `\Qdon't embed *sync.Mutex`
+	x int
+	y string
+	*sync.Mutex
+	z float64
+}
+
+type withRWMutex1 struct { // want `\Qdon't embed sync.RWMutex`
+	sync.RWMutex
+}
+
+type withRWMutex2 struct { // want `\Qdon't embed sync.RWMutex`
+	x int
+	sync.RWMutex
+}
+
+type withRWMutex3 struct { // want `\Qdon't embed sync.RWMutex`
+	sync.RWMutex
+	x int
+}
+
+type withRWMutex4 struct { // want `\Qdon't embed sync.RWMutex`
+	x int
+	y string
+	sync.RWMutex
+	z float64
+}
+
+type withRWMutexPtr1 struct { // want `\Qdon't embed *sync.RWMutex`
+	*sync.RWMutex
+}
+
+type withRWMutexPtr2 struct { // want `\Qdon't embed *sync.RWMutex`
+	x int
+	*sync.RWMutex
+}
+
+type withRWMutexPtr3 struct { // want `\Qdon't embed *sync.RWMutex`
+	*sync.RWMutex
+	x int
+}
+
+type withRWMutexPtr4 struct { // want `\Qdon't embed *sync.RWMutex`
+	x int
+	y string
+	*sync.RWMutex
+	z float64
+}

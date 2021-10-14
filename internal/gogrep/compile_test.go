@@ -262,10 +262,7 @@ func TestCompileWildcard(t *testing.T) {
 			` •  •  •  • NamedNode x`,
 			` •  •  •  • NamedNode y`,
 			` •  •  • End`,
-			` •  • FieldList`,
-			` •  •  • UnnamedField`,
-			` •  •  •  • NamedNode y`,
-			` •  •  • End`,
+			` •  • NamedFieldNode y`,
 			` • BlockStmt`,
 			` •  • ReturnStmt`,
 			` •  •  • NamedNode x`,
@@ -324,6 +321,27 @@ func TestCompileWildcard(t *testing.T) {
 			` •  •  •  •  • SimpleArgList 0`,
 			` •  •  • End`,
 			` • End`,
+		},
+
+		`struct{$*_; Foo; $*_}`: {
+			`StructType`,
+			` • FieldList`,
+			` •  • NodeSeq`,
+			` •  • UnnamedField`,
+			` •  •  • Ident Foo`,
+			` •  • NodeSeq`,
+			` •  • End`,
+		},
+
+		`func $_($*_) $_ { $*_ }`: {
+			`FuncDecl`,
+			` • Node`,
+			` • FuncType`,
+			` •  • OptNode`,
+			` •  • FieldNode`,
+			` • BlockStmt`,
+			` •  • NodeSeq`,
+			` •  • End`,
 		},
 	})
 

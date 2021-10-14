@@ -20,8 +20,12 @@ var opPrototypes = []operationProto{
 	{name: "OptNode"},
 	{name: "NamedOptNode", valueIndex: "strings | wildcard name"},
 
+	{name: "FieldNode", tag: "Node"},
+	{name: "NamedFieldNode", tag: "Node", valueIndex: "strings | wildcard name"},
+
 	{name: "MultiStmt", tag: "StmtList", args: "stmts...", example: "f(); g()"},
 	{name: "MultiExpr", tag: "ExprList", args: "exprs...", example: "f(), g()"},
+	{name: "MultiDecl", tag: "DeclList", args: "exprs...", example: "f(), g()"},
 
 	{name: "End"},
 
@@ -54,6 +58,8 @@ var opPrototypes = []operationProto{
 	{name: "TypeAssertExpr", tag: "TypeAssertExpr", args: "x typ"},
 	{name: "TypeSwitchAssertExpr", tag: "TypeAssertExpr", args: "x"},
 
+	{name: "StructType", tag: "StructType", args: "fields"},
+	{name: "InterfaceType", tag: "StructType", args: "fields"},
 	{name: "VoidFuncType", tag: "FuncType", args: "params"},
 	{name: "FuncType", tag: "FuncType", args: "params results"},
 	{name: "ArrayType", tag: "ArrayType", args: "length elem"},

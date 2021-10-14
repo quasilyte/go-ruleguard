@@ -187,4 +187,16 @@ func testRules(m dsl.Matcher) {
 		Where(m["s"].Text.Matches("^`.*\"%s\".*`$") ||
 			m["s"].Text.Matches(`^".*\\"%s\\".*"$`)).
 		Report(`use %q instead of "%s" for quoted strings`)
+
+	m.Match(`type $_ struct{ $*_; sync.Mutex; $*_ }`).
+		Report("don't embed sync.Mutex")
+
+	m.Match(`type $_ struct{ $*_; *sync.Mutex; $*_ }`).
+		Report("don't embed *sync.Mutex")
+
+	m.Match(`type $_ struct{ $*_; sync.RWMutex; $*_ }`).
+		Report("don't embed sync.RWMutex")
+
+	m.Match(`type $_ struct{ $*_; *sync.RWMutex; $*_ }`).
+		Report("don't embed *sync.RWMutex")
 }

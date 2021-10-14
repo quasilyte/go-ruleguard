@@ -69,6 +69,11 @@ func (m *matcher) MatchNode(info *types.Info, n ast.Node, accept func(MatchData)
 		case *ast.ReturnStmt:
 			m.walkExprSlice(n.Results, accept)
 		}
+	case opMultiDecl:
+		switch n := n.(type) {
+		case *ast.File:
+			m.walkDeclSlice(n.Decls, accept)
+		}
 	default:
 		m.capture = m.capture[:0]
 		if m.matchNodeWithInst(inst, n) {
@@ -78,6 +83,10 @@ func (m *matcher) MatchNode(info *types.Info, n ast.Node, accept func(MatchData)
 			})
 		}
 	}
+}
+
+func (m *matcher) walkDeclSlice(decls []ast.Decl, accept func(MatchData)) {
+	m.walkNodeSlice(declSlice(decls), accept)
 }
 
 func (m *matcher) walkExprSlice(exprs []ast.Expr, accept func(MatchData)) {
@@ -119,6 +128,32 @@ func (m *matcher) matchNamed(name string, n ast.Node) bool {
 	return equalNodes(prev, n)
 }
 
+func (m *matcher) matchNamedField(name string, n ast.Node) bool {
+	prev, ok := findNamed(m.capture, name)
+	if !ok {
+		// First occurrence, record value.
+		unwrapped := m.unwrapNode(n)
+		m.capture = append(m.capture, CapturedNode{Name: name, Node: unwrapped})
+		return true
+	}
+	n = m.unwrapNode(n)
+	return equalNodes(prev, n)
+}
+
+func (m *matcher) unwrapNode(x ast.Node) ast.Node {
+	switch x := x.(type) {
+	case *ast.Field:
+		if len(x.Names) == 0 {
+			return x.Type
+		}
+	case *ast.FieldList:
+		if x != nil && len(x.List) == 1 && len(x.List[0].Names) == 0 {
+			return x.List[0].Type
+		}
+	}
+	return x
+}
+
 func (m *matcher) matchNodeWithInst(inst instruction, n ast.Node) bool {
 	switch inst.op {
 	case opNode:
@@ -130,6 +165,12 @@ func (m *matcher) matchNodeWithInst(inst instruction, n ast.Node) bool {
 		return n != nil && m.matchNamed(m.stringValue(inst), n)
 	case opNamedOptNode:
 		return m.matchNamed(m.stringValue(inst), n)
+
+	case opFieldNode:
+		n, ok := n.(*ast.FieldList)
+		return ok && n != nil && len(n.List) == 1 && len(n.List[0].Names) == 0
+	case opNamedFieldNode:
+		return n != nil && m.matchNamedField(m.stringValue(inst), n)
 
 	case opBasicLit:
 		n, ok := n.(*ast.BasicLit)
@@ -266,6 +307,12 @@ func (m *matcher) matchNodeWithInst(inst instruction, n ast.Node) bool {
 	case opFuncType:
 		n, ok := n.(*ast.FuncType)
 		return ok && m.matchNode(n.Params) && m.matchNode(n.Results)
+	case opStructType:
+		n, ok := n.(*ast.StructType)
+		return ok && m.matchNode(n.Fields)
+	case opInterfaceType:
+		n, ok := n.(*ast.InterfaceType)
+		return ok && m.matchNode(n.Methods)
 
 	case opCompositeLit:
 		n, ok := n.(*ast.CompositeLit)
@@ -755,6 +802,18 @@ func equalNodes(x, y ast.Node) bool {
 			}
 		}
 		return true
+	case declSlice:
+		y, ok := y.(declSlice)
+		if !ok || len(x) != len(y) {
+			return false
+		}
+		for i := range x {
+			if !astequal.Decl(x[i], y[i]) {
+				return false
+			}
+		}
+		return true
+
 	default:
 		return astequal.Node(x, y)
 	}
