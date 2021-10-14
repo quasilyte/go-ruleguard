@@ -7,6 +7,8 @@ go get -v github.com/quasilyte/go-ruleguard/dsl
 
 # Try running with different rules file order.
 
+export CGO_ENABLED=0
+
 ruleguard -rules log-rule.go,worker-rule.go,string-rule.go . > actual.txt 2>&1 || true
 diff -u actual.txt /root/expected.txt
 
