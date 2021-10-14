@@ -17,14 +17,14 @@ var sink interface{}
 type Element struct{}
 
 func example() {
-	sink = &list.Element{}     // want `list Element`
-	sink = &listcont.Element{} // want `list Element`
+	sink = &list.Element{}     // want `\Qlist Element`
+	sink = &listcont.Element{} // want `\Qlist Element`
 
-	sink = &htmltemplate.Template{} // want `html Template`
-	sink = &texttemplate.Template{} // want `text Template`
+	sink = &htmltemplate.Template{} // want `\Qhtml Template`
+	sink = &texttemplate.Template{} // want `\Qtext Template`
 
-	sink = &xnested.Element{} // want `x/nested Element`
+	sink = &xnested.Element{} // want `\Qx/nested Element`
 	sink = &ynested.Element{}
 
-	sink = extra.NewValue() // want `extra Value`
+	sink = extra.NewValue() // want `\Qextra Value`
 }

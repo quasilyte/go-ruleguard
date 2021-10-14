@@ -9,5 +9,5 @@ func example2() {
 	sink = &Element{}
 	sink = &nested.Element{}
 
-	sink = extra.NewValue() // want `extra Value`
+	sink = extra.NewValue() // want `\Qextra Value`
 }

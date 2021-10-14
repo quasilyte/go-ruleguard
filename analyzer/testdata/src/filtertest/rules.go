@@ -18,15 +18,15 @@ func testRules(m dsl.Matcher) {
 
 	m.Match(`typeTest($x, "contains time.Time")`).
 		Where(m["x"].Type.Underlying().Is(`struct{$*_; time.Time; $*_}`)).
-		Report(`YES`)
+		Report(`true`)
 
 	m.Match(`typeTest($x, "starts with time.Time")`).
 		Where(m["x"].Type.Underlying().Is(`struct{time.Time; $*_}`)).
-		Report(`YES`)
+		Report(`true`)
 
 	m.Match(`typeTest($x, "non-underlying type test; T + T")`).
 		Where(m["x"].Type.Is(`struct{$t; $t}`)).
-		Report(`YES`)
+		Report(`true`)
 
 	m.Match(`typeTest($x + $y)`).
 		Where(m["x"].Type.Is(`string`) && m["y"].Type.Is("string")).
@@ -63,11 +63,11 @@ func testRules(m dsl.Matcher) {
 		Report(`$x !is(string) && !is(int)`)
 
 	m.Match(`typeTest($x, "implements io.Reader")`).
-		Where(m["x"].Type.Implements(`io.Reader`)).Report(`YES`)
+		Where(m["x"].Type.Implements(`io.Reader`)).Report(`true`)
 	m.Match(`typeTest($x, "implements foolib.Stringer")`).
-		Where(m["x"].Type.Implements(`foolib.Stringer`)).Report(`YES`)
+		Where(m["x"].Type.Implements(`foolib.Stringer`)).Report(`true`)
 	m.Match(`typeTest($x, "implements error")`).
-		Where(m["x"].Type.Implements(`error`)).Report(`YES`)
+		Where(m["x"].Type.Implements(`error`)).Report(`true`)
 
 	m.Match(`typeTest($*xs, "variadic implements error")`).
 		Where(m["xs"].Type.Implements(`error`)).Report(`true`)
@@ -77,27 +77,27 @@ func testRules(m dsl.Matcher) {
 	m.Match(`typeTest($*xs, "variadic size==4")`).Where(m["xs"].Type.Size == 4).Report(`true`)
 	m.Match(`typeTest($*xs, "variadic size==4")`).Where(!(m["xs"].Type.Size == 4)).Report(`false`)
 
-	m.Match(`typeTest($x, "size>=100")`).Where(m["x"].Type.Size >= 100).Report(`YES`)
-	m.Match(`typeTest($x, "size<=100")`).Where(m["x"].Type.Size <= 100).Report(`YES`)
-	m.Match(`typeTest($x, "size>100")`).Where(m["x"].Type.Size > 100).Report(`YES`)
-	m.Match(`typeTest($x, "size<100")`).Where(m["x"].Type.Size < 100).Report(`YES`)
-	m.Match(`typeTest($x, "size==100")`).Where(m["x"].Type.Size == 100).Report(`YES`)
-	m.Match(`typeTest($x, "size!=100")`).Where(m["x"].Type.Size != 100).Report(`YES`)
+	m.Match(`typeTest($x, "size>=100")`).Where(m["x"].Type.Size >= 100).Report(`true`)
+	m.Match(`typeTest($x, "size<=100")`).Where(m["x"].Type.Size <= 100).Report(`true`)
+	m.Match(`typeTest($x, "size>100")`).Where(m["x"].Type.Size > 100).Report(`true`)
+	m.Match(`typeTest($x, "size<100")`).Where(m["x"].Type.Size < 100).Report(`true`)
+	m.Match(`typeTest($x, "size==100")`).Where(m["x"].Type.Size == 100).Report(`true`)
+	m.Match(`typeTest($x, "size!=100")`).Where(m["x"].Type.Size != 100).Report(`true`)
 
 	m.Match(`typeTest($x(), "func() int")`).
 		Where(m["x"].Type.Is("func() int")).
-		Report(`YES`)
+		Report(`true`)
 
 	m.Match(`typeTest($x($*_), "func(int) int")`).
 		Where(m["x"].Type.Is("func(int) int")).
-		Report(`YES`)
+		Report(`true`)
 
 	m.Match(`typeTest($x(), "func() string")`).
 		Where(m["x"].Type.Is("func() string")).
-		Report(`YES`)
+		Report(`true`)
 
-	m.Match(`typeTest($t0 == $t1, "time==time")`).Where(m["t0"].Type.Is("time.Time")).Report(`YES`)
-	m.Match(`typeTest($t0 != $t1, "time!=time")`).Where(m["t1"].Type.Is("time.Time")).Report(`YES`)
+	m.Match(`typeTest($t0 == $t1, "time==time")`).Where(m["t0"].Type.Is("time.Time")).Report(`true`)
+	m.Match(`typeTest($t0 != $t1, "time!=time")`).Where(m["t1"].Type.Is("time.Time")).Report(`true`)
 
 	m.Match(`pureTest($x)`).
 		Where(m["x"].Pure).
@@ -135,71 +135,71 @@ func testRules(m dsl.Matcher) {
 	m.Match(`valueTest($*xs, "variadic value 5")`).Where(m["xs"].Value.Int() == 5).Report(`true`)
 	m.Match(`valueTest($*xs, "variadic value 5")`).Where(!(m["xs"].Value.Int() == 5)).Report(`false`)
 
-	m.Match(`lineTest($x, "line 4")`).Where(m["x"].Line == 4).Report(`YES`)
-	m.Match(`lineTest($x, $y, "same line")`).Where(m["x"].Line == m["y"].Line).Report(`YES`)
-	m.Match(`lineTest($x, $y, "different line")`).Where(m["x"].Line != m["y"].Line).Report(`YES`)
+	m.Match(`lineTest($x, "line 4")`).Where(m["x"].Line == 4).Report(`true`)
+	m.Match(`lineTest($x, $y, "same line")`).Where(m["x"].Line == m["y"].Line).Report(`true`)
+	m.Match(`lineTest($x, $y, "different line")`).Where(m["x"].Line != m["y"].Line).Report(`true`)
 
-	m.Match(`textTest($x, "text=foo")`).Where(m["x"].Text == `foo`).Report(`YES`)
-	m.Match(`textTest($x, "text='foo'")`).Where(m["x"].Text == `"foo"`).Report(`YES`)
-	m.Match(`textTest($x, "text!='foo'")`).Where(m["x"].Text != `"foo"`).Report(`YES`)
+	m.Match(`textTest($x, "text=foo")`).Where(m["x"].Text == `foo`).Report(`true`)
+	m.Match(`textTest($x, "text='foo'")`).Where(m["x"].Text == `"foo"`).Report(`true`)
+	m.Match(`textTest($x, "text!='foo'")`).Where(m["x"].Text != `"foo"`).Report(`true`)
 
-	m.Match(`textTest($x, "matches d+")`).Where(m["x"].Text.Matches(`^\d+$`)).Report(`YES`)
-	m.Match(`textTest($x, "doesn't match [A-Z]")`).Where(!m["x"].Text.Matches(`[A-Z]`)).Report(`YES`)
+	m.Match(`textTest($x, "matches d+")`).Where(m["x"].Text.Matches(`^\d+$`)).Report(`true`)
+	m.Match(`textTest($x, "doesn't match [A-Z]")`).Where(!m["x"].Text.Matches(`[A-Z]`)).Report(`true`)
 
-	m.Match(`parensFilterTest($x, "type is error")`).Where((m["x"].Type.Is(`error`))).Report(`YES`)
+	m.Match(`parensFilterTest($x, "type is error")`).Where((m["x"].Type.Is(`error`))).Report(`true`)
 
 	m.Match(`importsTest(os.PathSeparator, "path/filepath")`).
 		Where(m.File().Imports("path/filepath")).
-		Report(`YES`)
+		Report(`true`)
 
 	m.Match(`importsTest(os.PathListSeparator, "path/filepath")`).
 		Where(m.File().Imports("path/filepath")).
-		Report(`YES`)
+		Report(`true`)
 
 	m.Match(`fileTest("with foo prefix")`).
 		Where(m.File().Name.Matches(`^foo_`)).
-		Report(`YES`)
+		Report(`true`)
 
 	m.Match(`fileTest("f1.go")`).
 		Where(m.File().Name.Matches(`^f1.go$`)).
-		Report(`YES`)
+		Report(`true`)
 
 	m.Match(`(($x))`).Where(!m.File().PkgPath.Matches(`filtertest`)).Report(`suspicious double parens`)
 	m.Match(`((($x)))`).Where(m.File().PkgPath.Matches(`filtertest`)).Report(`suspicious tripple parens`)
 
 	m.Match(`nodeTest("3 identical expr statements in a row"); $x; $x; $x`).Where(m["x"].Node.Is(`ExprStmt`)).Report(`true`)
 
-	m.Match(`nodeTest($x, "Expr")`).Where(m["x"].Node.Is(`Expr`)).Report(`YES`)
-	m.Match(`nodeTest($x, "BasicLit")`).Where(m["x"].Node.Is(`BasicLit`)).Report(`YES`)
-	m.Match(`nodeTest($x, "Ident")`).Where(m["x"].Node.Is(`Ident`)).Report(`YES`)
-	m.Match(`nodeTest($x, "!Ident")`).Where(!m["x"].Node.Is(`Ident`)).Report(`YES`)
-	m.Match(`nodeTest($x, "IndexExpr")`).Where(m["x"].Node.Is(`IndexExpr`)).Report(`YES`)
+	m.Match(`nodeTest($x, "Expr")`).Where(m["x"].Node.Is(`Expr`)).Report(`true`)
+	m.Match(`nodeTest($x, "BasicLit")`).Where(m["x"].Node.Is(`BasicLit`)).Report(`true`)
+	m.Match(`nodeTest($x, "Ident")`).Where(m["x"].Node.Is(`Ident`)).Report(`true`)
+	m.Match(`nodeTest($x, "!Ident")`).Where(!m["x"].Node.Is(`Ident`)).Report(`true`)
+	m.Match(`nodeTest($x, "IndexExpr")`).Where(m["x"].Node.Is(`IndexExpr`)).Report(`true`)
 
 	m.Match(`typeTest($x, "convertible to ([2]int)")`).
 		Where(m["x"].Type.ConvertibleTo(`([2]int)`)).
-		Report(`YES`)
+		Report(`true`)
 
 	m.Match(`typeTest($x, "convertible to [][]int")`).
 		Where(m["x"].Type.ConvertibleTo(`[][]int`)).
-		Report(`YES`)
+		Report(`true`)
 
 	m.Match(`typeTest($x, "assignable to map[*string]error")`).
 		Where(m["x"].Type.AssignableTo(`map[*string]error`)).
-		Report(`YES`)
+		Report(`true`)
 
 	m.Match(`typeTest($x, "assignable to interface{}")`).
 		Where(m["x"].Type.AssignableTo(`interface{}`)).
-		Report(`YES`)
+		Report(`true`)
 
 	m.Match(`typeTest($x, "is interface")`).
 		Where(m["x"].Type.Is(`interface{ $*_ }`)).
-		Report(`YES`)
+		Report(`true`)
 
 	m.Match(`typeTest($x, "underlying is interface")`).
 		Where(m["x"].Type.Underlying().Is(`interface{ $*_ }`)).
-		Report(`YES`)
+		Report(`true`)
 
 	m.Match(`textTest("", "root text test")`).
 		Where(m["$$"].Text == `textTest("", "root text test")`).
-		Report(`YES`)
+		Report(`true`)
 }

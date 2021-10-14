@@ -67,7 +67,7 @@ func testFormatBool() {
 
 func testBlankAssign() {
 	x := foo()
-	_ = x // want `please remove the assignment to _`
+	_ = x // want `\Qplease remove the assignment to _`
 
 	// This is OK, could be for side-effects.
 	_ = foo()
@@ -92,10 +92,10 @@ func nilErrCheck() {
 }
 
 func unparen(x, y int) {
-	if (x == 0) || (y == 0) { // want `rewrite as 'x == 0 || y == 0'`
+	if (x == 0) || (y == 0) { // want `\Qrewrite as 'x == 0 || y == 0'`
 	}
 
-	if (x != 5) && (y == 5) { // want `rewrite as 'x != 5 && y == 5'`
+	if (x != 5) && (y == 5) { // want `\Qrewrite as 'x != 5 && y == 5'`
 	}
 }
 
@@ -148,7 +148,7 @@ func makeExpr() {
 
 func chanRange() int {
 	ch := make(chan int)
-	for { // want `can use for range over ch`
+	for { // want `\Qcan use for range over ch`
 		select {
 		case c := <-ch:
 			return c
@@ -184,7 +184,7 @@ func argOrder() {
 
 func stringsReplace() {
 	var s string
-	_ = strings.Replace(s, " ", " ", -1) // want `replace 'old' and 'new' parameters are identical`
+	_ = strings.Replace(s, " ", " ", -1) // want `\Qreplace 'old' and 'new' parameters are identical`
 }
 
 func stringsRepeat() {
@@ -209,11 +209,11 @@ func stringsRepeat() {
 func stringsCompare() {
 	var s1, s2 string
 
-	_ = strings.Compare(s1, s2) == 0  // want `suggestion: s1 == s2`
-	_ = strings.Compare(s1, s2) < 0   // want `suggestion: s1 < s2`
-	_ = strings.Compare(s1, s2) == -1 // want `suggestion: s1 < s2`
-	_ = strings.Compare(s1, s2) > 0   // want `suggestion: s1 > s2`
-	_ = strings.Compare(s1, s2) == 1  // want `suggestion: s1 > s2`
+	_ = strings.Compare(s1, s2) == 0  // want `\Qsuggestion: s1 == s2`
+	_ = strings.Compare(s1, s2) < 0   // want `\Qsuggestion: s1 < s2`
+	_ = strings.Compare(s1, s2) == -1 // want `\Qsuggestion: s1 < s2`
+	_ = strings.Compare(s1, s2) > 0   // want `\Qsuggestion: s1 > s2`
+	_ = strings.Compare(s1, s2) == 1  // want `\Qsuggestion: s1 > s2`
 
 	if s1 == s2 {
 	}
@@ -298,7 +298,7 @@ func testCtx(ctx context.Context) error {
 	return nil
 }
 
-type errDontLog error // want `error as underlying type is probably a mistake`
+type errDontLog error // want `\Qerror as underlying type is probably a mistake`
 
 var ( // want `\Qempty var() block`
 // Empty decl...
@@ -436,8 +436,8 @@ func redundantLenCheck(xs []int, v int) {
 }
 
 func emptyError() {
-	_ = errors.New("") // want `empty error`
-	_ = errors.New(``) // want `empty error`
+	_ = errors.New("") // want `\Qempty error`
+	_ = errors.New(``) // want `\Qempty error`
 }
 
 func contextWithValue(ctx context.Context) {

@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"fmt"
 	"go/token"
+	"io/fs"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -40,6 +43,45 @@ var tests = []struct {
 	{name: "stdlib"},
 	{name: "uber"},
 	{name: "goversion", flags: map[string]string{"go": "1.16"}},
+}
+
+func TestDirectiveComments(t *testing.T) {
+	testdata := analysistest.TestData()
+	badDirectiveRe := regexp.MustCompile("// want `[^\\\\][^Q].*")
+	err := filepath.WalkDir(testdata, func(filename string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if !strings.HasSuffix(filename, ".go") {
+			return nil
+		}
+		data, err := os.ReadFile(filename)
+		if err != nil {
+			return err
+		}
+		lines := bytes.Split(data, []byte("\n"))
+		for i, l := range lines {
+			m := badDirectiveRe.Find(l)
+			if m == nil {
+				continue
+			}
+			if bytes.HasPrefix(m, []byte("// want `true")) {
+				continue
+			}
+			if bytes.HasPrefix(m, []byte("// want `false")) {
+				continue
+			}
+			relName := strings.TrimPrefix(filename, filepath.Join(testdata, "src")+"/")
+			t.Errorf("%s:%d: escape 'want' text with \\Q in %s", relName, i+1, m)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestAnalyzer(t *testing.T) {
