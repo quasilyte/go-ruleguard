@@ -19,6 +19,7 @@ unzip ruleguard-linux-amd64.zip
 go mod init test
 go get -v -u github.com/quasilyte/go-ruleguard/dsl@master
 go get -v -u github.com/quasilyte/ruleguard-rules-test@master
+go get -v -u github.com/quasilyte/ruleguard-rules-test/sub2@master
 
 ./ruleguard -rules rules.go /root/target.go &> actual.txt || true
 diff -u actual.txt /root/expected.txt
@@ -26,11 +27,10 @@ diff -u actual.txt /root/expected.txt
 ./ruleguard -e 'm.Match(`$f($*_, ($x), $*_)`)' /root/target.go &> actual.txt || true
 diff -u actual.txt /root/expected2.txt
 
-# TODO: make it work with `go mod vendor` properly.
-unset GO111MODULE
+export GO111MODULE=off
 cd /usr/local/go
 go get -v -u github.com/quasilyte/go-ruleguard/dsl
-go get -v -u github.com/quasilyte/ruleguard-rules-test
+go get -v -u github.com/quasilyte/ruleguard-rules-test/...
 CGO_ENABLED=0 /root/test/ruleguard -rules /root/rules.go ./src/encoding/... &> actual.txt || true
 diff -u actual.txt /root/expected3.txt
 
