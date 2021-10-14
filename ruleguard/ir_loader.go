@@ -16,6 +16,7 @@ import (
 	"github.com/quasilyte/go-ruleguard/ruleguard/goutil"
 	"github.com/quasilyte/go-ruleguard/ruleguard/ir"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
+	"github.com/quasilyte/go-ruleguard/ruleguard/textmatch"
 	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
 )
 
@@ -409,12 +410,12 @@ func (l *irLoader) unwrapInterfaceExpr(filter ir.FilterExpr) (*types.Interface, 
 	return iface, nil
 }
 
-func (l *irLoader) unwrapRegexpExpr(filter ir.FilterExpr) (*regexp.Regexp, error) {
+func (l *irLoader) unwrapRegexpExpr(filter ir.FilterExpr) (textmatch.Pattern, error) {
 	patternString := l.unwrapStringExpr(filter)
 	if patternString == "" {
 		return nil, l.errorf(filter.Line, nil, "expected a non-empty regexp pattern argument")
 	}
-	re, err := regexp.Compile(patternString)
+	re, err := textmatch.Compile(patternString)
 	if err != nil {
 		return nil, l.errorf(filter.Line, err, "compile regexp")
 	}
