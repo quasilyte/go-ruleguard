@@ -534,31 +534,31 @@ func (c *compiler) compileSliceExpr(n *ast.SliceExpr) {
 	switch {
 	case n.Low == nil && n.High == nil && !n.Slice3:
 		c.emitInstOp(opSliceExpr)
-		c.compileExpr(n.X)
+		c.compileOptExpr(n.X)
 	case n.Low != nil && n.High == nil && !n.Slice3:
 		c.emitInstOp(opSliceFromExpr)
-		c.compileExpr(n.X)
-		c.compileExpr(n.Low)
+		c.compileOptExpr(n.X)
+		c.compileOptExpr(n.Low)
 	case n.Low == nil && n.High != nil && !n.Slice3:
 		c.emitInstOp(opSliceToExpr)
-		c.compileExpr(n.X)
-		c.compileExpr(n.High)
+		c.compileOptExpr(n.X)
+		c.compileOptExpr(n.High)
 	case n.Low != nil && n.High != nil && !n.Slice3:
 		c.emitInstOp(opSliceFromToExpr)
-		c.compileExpr(n.X)
-		c.compileExpr(n.Low)
-		c.compileExpr(n.High)
+		c.compileOptExpr(n.X)
+		c.compileOptExpr(n.Low)
+		c.compileOptExpr(n.High)
 	case n.Low == nil && n.Slice3:
 		c.emitInstOp(opSliceToCapExpr)
-		c.compileExpr(n.X)
-		c.compileExpr(n.High)
-		c.compileExpr(n.Max)
+		c.compileOptExpr(n.X)
+		c.compileOptExpr(n.High)
+		c.compileOptExpr(n.Max)
 	case n.Low != nil && n.Slice3:
 		c.emitInstOp(opSliceFromToCapExpr)
-		c.compileExpr(n.X)
-		c.compileExpr(n.Low)
-		c.compileExpr(n.High)
-		c.compileExpr(n.Max)
+		c.compileOptExpr(n.X)
+		c.compileOptExpr(n.Low)
+		c.compileOptExpr(n.High)
+		c.compileOptExpr(n.Max)
 	default:
 		panic(c.errorf(n, "unexpected slice expr"))
 	}

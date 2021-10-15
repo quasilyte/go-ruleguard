@@ -251,24 +251,23 @@ func (m *matcher) matchNodeWithInst(inst instruction, n ast.Node) bool {
 		return ok && n.Low == nil && n.High == nil && m.matchNode(n.X)
 	case opSliceFromExpr:
 		n, ok := n.(*ast.SliceExpr)
-		return ok && n.Low != nil && n.High == nil && !n.Slice3 &&
+		return ok && n.High == nil && !n.Slice3 &&
 			m.matchNode(n.X) && m.matchNode(n.Low)
 	case opSliceToExpr:
 		n, ok := n.(*ast.SliceExpr)
-		return ok && n.Low == nil && n.High != nil && !n.Slice3 &&
+		return ok && n.Low == nil && !n.Slice3 &&
 			m.matchNode(n.X) && m.matchNode(n.High)
 	case opSliceFromToExpr:
 		n, ok := n.(*ast.SliceExpr)
-		return ok && n.Low != nil && n.High != nil && !n.Slice3 &&
+		return ok && !n.Slice3 &&
 			m.matchNode(n.X) && m.matchNode(n.Low) && m.matchNode(n.High)
 	case opSliceToCapExpr:
 		n, ok := n.(*ast.SliceExpr)
-		return ok && n.Low == nil && n.High != nil && n.Max != nil &&
+		return ok && n.Low == nil &&
 			m.matchNode(n.X) && m.matchNode(n.High) && m.matchNode(n.Max)
 	case opSliceFromToCapExpr:
 		n, ok := n.(*ast.SliceExpr)
-		return ok && n.Low != nil && n.High != nil && n.Max != nil &&
-			m.matchNode(n.X) && m.matchNode(n.Low) && m.matchNode(n.High) && m.matchNode(n.Max)
+		return ok && m.matchNode(n.X) && m.matchNode(n.Low) && m.matchNode(n.High) && m.matchNode(n.Max)
 
 	case opIndexExpr:
 		n, ok := n.(*ast.IndexExpr)
