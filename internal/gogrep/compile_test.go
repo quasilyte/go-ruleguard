@@ -343,6 +343,19 @@ func TestCompileWildcard(t *testing.T) {
 			` •  • NodeSeq`,
 			` •  • End`,
 		},
+
+		`s[$*_:$*_]`: {
+			`SliceFromToExpr`,
+			` • Ident s`,
+			` • OptNode`,
+			` • OptNode`,
+		},
+
+		`s[$*_:]`: {
+			`SliceFromExpr`,
+			` • Ident s`,
+			` • OptNode`,
+		},
 	})
 
 	for i := range tests {
