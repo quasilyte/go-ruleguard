@@ -79,13 +79,8 @@ func testRules(m dsl.Matcher) {
 		Where(m["arr"].Type.Is(`*[$_]$_`)).
 		Report(`explicit array deref is redundant`)
 
-	// Can factor into a single rule when || operator
-	// is supported in filters.
 	m.Match(`$s[:]`).
-		Where(m["s"].Type.Is(`string`)).
-		Report(`can simplify $$ to $s`)
-	m.Match(`$s[:]`).
-		Where(m["s"].Type.Is(`[]$_`)).
+		Where(m["s"].Type.Is(`string`) || m["s"].Type.Is(`[]$_`)).
 		Report(`can simplify $$ to $s`)
 
 	m.Match(`switch $_ {case $_: $*_}`,
