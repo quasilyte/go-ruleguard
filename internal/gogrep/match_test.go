@@ -871,6 +871,7 @@ func TestMatch(t *testing.T) {
 	for i := range tests {
 		test := tests[i]
 		t.Run(fmt.Sprintf("test%d", i), func(t *testing.T) {
+			state := NewMatcherState()
 			fset := token.NewFileSet()
 			testPattern := unwrapPattern(test.pat)
 			pat, _, err := Compile(fset, testPattern, isStrict(test.pat))
@@ -884,7 +885,7 @@ func TestMatch(t *testing.T) {
 				return
 			}
 			matches := 0
-			testAllMatches(pat, target, func(m MatchData) {
+			testAllMatches(pat, &state, target, func(m MatchData) {
 				matches++
 			})
 			if matches != test.numMatches {
@@ -895,12 +896,12 @@ func TestMatch(t *testing.T) {
 	}
 }
 
-func testAllMatches(p *Pattern, target ast.Node, cb func(MatchData)) {
+func testAllMatches(p *Pattern, state *MatcherState, target ast.Node, cb func(MatchData)) {
 	visit := func(n ast.Node) bool {
 		if n == nil {
 			return false
 		}
-		p.MatchNode(nil, n, cb)
+		p.MatchNode(state, n, cb)
 		return true
 	}
 	ast.Inspect(target, visit)

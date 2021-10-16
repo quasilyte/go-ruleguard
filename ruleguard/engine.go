@@ -118,7 +118,7 @@ func (e *engine) Run(ctx *RunContext, f *ast.File) error {
 	if e.ruleSet == nil {
 		return errors.New("used Run() with an empty rule set; forgot to call Load() first?")
 	}
-	rset := cloneRuleSet(e.ruleSet)
+	rset := e.ruleSet
 	return newRulesRunner(ctx, e.state, rset).run(f)
 }
 

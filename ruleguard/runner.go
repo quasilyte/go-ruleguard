@@ -22,6 +22,8 @@ type rulesRunner struct {
 	ctx   *RunContext
 	rules *goRuleSet
 
+	gogrepState gogrep.MatcherState
+
 	importer *goImporter
 
 	filename string
@@ -51,11 +53,14 @@ func newRulesRunner(ctx *RunContext, state *engineState, rules *goRuleSet) *rule
 		debugImports: ctx.DebugImports,
 		debugPrint:   ctx.DebugPrint,
 	})
+	gogrepState := gogrep.NewMatcherState()
+	gogrepState.Types = ctx.Types
 	rr := &rulesRunner{
-		ctx:      ctx,
-		importer: importer,
-		rules:    rules,
-		nodePath: newNodePath(),
+		ctx:         ctx,
+		importer:    importer,
+		rules:       rules,
+		gogrepState: gogrepState,
+		nodePath:    newNodePath(),
 		filterParams: filterParams{
 			env:      state.env.GetEvalEnv(),
 			importer: importer,
@@ -203,7 +208,7 @@ func (rr *rulesRunner) runRules(n ast.Node) {
 	tag := nodetag.FromNode(n)
 	for _, rule := range rr.rules.universal.rulesByTag[tag] {
 		matched := false
-		rule.pat.MatchNode(rr.ctx.Types, n, func(m gogrep.MatchData) {
+		rule.pat.MatchNode(&rr.gogrepState, n, func(m gogrep.MatchData) {
 			matched = rr.handleMatch(rule, m)
 		})
 		if matched {

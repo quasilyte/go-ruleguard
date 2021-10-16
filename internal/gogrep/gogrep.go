@@ -33,6 +33,22 @@ func (data MatchData) CapturedByName(name string) (ast.Node, bool) {
 	return findNamed(data.Capture, name)
 }
 
+type MatcherState struct {
+	Types *types.Info
+
+	// node values recorded by name, excluding "_" (used only by the
+	// actual matching phase)
+	capture []CapturedNode
+
+	pc int
+}
+
+func NewMatcherState() MatcherState {
+	return MatcherState{
+		capture: make([]CapturedNode, 0, 8),
+	}
+}
+
 type Pattern struct {
 	m *matcher
 }
@@ -46,8 +62,8 @@ func (p *Pattern) NodeTag() nodetag.Value {
 }
 
 // MatchNode calls cb if n matches a pattern.
-func (p *Pattern) MatchNode(info *types.Info, n ast.Node, cb func(MatchData)) {
-	p.m.MatchNode(info, n, cb)
+func (p *Pattern) MatchNode(state *MatcherState, n ast.Node, cb func(MatchData)) {
+	p.m.MatchNode(state, n, cb)
 }
 
 // Clone creates a pattern copy.
@@ -55,7 +71,6 @@ func (p *Pattern) Clone() *Pattern {
 	clone := *p
 	clone.m = &matcher{}
 	*clone.m = *p.m
-	clone.m.capture = make([]CapturedNode, 0, 8)
 	return &clone
 }
 
