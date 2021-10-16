@@ -98,14 +98,6 @@ func (params *filterParams) typeofNode(n ast.Node) types.Type {
 	return types.Typ[types.Invalid]
 }
 
-func cloneRuleSet(rset *goRuleSet) *goRuleSet {
-	out, err := mergeRuleSets([]*goRuleSet{rset})
-	if err != nil {
-		panic(err) // Should never happen
-	}
-	return out
-}
-
 func mergeRuleSets(toMerge []*goRuleSet) (*goRuleSet, error) {
 	out := &goRuleSet{
 		universal: &scopedGoRuleSet{},

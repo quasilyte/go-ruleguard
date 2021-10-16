@@ -162,6 +162,8 @@ func BenchmarkMatch(b *testing.B) {
 	for i := range tests {
 		test := tests[i]
 		b.Run(test.name, func(b *testing.B) {
+			state := NewMatcherState()
+
 			fset := token.NewFileSet()
 			pat, _, err := Compile(fset, test.pat, true)
 			if err != nil {
@@ -175,7 +177,7 @@ func BenchmarkMatch(b *testing.B) {
 			}
 			if !strings.HasPrefix(test.name, "fail") {
 				matches := 0
-				testAllMatches(pat, target, func(m MatchData) {
+				testAllMatches(pat, &state, target, func(m MatchData) {
 					matches++
 				})
 				if matches == 0 {
@@ -186,7 +188,7 @@ func BenchmarkMatch(b *testing.B) {
 			b.ResetTimer()
 
 			for i := 0; i < b.N; i++ {
-				testAllMatches(pat, target, func(m MatchData) {})
+				testAllMatches(pat, &state, target, func(m MatchData) {})
 			}
 		})
 	}
