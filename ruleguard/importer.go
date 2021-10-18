@@ -16,8 +16,6 @@ import (
 // goImporter is a `types.Importer` that tries to load a package no matter what.
 // It iterates through multiple import strategies and accepts whatever succeeds first.
 type goImporter struct {
-	// TODO(quasilyte): share importers with gogrep?
-
 	state *engineState
 
 	defaultImporter types.Importer
@@ -54,20 +52,20 @@ func (imp *goImporter) Import(path string) (*types.Package, error) {
 		return pkg, nil
 	}
 
-	pkg, err1 := imp.srcImporter.Import(path)
-	if err1 == nil {
-		imp.state.AddCachedPackage(path, pkg)
-		if imp.debugImports {
-			imp.debugPrint(fmt.Sprintf(`imported "%s" from source importer`, path))
-		}
-		return pkg, nil
-	}
-
 	pkg, err2 := imp.defaultImporter.Import(path)
 	if err2 == nil {
 		imp.state.AddCachedPackage(path, pkg)
 		if imp.debugImports {
 			imp.debugPrint(fmt.Sprintf(`imported "%s" from %s importer`, path, runtime.Compiler))
+		}
+		return pkg, nil
+	}
+
+	pkg, err1 := imp.srcImporter.Import(path)
+	if err1 == nil {
+		imp.state.AddCachedPackage(path, pkg)
+		if imp.debugImports {
+			imp.debugPrint(fmt.Sprintf(`imported "%s" from source importer`, path))
 		}
 		return pkg, nil
 	}
