@@ -2,6 +2,7 @@ package ruleguard
 
 import (
 	"go/ast"
+	"go/build"
 	"go/token"
 	"go/types"
 	"io"
@@ -20,11 +21,26 @@ import (
 // An Engine must be created with NewEngine() function.
 type Engine struct {
 	impl *engine
+
+	// BuildContext can be used as an override for build.Default context.
+	// Used during the Go packages resolving.
+	//
+	// Use Engine.InferBuildContext() to create a sensible default
+	// for this field that is better than build.Default.
+	// We're not using this by default to avoid the excessive work
+	// if you already have a properly initialized build.Context object.
+	//
+	// nil will result in build.Default usage.
+	BuildContext *build.Context
 }
 
 // NewEngine creates an engine with empty rule set.
 func NewEngine() *Engine {
 	return &Engine{impl: newEngine()}
+}
+
+func (e *Engine) InferBuildContext() {
+	e.BuildContext = inferBuildContext()
 }
 
 // Load reads a ruleguard file from r and adds it to the engine rule set.
@@ -33,7 +49,7 @@ func NewEngine() *Engine {
 // It's advised to Load() all ruleguard files under a critical section (like sync.Once)
 // and then use Run() to execute all of them.
 func (e *Engine) Load(ctx *LoadContext, filename string, r io.Reader) error {
-	return e.impl.Load(ctx, filename, r)
+	return e.impl.Load(ctx, e.BuildContext, filename, r)
 }
 
 // LoadFromIR is like Load(), but it takes already parsed IR file as an input.
@@ -41,7 +57,7 @@ func (e *Engine) Load(ctx *LoadContext, filename string, r io.Reader) error {
 // This method can be useful if you're trying to embed a precompiled rules file
 // into your binary.
 func (e *Engine) LoadFromIR(ctx *LoadContext, filename string, f *ir.File) error {
-	return e.impl.LoadFromIR(ctx, filename, f)
+	return e.impl.LoadFromIR(ctx, e.BuildContext, filename, f)
 }
 
 // LoadedGroups returns information about all currently loaded rule groups.
@@ -55,7 +71,7 @@ func (e *Engine) LoadedGroups() []GoRuleGroup {
 // Run() is thread-safe, unless used in parallel with Load(),
 // which modifies the engine state.
 func (e *Engine) Run(ctx *RunContext, f *ast.File) error {
-	return e.impl.Run(ctx, f)
+	return e.impl.Run(ctx, e.BuildContext, f)
 }
 
 type LoadContext struct {

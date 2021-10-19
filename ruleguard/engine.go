@@ -1,14 +1,18 @@
 package ruleguard
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"go/ast"
+	"go/build"
 	"go/token"
 	"go/types"
 	"io"
 	"io/ioutil"
+	"os/exec"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -41,7 +45,7 @@ func (e *engine) LoadedGroups() []GoRuleGroup {
 	return result
 }
 
-func (e *engine) Load(ctx *LoadContext, filename string, r io.Reader) error {
+func (e *engine) Load(ctx *LoadContext, buildContext *build.Context, filename string, r io.Reader) error {
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
 		return err
@@ -50,6 +54,7 @@ func (e *engine) Load(ctx *LoadContext, filename string, r io.Reader) error {
 		fset:         ctx.Fset,
 		debugImports: ctx.DebugImports,
 		debugPrint:   ctx.DebugPrint,
+		buildContext: buildContext,
 	})
 	irfile, pkg, err := convertAST(ctx, imp, filename, data)
 	if err != nil {
@@ -82,11 +87,12 @@ func (e *engine) Load(ctx *LoadContext, filename string, r io.Reader) error {
 	return nil
 }
 
-func (e *engine) LoadFromIR(ctx *LoadContext, filename string, f *ir.File) error {
+func (e *engine) LoadFromIR(ctx *LoadContext, buildContext *build.Context, filename string, f *ir.File) error {
 	imp := newGoImporter(e.state, goImporterConfig{
 		fset:         ctx.Fset,
 		debugImports: ctx.DebugImports,
 		debugPrint:   ctx.DebugPrint,
+		buildContext: buildContext,
 	})
 	config := irLoaderConfig{
 		state:      e.state,
@@ -114,12 +120,12 @@ func (e *engine) LoadFromIR(ctx *LoadContext, filename string, f *ir.File) error
 	return nil
 }
 
-func (e *engine) Run(ctx *RunContext, f *ast.File) error {
+func (e *engine) Run(ctx *RunContext, buildContext *build.Context, f *ast.File) error {
 	if e.ruleSet == nil {
 		return errors.New("used Run() with an empty rule set; forgot to call Load() first?")
 	}
 	rset := e.ruleSet
-	return newRulesRunner(ctx, e.state, rset).run(f)
+	return newRulesRunner(ctx, buildContext, e.state, rset).run(f)
 }
 
 // engineState is a shared state inside the engine.
@@ -230,4 +236,38 @@ func (state *engineState) findTypeNoCache(importer *goImporter, currentPkg *type
 	typ := obj.Type()
 	state.typeByFQN[fqn] = typ
 	return typ, nil
+}
+
+func inferBuildContext() *build.Context {
+	goEnv := func() map[string]string {
+		out, err := exec.Command("go", "env").CombinedOutput()
+		if err != nil {
+			return nil
+		}
+		vars := make(map[string]string)
+		for _, l := range bytes.Split(out, []byte("\n")) {
+			parts := strings.Split(strings.TrimSpace(string(l)), "=")
+			if len(parts) != 2 {
+				continue
+			}
+			val, err := strconv.Unquote(parts[1])
+			if err != nil {
+				continue
+			}
+			vars[parts[0]] = val
+		}
+		return vars
+	}
+
+	// Inherit most fields from the build.Default.
+	ctx := build.Default
+
+	env := goEnv()
+
+	ctx.GOROOT = env["GOROOT"]
+	ctx.GOPATH = env["GOPATH"]
+	ctx.GOARCH = env["GOARCH"]
+	ctx.GOOS = env["GOOS"]
+
+	return &ctx
 }

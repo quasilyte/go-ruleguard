@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"go/ast"
+	"go/build"
 	"go/printer"
 	"io/ioutil"
 	"path/filepath"
@@ -47,11 +48,12 @@ type rulesRunner struct {
 	filterParams filterParams
 }
 
-func newRulesRunner(ctx *RunContext, state *engineState, rules *goRuleSet) *rulesRunner {
+func newRulesRunner(ctx *RunContext, buildContext *build.Context, state *engineState, rules *goRuleSet) *rulesRunner {
 	importer := newGoImporter(state, goImporterConfig{
 		fset:         ctx.Fset,
 		debugImports: ctx.DebugImports,
 		debugPrint:   ctx.DebugPrint,
+		buildContext: buildContext,
 	})
 	gogrepState := gogrep.NewMatcherState()
 	gogrepState.Types = ctx.Types
