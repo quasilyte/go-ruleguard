@@ -169,6 +169,7 @@ func prepareEngine() (*ruleguard.Engine, error) {
 
 func newEngine() (*ruleguard.Engine, error) {
 	e := ruleguard.NewEngine()
+	e.InferBuildContext()
 	fset := token.NewFileSet()
 
 	disabledGroups := make(map[string]bool)
