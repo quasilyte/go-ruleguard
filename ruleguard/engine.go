@@ -1,7 +1,6 @@
 package ruleguard
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"go/ast"
@@ -10,12 +9,12 @@ import (
 	"go/types"
 	"io"
 	"io/ioutil"
-	"os/exec"
+	"os"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 
+	"github.com/quasilyte/go-ruleguard/internal/goenv"
 	"github.com/quasilyte/go-ruleguard/internal/stdinfo"
 	"github.com/quasilyte/go-ruleguard/ruleguard/ir"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
@@ -239,35 +238,27 @@ func (state *engineState) findTypeNoCache(importer *goImporter, currentPkg *type
 }
 
 func inferBuildContext() *build.Context {
-	goEnv := func() map[string]string {
-		out, err := exec.Command("go", "env").CombinedOutput()
-		if err != nil {
-			return nil
-		}
-		vars := make(map[string]string)
-		for _, l := range bytes.Split(out, []byte("\n")) {
-			parts := strings.Split(strings.TrimSpace(string(l)), "=")
-			if len(parts) != 2 {
-				continue
-			}
-			val, err := strconv.Unquote(parts[1])
-			if err != nil {
-				continue
-			}
-			vars[parts[0]] = val
-		}
-		return vars
-	}
-
 	// Inherit most fields from the build.Default.
 	ctx := build.Default
 
-	env := goEnv()
+	env, err := goenv.Read()
+	if err != nil {
+		return &ctx
+	}
 
 	ctx.GOROOT = env["GOROOT"]
 	ctx.GOPATH = env["GOPATH"]
 	ctx.GOARCH = env["GOARCH"]
 	ctx.GOOS = env["GOOS"]
+
+	switch os.Getenv("CGO_ENABLED") {
+	case "0":
+		ctx.CgoEnabled = false
+	case "1":
+		ctx.CgoEnabled = true
+	default:
+		ctx.CgoEnabled = env["CGO_ENABLED"] == "1"
+	}
 
 	return &ctx
 }
