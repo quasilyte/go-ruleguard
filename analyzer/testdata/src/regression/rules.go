@@ -33,3 +33,10 @@ func issue192(m dsl.Matcher) {
 	m.Match(`fmt.Println(fmt.Sprintf($format, $*args, $last))`).
 		Suggest(`fmt.Printf($format+"\n", $args, $last)`)
 }
+
+func issue291(m dsl.Matcher) {
+	m.Match(`$_ $_ = $iota`, `const ( $_ = $iota; $*_ )`).
+		Where(m["iota"].Text == "iota").
+		At(m["iota"]).
+		Report("avoid use of iota for constant types")
+}
