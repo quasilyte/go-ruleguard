@@ -356,6 +356,17 @@ func TestCompileWildcard(t *testing.T) {
 			` • Ident s`,
 			` • OptNode`,
 		},
+
+		`const $_ $*_ = iota`: {
+			`ConstDecl`,
+			` • TypedValueInitSpec`,
+			` •  • Node`,
+			` •  • End`,
+			` •  • OptNode`,
+			` •  • Ident iota`,
+			` •  • End`,
+			` • End`,
+		},
 	})
 
 	for i := range tests {

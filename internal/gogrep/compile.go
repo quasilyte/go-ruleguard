@@ -231,7 +231,7 @@ func (c *compiler) compileValueSpec(spec *ast.ValueSpec) {
 	}
 	c.emitInstOp(opEnd)
 	if spec.Type != nil {
-		c.compileExpr(spec.Type)
+		c.compileOptExpr(spec.Type)
 	}
 	if len(spec.Values) != 0 {
 		for _, v := range spec.Values {

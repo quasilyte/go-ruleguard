@@ -803,6 +803,14 @@ func TestMatch(t *testing.T) {
 		{`func $_($_) {}`, 0, `package p; func f() {}`},
 
 		// Gen decl.
+		{`const $_ $*_ = iota`, 1, `const foo = iota`},
+		{`const $_ $*_ = iota`, 1, `const foo int = iota`},
+		{`const $_ $*_ = iota`, 1, `const (foo = iota)`},
+		{`const $_ $*_ = iota`, 1, `const (foo int = iota)`},
+		{`const $_ $*_ = iota`, 0, `const foo int = 0`},
+		{`const $_ $*_ = iota`, 0, `var foo = iota`},
+		{`const $_ $_ = iota`, 1, `const foo int = iota`},
+		{`const $_ $_ = iota`, 0, `const foo = iota`},
 		{`const $x = $y`, 1, `const a = b`},
 		{`const $x = $y`, 1, `const (a = b)`},
 		{`const $x = $y`, 0, "const (a = b\nc = d)"},

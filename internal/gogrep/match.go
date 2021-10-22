@@ -529,7 +529,7 @@ func (m *matcher) matchNodeWithInst(state *MatcherState, inst instruction, n ast
 			m.matchIdentSlice(state, n.Names) && m.matchNode(state, n.Type)
 	case opTypedValueInitSpec:
 		n, ok := n.(*ast.ValueSpec)
-		return ok && len(n.Values) != 0 && n.Type != nil &&
+		return ok && len(n.Values) != 0 &&
 			m.matchIdentSlice(state, n.Names) && m.matchNode(state, n.Type) && m.matchExprSlice(state, n.Values)
 
 	case opTypeSpec:
