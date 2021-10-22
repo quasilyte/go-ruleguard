@@ -35,8 +35,13 @@ func issue192(m dsl.Matcher) {
 }
 
 func issue291(m dsl.Matcher) {
-	m.Match(`$_ $_ = $iota`, `const ( $_ = $iota; $*_ )`).
+	m.Match(`const ( $_ = $iota; $*_ )`).
 		Where(m["iota"].Text == "iota").
 		At(m["iota"]).
-		Report("avoid use of iota for constant types")
+		Report("avoid use of iota without explicit type")
+
+	m.Match(`const ( $_ $_ = $iota; $*_ )`).
+		Where(m["iota"].Text == "iota").
+		At(m["iota"]).
+		Report("good, have explicit type")
 }
