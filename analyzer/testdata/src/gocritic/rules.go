@@ -170,21 +170,22 @@ func appendAssign(m dsl.Matcher) {
 //doc:before  w.Write([]byte(fmt.Sprintf("%x", 10)))
 //doc:after   fmt.Fprintf(w, "%x", 10)
 func preferFprint(m dsl.Matcher) {
+	isFmtPackage := func(v dsl.Var) bool {
+		return v.Text == "fmt" && v.Object.Is(`PkgName`)
+	}
+
 	m.Match(`$w.Write([]byte($fmt.Sprint($*args)))`).
-		Where(m["w"].Type.Implements("io.Writer") &&
-			m["fmt"].Text == "fmt" && m["fmt"].Object.Is(`PkgName`)).
+		Where(m["w"].Type.Implements("io.Writer") && isFmtPackage(m["fmt"])).
 		Suggest("fmt.Fprint($w, $args)").
 		Report(`fmt.Fprint($w, $args) should be preferred to the $$`)
 
 	m.Match(`$w.Write([]byte($fmt.Sprintf($*args)))`).
-		Where(m["w"].Type.Implements("io.Writer") &&
-			m["fmt"].Text == "fmt" && m["fmt"].Object.Is(`PkgName`)).
+		Where(m["w"].Type.Implements("io.Writer") && isFmtPackage(m["fmt"])).
 		Suggest("fmt.Fprintf($w, $args)").
 		Report(`fmt.Fprintf($w, $args) should be preferred to the $$`)
 
 	m.Match(`$w.Write([]byte($fmt.Sprintln($*args)))`).
-		Where(m["w"].Type.Implements("io.Writer") &&
-			m["fmt"].Text == "fmt" && m["fmt"].Object.Is(`PkgName`)).
+		Where(m["w"].Type.Implements("io.Writer") && isFmtPackage(m["fmt"])).
 		Suggest("fmt.Fprintln($w, $args)").
 		Report(`fmt.Fprintln($w, $args) should be preferred to the $$`)
 }

@@ -158,6 +158,20 @@ func TestDebug(t *testing.T) {
 				`  $x []string: []string{"x"}`,
 			},
 		},
+
+		`isConst := func(v dsl.Var) bool { return v.Const }; m.Match("_ = $x").Where(isConst(m["x"]) && !m["x"].Type.Is("string"))`: {
+			`_ = 10`: nil,
+
+			`_ = "str"`: {
+				`input.go:4: [rules.go:5] rejected by !m["x"].Type.Is("string")`,
+				`  $x string: "str"`,
+			},
+
+			`_ = f()`: {
+				`input.go:4: [rules.go:5] rejected by isConst(m["x"])`,
+				`  $x interface{}: f()`,
+			},
+		},
 	}
 
 	loadRulesFromExpr := func(e *Engine, s string) {
