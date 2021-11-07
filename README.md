@@ -128,10 +128,10 @@ Run `ruleguard` on that target file:
 
 ```bash
 $ ruleguard -rules rules.go -fix example.go
-example.go:5:1: exposedMutex: do not embed sync.Mutex (rules2.go:24)
-example.go:12:10: boolExprSimplify: suggestion: v1 == v2 (rules2.go:15)
-example.go:13:10: boolExprSimplify: suggestion: v1 != v2 (rules2.go:16)
-example.go:14:5: dupSubExpr: suspicious identical LHS and RHS (rules2.go:7)
+example.go:5:1: exposedMutex: do not embed sync.Mutex (rules.go:24)
+example.go:12:10: boolExprSimplify: suggestion: v1 == v2 (rules.go:15)
+example.go:13:10: boolExprSimplify: suggestion: v1 != v2 (rules.go:16)
+example.go:14:5: dupSubExpr: suspicious identical LHS and RHS (rules.go:7)
 ```
 
 Since we ran `ruleguard` with `-fix` argument, both **suggested** changes are applied to `example.go`.
