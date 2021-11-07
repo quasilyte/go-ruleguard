@@ -27,7 +27,7 @@ test-release:
 	@echo "everything is OK"
 
 lint:
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOPATH_DIR)/bin v1.30.0
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOPATH_DIR)/bin v1.43.0
 	$(GOPATH_DIR)/bin/golangci-lint run ./...
 	go build -o go-ruleguard ./cmd/ruleguard
 	./go-ruleguard -debug-imports -rules rules.go ./...

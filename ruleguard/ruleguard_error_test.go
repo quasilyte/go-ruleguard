@@ -255,7 +255,32 @@ func TestParseRuleError(t *testing.T) {
 
 		{
 			`m.Match("func[]").Report("$$")`,
-			`\Qparse match pattern: cannot parse expr: 1:5: expected '(', found '['`,
+			`(?:expected '\(', found '\['|empty type parameter list)`,
+		},
+
+		{
+			`x := 10; println(x)`,
+			`\Qonly func literals are supported on the rhs`,
+		},
+
+		{
+			`x, y := 10, 20; println(x, y)`,
+			`\Qmulti-value := is not supported`,
+		},
+
+		{
+			`f := func() int { return 10 }; f()`,
+			`\Qonly funcs returning bool are supported`,
+		},
+
+		{
+			`f := func() bool { v := true; return v }; f()`,
+			`\Qonly simple 1 return statement funcs are supported`,
+		},
+
+		{
+			`f := func(x int) bool { return x == 0 }; m.Match("($x)").Where(f(1+1)).Report("")`,
+			`\Qunsupported/too complex x argument`,
 		},
 	}
 
@@ -293,11 +318,6 @@ func TestParseFilterError(t *testing.T) {
 		{
 			`true`,
 			`unsupported expr: true`,
-		},
-
-		{
-			`m["x"].Text == 5`,
-			`cannot convert 5 (untyped int constant) to string`,
 		},
 
 		{
