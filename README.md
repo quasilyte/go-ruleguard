@@ -86,12 +86,33 @@ func boolExprSimplify(m dsl.Matcher) {
 	m.Match(`!($x != $y)`).Suggest(`$x == $y`)
 	m.Match(`!($x == $y)`).Suggest(`$x != $y`)
 }
+
+func exposedMutex(m dsl.Matcher) {
+	isExported := func(v dsl.Var) bool {
+		return v.Text.Matches(`^\p{Lu}`)
+	}
+
+	m.Match(`type $name struct { $*_; sync.Mutex; $*_ }`).
+		Where(isExported(m["name"])).
+		Report("do not embed sync.Mutex")
+
+	m.Match(`type $name struct { $*_; sync.RWMutex; $*_ }`).
+		Where(isExported(m["name"])).
+		Report("don not embed sync.RWMutex")
+}
 ```
 
 Create a test `example.go` target file:
 
 ```go
 package main
+
+import "sync"
+
+type EmbedsMutex struct {
+	key int
+	sync.Mutex
+}
 
 func main() {
 	var v1, v2 int
@@ -107,9 +128,10 @@ Run `ruleguard` on that target file:
 
 ```bash
 $ ruleguard -rules rules.go -fix example.go
-example.go:5:10: hint: suggested: v1 == v2
-example.go:6:10: hint: suggested: v1 != v2
-example.go:7:5: error: suspicious identical LHS and RHS
+example.go:5:1: exposedMutex: do not embed sync.Mutex (rules2.go:24)
+example.go:12:10: boolExprSimplify: suggestion: v1 == v2 (rules2.go:15)
+example.go:13:10: boolExprSimplify: suggestion: v1 != v2 (rules2.go:16)
+example.go:14:5: dupSubExpr: suspicious identical LHS and RHS (rules2.go:7)
 ```
 
 Since we ran `ruleguard` with `-fix` argument, both **suggested** changes are applied to `example.go`.
@@ -118,7 +140,7 @@ There is also a `-e` mode that is useful during the pattern debugging:
 
 ```bash
 $ ruleguard -e 'm.Match(`!($x != $y)`)' example.go
-example.go:5:10: !(v1 != v2)
+example.go:12:10: !(v1 != v2)
 ```
 
 It automatically inserts `Report("$$")` into the specified pattern.
