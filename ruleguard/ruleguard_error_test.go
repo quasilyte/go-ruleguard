@@ -282,6 +282,18 @@ func TestParseRuleError(t *testing.T) {
 			`f := func(x int) bool { return x == 0 }; m.Match("($x)").Where(f(1+1)).Report("")`,
 			`\Qunsupported/too complex x argument`,
 		},
+
+		// TODO: error line should be associated with `f` function,
+		// not with Where() location where it's inlined.
+		{
+			`
+				f := func(v dsl.Var) bool { return v.Object.Is("abc") }
+				m.Match("($x)").
+					Where(f(m["x"])).
+					Report("")
+			`,
+			`\Qrules.go:8: abc is not a valid go/types object name`,
+		},
 	}
 
 	for _, test := range tests {
