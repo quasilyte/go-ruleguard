@@ -36,10 +36,10 @@ If you want to install the ruleguard from source, it's as simple as:
 
 ```bash
 # Installs a `ruleguard` binary under your `$(go env GOPATH)/bin`
-$ GO111MODULE=on go get -v -u github.com/quasilyte/go-ruleguard/cmd/ruleguard
+$ go install -v github.com/quasilyte/go-ruleguard/cmd/ruleguard@latest
 
 # Get the DSL package (needed to execute the ruleguard files)
-$ go get -v -u github.com/quasilyte/go-ruleguard/dsl
+$ go get -v -u github.com/quasilyte/go-ruleguard/dsl@latest
 ```
 
 > If inside a Go module, the `dsl` package will be installed for the current module,
