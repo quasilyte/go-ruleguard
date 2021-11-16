@@ -69,6 +69,8 @@ Flags:
 Create a test `rules.go` file:
 
 ```go
+// +build ignore
+
 package gorules
 
 import "github.com/quasilyte/go-ruleguard/dsl"
