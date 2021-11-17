@@ -138,12 +138,8 @@ func TestParseFilterFuncError(t *testing.T) {
 		},
 
 		{
-			`func f() {}`,
-			`only functions with a single non-void results are supported`,
-		},
-		{
 			`func f() (int, int) { return 0, 0 }`,
-			`only functions with a single non-void results are supported`,
+			`multi-result functions are not supported`,
 		},
 
 		{

@@ -114,6 +114,8 @@ func eval(env *EvalEnv, fn *Func, args []interface{}) CallResult {
 			return CallResult{value: stack.top()}
 		case opReturnIntTop:
 			return CallResult{scalarValue: uint64(stack.topInt())}
+		case opReturn:
+			return CallResult{}
 
 		case opCallNative:
 			id := decode16(code, pc+1)

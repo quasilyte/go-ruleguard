@@ -34,6 +34,7 @@ var opcodePrototypes = []opcodeProto{
 	{"ReturnIntTop", "op", "(value) -> (value)"},
 	{"ReturnFalse", "op", stackUnchanged},
 	{"ReturnTrue", "op", stackUnchanged},
+	{"Return", "op", stackUnchanged},
 
 	{"Jump", "op offset:i16", stackUnchanged},
 	{"JumpFalse", "op offset:i16", "(cond:bool) -> ()"},
@@ -45,7 +46,7 @@ var opcodePrototypes = []opcodeProto{
 	{"IsNotNil", "op", "(value) -> (result:bool)"},
 
 	{"Not", "op", "(value:bool) -> (result:bool)"},
-	
+
 	{"EqInt", "op", "(x:int y:int) -> (result:bool)"},
 	{"NotEqInt", "op", "(x:int y:int) -> (result:bool)"},
 	{"GtInt", "op", "(x:int y:int) -> (result:bool)"},
