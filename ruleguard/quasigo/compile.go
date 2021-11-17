@@ -11,6 +11,8 @@ import (
 	"golang.org/x/tools/go/ast/astutil"
 )
 
+var voidType = &types.Tuple{}
+
 func compile(ctx *CompileContext, fn *ast.FuncDecl) (compiled *Func, err error) {
 	defer func() {
 		if err != nil {
@@ -74,10 +76,14 @@ type compileError string
 func (e compileError) Error() string { return string(e) }
 
 func (cl *compiler) compileFunc(fn *ast.FuncDecl) *Func {
-	if cl.fnType.Results().Len() != 1 {
-		panic(cl.errorf(fn.Name, "only functions with a single non-void results are supported"))
+	switch cl.fnType.Results().Len() {
+	case 0:
+		cl.retType = voidType
+	case 1:
+		cl.retType = cl.fnType.Results().At(0).Type()
+	default:
+		panic(cl.errorf(fn.Name, "multi-result functions are not supported"))
 	}
-	cl.retType = cl.fnType.Results().At(0).Type()
 
 	if !cl.isSupportedType(cl.retType) {
 		panic(cl.errorUnsupportedType(fn.Name, cl.retType, "function result"))
@@ -136,6 +142,9 @@ func (cl *compiler) compileStmt(stmt ast.Stmt) {
 	case *ast.BranchStmt:
 		cl.compileBranchStmt(stmt)
 
+	case *ast.ExprStmt:
+		cl.compileExprStmt(stmt)
+
 	case *ast.BlockStmt:
 		for i := range stmt.List {
 			cl.compileStmt(stmt.List[i])
@@ -170,6 +179,19 @@ func (cl *compiler) compileBranchStmt(branch *ast.BranchStmt) {
 	default:
 		panic(cl.errorf(branch, "can't compile %s yet", branch.Tok))
 	}
+}
+
+func (cl *compiler) compileExprStmt(stmt *ast.ExprStmt) {
+	if call, ok := stmt.X.(*ast.CallExpr); ok {
+		sig := cl.ctx.Types.TypeOf(call.Fun).(*types.Signature)
+		if sig.Results() != nil {
+			panic(cl.errorf(call, "only void funcs can be used in stmt context"))
+		}
+		cl.compileCallExpr(call)
+		return
+	}
+
+	panic(cl.errorf(stmt.X, "can't compile this expr stmt yet: %T", stmt.X))
 }
 
 func (cl *compiler) compileForStmt(stmt *ast.ForStmt) {
@@ -279,6 +301,11 @@ func (cl *compiler) getLocal(v ast.Expr, varname string) int {
 }
 
 func (cl *compiler) compileReturnStmt(ret *ast.ReturnStmt) {
+	if cl.retType == voidType {
+		cl.emit(opReturn)
+		return
+	}
+
 	if ret.Results == nil {
 		panic(cl.errorf(ret, "'naked' return statements are not allowed"))
 	}
@@ -471,6 +498,20 @@ func (cl *compiler) compileBuiltinCall(fn *ast.Ident, call *ast.CallExpr) {
 			panic(cl.errorf(s, "can't compile len() with non-string argument yet"))
 		}
 		cl.emit(opStringLen)
+
+	case `println`:
+		if len(call.Args) != 1 {
+			panic(cl.errorf(call, "only 1-arg form of println() is supported"))
+		}
+		funcName := "Print"
+		if typeIsInt(cl.ctx.Types.TypeOf(call.Args[0])) {
+			funcName = "PrintInt"
+		}
+		key := funcKey{qualifier: "builtin", name: funcName}
+		if !cl.compileNativeCall(key, nil, call.Args) {
+			panic(cl.errorf(fn, "builtin.%s native func is not registered", funcName))
+		}
+
 	default:
 		panic(cl.errorf(fn, "can't compile %s() builtin function call yet", fn))
 	}
@@ -499,18 +540,24 @@ func (cl *compiler) compileCallExpr(call *ast.CallExpr) {
 		key.qualifier = fn.Pkg().Path()
 	}
 
-	if funcID, ok := cl.ctx.Env.nameToNativeFuncID[key]; ok {
-		if expr != nil {
-			cl.compileExpr(expr)
-		}
-		for _, arg := range call.Args {
-			cl.compileExpr(arg)
-		}
-		cl.emit16(opCallNative, int(funcID))
-		return
+	if !cl.compileNativeCall(key, expr, call.Args) {
+		panic(cl.errorf(call.Fun, "can't compile a call to %s func", key))
 	}
+}
 
-	panic(cl.errorf(call.Fun, "can't compile a call to %s func", key))
+func (cl *compiler) compileNativeCall(key funcKey, expr ast.Expr, args []ast.Expr) bool {
+	funcID, ok := cl.ctx.Env.nameToNativeFuncID[key]
+	if !ok {
+		return false
+	}
+	if expr != nil {
+		cl.compileExpr(expr)
+	}
+	for _, arg := range args {
+		cl.compileExpr(arg)
+	}
+	cl.emit16(opCallNative, int(funcID))
+	return true
 }
 
 func (cl *compiler) compileUnaryOp(op opcode, e *ast.UnaryExpr) {
@@ -681,6 +728,10 @@ func (cl *compiler) isUncondJump(op opcode) bool {
 }
 
 func (cl *compiler) isSupportedType(typ types.Type) bool {
+	if typ == voidType {
+		return true
+	}
+
 	switch typ := typ.Underlying().(type) {
 	case *types.Pointer:
 		// 1. Pointers to structs are supported.

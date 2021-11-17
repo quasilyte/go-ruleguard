@@ -1,9 +1,17 @@
 package quasigo
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
+	"go/ast"
+	"io/ioutil"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo/internal/evaltest"
 )
 
@@ -220,4 +228,91 @@ func TestEval(t *testing.T) {
 			t.Errorf("eval %s:\nhave: %#v\nwant: %#v", test.src, unboxedResult, test.result)
 		}
 	}
+}
+
+func TestEvalFile(t *testing.T) {
+	files, err := ioutil.ReadDir("testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	runGo := func(main string) (string, error) {
+		out, err := exec.Command("go", "run", main).CombinedOutput()
+		if err != nil {
+			return "", fmt.Errorf("%v: %s", err, out)
+		}
+		return string(out), nil
+	}
+
+	runQuasigo := func(main string) (string, error) {
+		src, err := os.ReadFile(main)
+		if err != nil {
+			return "", err
+		}
+		env := NewEnv()
+		parsed, err := parseGoFile(string(src))
+		if err != nil {
+			return "", fmt.Errorf("parse: %v", err)
+		}
+
+		var stdout bytes.Buffer
+		env.AddNativeFunc("builtin", "Print", func(stack *ValueStack) {
+			arg := stack.Pop()
+			fmt.Fprintln(&stdout, arg)
+		})
+		env.AddNativeFunc("builtin", "PrintInt", func(stack *ValueStack) {
+			fmt.Fprintln(&stdout, stack.PopInt())
+		})
+
+		var mainFunc *Func
+		for _, decl := range parsed.ast.Decls {
+			decl, ok := decl.(*ast.FuncDecl)
+			if !ok {
+				continue
+			}
+			ctx := &CompileContext{
+				Env:   env,
+				Types: parsed.types,
+				Fset:  parsed.fset,
+			}
+			fn, err := Compile(ctx, decl)
+			if err != nil {
+				return "", fmt.Errorf("compile %s func: %v", decl.Name, err)
+			}
+			if decl.Name.String() == "main" {
+				mainFunc = fn
+			}
+		}
+		if mainFunc == nil {
+			return "", errors.New("can't find main() function")
+		}
+
+		Call(env.GetEvalEnv(), mainFunc)
+		return stdout.String(), nil
+	}
+
+	runTest := func(t *testing.T, mainFile string) {
+		goResult, err := runGo(mainFile)
+		if err != nil {
+			t.Fatalf("run go: %v", err)
+		}
+		quasigoResult, err := runQuasigo(mainFile)
+		if err != nil {
+			t.Fatalf("run quasigo: %v", err)
+		}
+		if diff := cmp.Diff(quasigoResult, goResult); diff != "" {
+			t.Errorf("output mismatch:\nhave (+): `%s`\nwant (-): `%s`\ndiff: %s", quasigoResult, goResult, diff)
+		}
+	}
+
+	for _, f := range files {
+		if !f.IsDir() {
+			continue
+		}
+		mainFile := filepath.Join("testdata", f.Name(), "main.go")
+		t.Run(f.Name(), func(t *testing.T) {
+			runTest(t, mainFile)
+		})
+	}
+
 }
