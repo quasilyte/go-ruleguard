@@ -1,4 +1,4 @@
-package quasigo
+package quasigo_test
 
 import (
 	"fmt"
@@ -7,6 +7,8 @@ import (
 	"go/parser"
 	"go/token"
 	"go/types"
+
+	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
 )
 
 const testPackage = "testpkg"
@@ -40,7 +42,7 @@ func parseGoFile(src string) (*parsedTestFile, error) {
 	return result, err
 }
 
-func compileTestFunc(env *Env, fn string, parsed *parsedTestFile) (*Func, error) {
+func compileTestFunc(env *quasigo.Env, fn string, parsed *parsedTestFile) (*quasigo.Func, error) {
 	var target *ast.FuncDecl
 	for _, decl := range parsed.ast.Decls {
 		decl, ok := decl.(*ast.FuncDecl)
@@ -56,10 +58,10 @@ func compileTestFunc(env *Env, fn string, parsed *parsedTestFile) (*Func, error)
 		return nil, fmt.Errorf("test function %s not found", fn)
 	}
 
-	ctx := &CompileContext{
+	ctx := &quasigo.CompileContext{
 		Env:   env,
 		Types: parsed.types,
 		Fset:  parsed.fset,
 	}
-	return Compile(ctx, target)
+	return quasigo.Compile(ctx, target)
 }

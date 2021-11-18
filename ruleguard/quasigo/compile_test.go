@@ -1,4 +1,4 @@
-package quasigo
+package quasigo_test
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
 )
 
 func TestCompile(t *testing.T) {
@@ -335,14 +336,12 @@ func TestCompile(t *testing.T) {
 		  `
 	}
 
-	env := NewEnv()
-	env.AddNativeFunc(testPackage, "imul", func(stack *ValueStack) {
-		x, y := stack.pop2()
-		stack.Push(x.(int) * y.(int))
+	env := quasigo.NewEnv()
+	env.AddNativeFunc(testPackage, "imul", func(stack *quasigo.ValueStack) {
+		panic("should not be called")
 	})
-	env.AddNativeFunc(testPackage, "idiv", func(stack *ValueStack) {
-		x, y := stack.pop2()
-		stack.Push(x.(int) / y.(int))
+	env.AddNativeFunc(testPackage, "idiv", func(stack *quasigo.ValueStack) {
+		panic("should not be called")
 	})
 
 	for testSrc, disasmLines := range tests {
@@ -358,7 +357,7 @@ func TestCompile(t *testing.T) {
 			continue
 		}
 		want := disasmLines
-		have := strings.Split(Disasm(env, compiled), "\n")
+		have := strings.Split(quasigo.Disasm(env, compiled), "\n")
 		have = have[:len(have)-1] // Drop an empty line
 		if diff := cmp.Diff(have, want); diff != "" {
 			t.Errorf("compile %s (-have +want):\n%s", testSrc, diff)
