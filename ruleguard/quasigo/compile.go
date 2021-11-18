@@ -106,6 +106,10 @@ func (cl *compiler) compileFunc(fn *ast.FuncDecl) *Func {
 	}
 
 	cl.compileStmt(fn.Body)
+	if cl.retType == voidType {
+		cl.emit(opReturn)
+	}
+
 	compiled := &Func{
 		code:         cl.code,
 		constants:    cl.constants,

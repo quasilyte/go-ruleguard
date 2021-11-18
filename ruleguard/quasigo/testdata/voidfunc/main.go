@@ -5,5 +5,4 @@ func main() {
 	println(1)
 	x := "var"
 	println(x)
-	return
 }
