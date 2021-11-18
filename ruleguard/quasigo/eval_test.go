@@ -1,4 +1,4 @@
-package quasigo
+package quasigo_test
 
 import (
 	"bytes"
@@ -12,7 +12,9 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo/internal/evaltest"
+	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo/stdlib/qstrings"
 )
 
 func TestEval(t *testing.T) {
@@ -177,29 +179,31 @@ func TestEval(t *testing.T) {
 		  `
 	}
 
-	env := NewEnv()
-	env.AddNativeFunc(testPackage, "imul", func(stack *ValueStack) {
-		x, y := stack.popInt2()
+	env := quasigo.NewEnv()
+	env.AddNativeFunc(testPackage, "imul", func(stack *quasigo.ValueStack) {
+		y := stack.PopInt()
+		x := stack.PopInt()
 		stack.PushInt(x * y)
 	})
-	env.AddNativeFunc(testPackage, "idiv", func(stack *ValueStack) {
-		x, y := stack.popInt2()
+	env.AddNativeFunc(testPackage, "idiv", func(stack *quasigo.ValueStack) {
+		y := stack.PopInt()
+		x := stack.PopInt()
 		stack.PushInt(x / y)
 	})
-	env.AddNativeFunc(testPackage, "newFoo", func(stack *ValueStack) {
+	env.AddNativeFunc(testPackage, "newFoo", func(stack *quasigo.ValueStack) {
 		prefix := stack.Pop().(string)
 		stack.Push(&evaltest.Foo{Prefix: prefix})
 	})
 
 	const evaltestPkgPath = `github.com/quasilyte/go-ruleguard/ruleguard/quasigo/internal/evaltest`
 	const evaltestFoo = `*` + evaltestPkgPath + `.Foo`
-	env.AddNativeMethod(evaltestFoo, "Method1", func(stack *ValueStack) {
+	env.AddNativeMethod(evaltestFoo, "Method1", func(stack *quasigo.ValueStack) {
 		x := stack.PopInt()
 		obj := stack.Pop()
 		foo := obj.(*evaltest.Foo)
 		stack.Push(foo.Prefix + fmt.Sprint(x))
 	})
-	env.AddNativeMethod(evaltestFoo, "Prefix", func(stack *ValueStack) {
+	env.AddNativeMethod(evaltestFoo, "Prefix", func(stack *quasigo.ValueStack) {
 		foo := stack.Pop().(*evaltest.Foo)
 		stack.Push(foo.Prefix)
 	})
@@ -216,7 +220,7 @@ func TestEval(t *testing.T) {
 			t.Errorf("compile %s: %v", test.src, err)
 			continue
 		}
-		result := Call(env.GetEvalEnv(), compiled,
+		result := quasigo.Call(env.GetEvalEnv(), compiled,
 			10, "foo", true, &evaltest.Foo{Prefix: "Hello"}, (*evaltest.Foo)(nil), nil)
 		var unboxedResult interface{}
 		if _, ok := test.result.(int); ok {
@@ -249,33 +253,35 @@ func TestEvalFile(t *testing.T) {
 		if err != nil {
 			return "", err
 		}
-		env := NewEnv()
+		env := quasigo.NewEnv()
 		parsed, err := parseGoFile(string(src))
 		if err != nil {
 			return "", fmt.Errorf("parse: %v", err)
 		}
 
 		var stdout bytes.Buffer
-		env.AddNativeFunc("builtin", "Print", func(stack *ValueStack) {
+		env.AddNativeFunc("builtin", "Print", func(stack *quasigo.ValueStack) {
 			arg := stack.Pop()
 			fmt.Fprintln(&stdout, arg)
 		})
-		env.AddNativeFunc("builtin", "PrintInt", func(stack *ValueStack) {
+		env.AddNativeFunc("builtin", "PrintInt", func(stack *quasigo.ValueStack) {
 			fmt.Fprintln(&stdout, stack.PopInt())
 		})
 
-		var mainFunc *Func
+		qstrings.ImportAll(env)
+
+		var mainFunc *quasigo.Func
 		for _, decl := range parsed.ast.Decls {
 			decl, ok := decl.(*ast.FuncDecl)
 			if !ok {
 				continue
 			}
-			ctx := &CompileContext{
+			ctx := &quasigo.CompileContext{
 				Env:   env,
 				Types: parsed.types,
 				Fset:  parsed.fset,
 			}
-			fn, err := Compile(ctx, decl)
+			fn, err := quasigo.Compile(ctx, decl)
 			if err != nil {
 				return "", fmt.Errorf("compile %s func: %v", decl.Name, err)
 			}
@@ -287,7 +293,7 @@ func TestEvalFile(t *testing.T) {
 			return "", errors.New("can't find main() function")
 		}
 
-		Call(env.GetEvalEnv(), mainFunc)
+		quasigo.Call(env.GetEvalEnv(), mainFunc)
 		return stdout.String(), nil
 	}
 

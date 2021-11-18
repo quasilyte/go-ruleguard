@@ -1,8 +1,10 @@
-package quasigo
+package quasigo_test
 
 import (
 	"runtime"
 	"testing"
+
+	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
 )
 
 type benchTestCase struct {
@@ -59,7 +61,7 @@ func TestNoAllocs(t *testing.T) {
 			var before, after runtime.MemStats
 			runtime.GC()
 			runtime.ReadMemStats(&before)
-			Call(evalEnv, compiled)
+			quasigo.Call(evalEnv, compiled)
 			runtime.ReadMemStats(&after)
 			allocated = after.Alloc - before.Alloc
 			if allocated != 0 {
@@ -76,9 +78,9 @@ func BenchmarkEval(b *testing.B) {
 	var tests []*benchTestCase
 	tests = append(tests, benchmarksNoAlloc...)
 
-	runBench := func(b *testing.B, env *EvalEnv, fn *Func) {
+	runBench := func(b *testing.B, env *quasigo.EvalEnv, fn *quasigo.Func) {
 		for i := 0; i < b.N; i++ {
-			_ = Call(env, fn)
+			_ = quasigo.Call(env, fn)
 		}
 	}
 
@@ -92,7 +94,7 @@ func BenchmarkEval(b *testing.B) {
 	}
 }
 
-func compileBenchFunc(t testing.TB, bodySrc string) (*Env, *Func) {
+func compileBenchFunc(t testing.TB, bodySrc string) (*quasigo.Env, *quasigo.Func) {
 	makePackageSource := func(body string) string {
 		return `
 		  package test
@@ -103,9 +105,10 @@ func compileBenchFunc(t testing.TB, bodySrc string) (*Env, *Func) {
 		  `
 	}
 
-	env := NewEnv()
-	env.AddNativeFunc(testPackage, "imul", func(stack *ValueStack) {
-		x, y := stack.popInt2()
+	env := quasigo.NewEnv()
+	env.AddNativeFunc(testPackage, "imul", func(stack *quasigo.ValueStack) {
+		y := stack.PopInt()
+		x := stack.PopInt()
 		stack.PushInt(x * y)
 	})
 	src := makePackageSource(bodySrc)
