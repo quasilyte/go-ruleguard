@@ -14,6 +14,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo/internal/evaltest"
+	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo/stdlib/qstrconv"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo/stdlib/qstrings"
 )
 
@@ -260,15 +261,21 @@ func TestEvalFile(t *testing.T) {
 		}
 
 		var stdout bytes.Buffer
-		env.AddNativeFunc("builtin", "Print", func(stack *quasigo.ValueStack) {
+		env.AddNativeFunc(`builtin`, `Print`, func(stack *quasigo.ValueStack) {
 			arg := stack.Pop()
 			fmt.Fprintln(&stdout, arg)
 		})
-		env.AddNativeFunc("builtin", "PrintInt", func(stack *quasigo.ValueStack) {
+		env.AddNativeFunc(`builtin`, `PrintInt`, func(stack *quasigo.ValueStack) {
 			fmt.Fprintln(&stdout, stack.PopInt())
 		})
 
+		env.AddNativeMethod(`error`, `Error`, func(stack *quasigo.ValueStack) {
+			err := stack.Pop().(error)
+			stack.Push(err.Error())
+		})
+
 		qstrings.ImportAll(env)
+		qstrconv.ImportAll(env)
 
 		var mainFunc *quasigo.Func
 		for _, decl := range parsed.ast.Decls {
@@ -320,5 +327,4 @@ func TestEvalFile(t *testing.T) {
 			runTest(t, mainFile)
 		})
 	}
-
 }

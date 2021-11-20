@@ -82,7 +82,7 @@ func TestParseFilterFuncError(t *testing.T) {
 		// Assignment errors.
 		{
 			`x, y := 1, 2; return x == y`,
-			`only single left operand is allowed in assignments`,
+			`only single right operand is allowed in assignments`,
 		},
 		{
 			`x := 0; { x := 1; return x == 1 }; return x == 0`,
