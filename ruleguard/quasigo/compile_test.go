@@ -323,16 +323,31 @@ func TestCompile(t *testing.T) {
 			`  PushIntLocal 0 # j`,
 			`  ReturnIntTop`,
 		},
+
+		`v, err := atoi("foo"); println(v); println(err == nil); return err`: {
+			`  PushConst 0 # value="foo"`,
+			`  CallNative 2 # testpkg.atoi`,
+			`  SetLocal 0 # err`,
+			`  SetIntLocal 1 # v`,
+			`  PushIntLocal 1 # v`,
+			`  CallNative 3 # builtin.PrintInt`,
+			`  PushLocal 0 # err`,
+			`  IsNil`,
+			`  CallNative 4 # builtin.Print`,
+			`  PushLocal 0 # err`,
+			`  ReturnTop`,
+		},
 	}
 
 	makePackageSource := func(body string) string {
 		return `
-		  package test
+		  package testpkg
 		  func f(i int, s string, b bool, eface interface{}) interface{} {
 			` + body + `
 		  }
 		  func imul(x, y int) int
 		  func idiv(x, y int) int
+		  func atoi(s string) (int, error)
 		  `
 	}
 
@@ -341,6 +356,15 @@ func TestCompile(t *testing.T) {
 		panic("should not be called")
 	})
 	env.AddNativeFunc(testPackage, "idiv", func(stack *quasigo.ValueStack) {
+		panic("should not be called")
+	})
+	env.AddNativeFunc(testPackage, "atoi", func(stack *quasigo.ValueStack) {
+		panic("should not be called")
+	})
+	env.AddNativeFunc("builtin", "PrintInt", func(stack *quasigo.ValueStack) {
+		panic("should not be called")
+	})
+	env.AddNativeFunc("builtin", "Print", func(stack *quasigo.ValueStack) {
 		panic("should not be called")
 	})
 

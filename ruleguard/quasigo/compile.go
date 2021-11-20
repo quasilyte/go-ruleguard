@@ -258,38 +258,43 @@ func (cl *compiler) compileIfStmt(stmt *ast.IfStmt) {
 }
 
 func (cl *compiler) compileAssignStmt(assign *ast.AssignStmt) {
-	if len(assign.Lhs) != 1 {
-		panic(cl.errorf(assign, "only single left operand is allowed in assignments"))
-	}
 	if len(assign.Rhs) != 1 {
 		panic(cl.errorf(assign, "only single right operand is allowed in assignments"))
 	}
-	lhs := assign.Lhs[0]
-	rhs := assign.Rhs[0]
-	varname, ok := lhs.(*ast.Ident)
-	if !ok {
-		panic(cl.errorf(lhs, "can assign only to simple variables"))
+	for _, lhs := range assign.Lhs {
+		_, ok := lhs.(*ast.Ident)
+		if !ok {
+			panic(cl.errorf(lhs, "can assign only to simple variables"))
+		}
 	}
 
+	rhs := assign.Rhs[0]
 	cl.compileExpr(rhs)
 
-	typ := cl.ctx.Types.TypeOf(varname)
 	if assign.Tok == token.DEFINE {
-		if _, ok := cl.locals[varname.String()]; ok {
-			panic(cl.errorf(lhs, "%s variable shadowing is not allowed", varname))
+		for i := len(assign.Lhs) - 1; i >= 0; i-- {
+			varname := assign.Lhs[i].(*ast.Ident)
+			typ := cl.ctx.Types.TypeOf(varname)
+			if _, ok := cl.locals[varname.String()]; ok {
+				panic(cl.errorf(varname, "%s variable shadowing is not allowed", varname))
+			}
+			if !cl.isSupportedType(typ) {
+				panic(cl.errorUnsupportedType(varname, typ, varname.String()+" local variable"))
+			}
+			if len(cl.locals) == maxFuncLocals {
+				panic(cl.errorf(varname, "can't define %s: too many locals", varname))
+			}
+			id := len(cl.locals)
+			cl.locals[varname.String()] = id
+			cl.emit8(pickOp(typeIsInt(typ), opSetIntLocal, opSetLocal), id)
 		}
-		if !cl.isSupportedType(typ) {
-			panic(cl.errorUnsupportedType(varname, typ, varname.String()+" local variable"))
-		}
-		if len(cl.locals) == maxFuncLocals {
-			panic(cl.errorf(lhs, "can't define %s: too many locals", varname))
-		}
-		id := len(cl.locals)
-		cl.locals[varname.String()] = id
-		cl.emit8(pickOp(typeIsInt(typ), opSetIntLocal, opSetLocal), id)
 	} else {
-		id := cl.getLocal(varname, varname.String())
-		cl.emit8(pickOp(typeIsInt(typ), opSetIntLocal, opSetLocal), id)
+		for i := len(assign.Lhs) - 1; i >= 0; i-- {
+			varname := assign.Lhs[i].(*ast.Ident)
+			typ := cl.ctx.Types.TypeOf(varname)
+			id := cl.getLocal(varname, varname.String())
+			cl.emit8(pickOp(typeIsInt(typ), opSetIntLocal, opSetLocal), id)
+		}
 	}
 }
 
@@ -556,6 +561,16 @@ func (cl *compiler) compileNativeCall(key funcKey, expr ast.Expr, args []ast.Exp
 	}
 	if expr != nil {
 		cl.compileExpr(expr)
+	}
+	if len(args) == 1 {
+		// Check that it's not a f(g()) call, where g() returns
+		// a multi-value result; we can't compile that yet.
+		if call, ok := args[0].(*ast.CallExpr); ok {
+			results := cl.ctx.Types.TypeOf(call.Fun).(*types.Signature).Results()
+			if results != nil && results.Len() > 1 {
+				panic(cl.errorf(args[0], "can't pass tuple as a func argument"))
+			}
+		}
 	}
 	for _, arg := range args {
 		cl.compileExpr(arg)
