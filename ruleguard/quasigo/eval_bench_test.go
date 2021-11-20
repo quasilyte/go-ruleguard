@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
+	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo/stdlib/qfmt"
 )
 
 type benchTestCase struct {
@@ -75,7 +76,22 @@ func TestNoAllocs(t *testing.T) {
 }
 
 func BenchmarkEval(b *testing.B) {
-	var tests []*benchTestCase
+	var tests = []*benchTestCase{
+		{
+			`CallNativeVariadic0`,
+			`return fmt.Sprintf("no formatting")`,
+		},
+		{
+			`CallNativeVariadic1`,
+			`return fmt.Sprintf("Hello, %s!", "world")`,
+		},
+
+		{
+			`CallNativeVariadic2`,
+			`return fmt.Sprintf("%s:%d", "foo.go", 105)`,
+		},
+	}
+
 	tests = append(tests, benchmarksNoAlloc...)
 
 	runBench := func(b *testing.B, env *quasigo.EvalEnv, fn *quasigo.Func) {
@@ -98,6 +114,8 @@ func compileBenchFunc(t testing.TB, bodySrc string) (*quasigo.Env, *quasigo.Func
 	makePackageSource := func(body string) string {
 		return `
 		  package test
+		  import "fmt"
+		  var _ = fmt.Sprintf
 		  func f() interface{} {
 			  ` + body + `
 		  }
@@ -111,6 +129,7 @@ func compileBenchFunc(t testing.TB, bodySrc string) (*quasigo.Env, *quasigo.Func
 		x := stack.PopInt()
 		stack.PushInt(x * y)
 	})
+	qfmt.ImportAll(env)
 	src := makePackageSource(bodySrc)
 	parsed, err := parseGoFile(src)
 	if err != nil {

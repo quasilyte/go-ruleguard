@@ -1,3 +1,4 @@
+//go:build main
 // +build main
 
 package main
@@ -25,6 +26,8 @@ var opcodePrototypes = []opcodeProto{
 	{"PushConst", "op constid:u8", "() -> (const)"},
 	{"PushIntConst", "op constid:u8", "() -> (const:int)"},
 
+	{"ConvIntToIface", "op", "(value:int) -> (value)"},
+
 	{"SetLocal", "op index:u8", "(value) -> ()"},
 	{"SetIntLocal", "op index:u8", "(value:int) -> ()"},
 	{"IncLocal", "op index:u8", stackUnchanged},
@@ -40,6 +43,7 @@ var opcodePrototypes = []opcodeProto{
 	{"JumpFalse", "op offset:i16", "(cond:bool) -> ()"},
 	{"JumpTrue", "op offset:i16", "(cond:bool) -> ()"},
 
+	{"SetVariadicLen", "op len:u8", stackUnchanged},
 	{"CallNative", "op funcid:u16", "(args...) -> (results...)"},
 
 	{"IsNil", "op", "(value) -> (result:bool)"},

@@ -517,7 +517,7 @@ func (cl *compiler) compileBuiltinCall(fn *ast.Ident, call *ast.CallExpr) {
 			funcName = "PrintInt"
 		}
 		key := funcKey{qualifier: "builtin", name: funcName}
-		if !cl.compileNativeCall(key, nil, call.Args) {
+		if !cl.compileNativeCall(key, 0, nil, call.Args) {
 			panic(cl.errorf(fn, "builtin.%s native func is not registered", funcName))
 		}
 
@@ -548,13 +548,16 @@ func (cl *compiler) compileCallExpr(call *ast.CallExpr) {
 	} else {
 		key.qualifier = fn.Pkg().Path()
 	}
-
-	if !cl.compileNativeCall(key, expr, call.Args) {
+	variadic := 0
+	if sig.Variadic() {
+		variadic = sig.Params().Len() - 1
+	}
+	if !cl.compileNativeCall(key, variadic, expr, call.Args) {
 		panic(cl.errorf(call.Fun, "can't compile a call to %s func", key))
 	}
 }
 
-func (cl *compiler) compileNativeCall(key funcKey, expr ast.Expr, args []ast.Expr) bool {
+func (cl *compiler) compileNativeCall(key funcKey, variadic int, expr ast.Expr, args []ast.Expr) bool {
 	funcID, ok := cl.ctx.Env.nameToNativeFuncID[key]
 	if !ok {
 		return false
@@ -572,9 +575,35 @@ func (cl *compiler) compileNativeCall(key funcKey, expr ast.Expr, args []ast.Exp
 			}
 		}
 	}
-	for _, arg := range args {
+
+	normalArgs := args
+	var variadicArgs []ast.Expr
+	if variadic != 0 {
+		normalArgs = args[:variadic]
+		variadicArgs = args[variadic:]
+	}
+
+	for _, arg := range normalArgs {
 		cl.compileExpr(arg)
 	}
+	if variadic != 0 {
+		for _, arg := range variadicArgs {
+			cl.compileExpr(arg)
+			// int-typed values should appear in the interface{}-typed
+			// objects slice, so we get all variadic args placed in one place.
+			if typeIsInt(cl.ctx.Types.TypeOf(arg)) {
+				cl.emit(opConvIntToIface)
+			}
+		}
+		if len(variadicArgs) > 255 {
+			panic(cl.errorf(expr, "too many variadic args"))
+		}
+		// Even if len(variadicArgs) is 0, we still need to overwrite
+		// the old variadicLen value, so the variadic func is not confused
+		// by some unrelated value.
+		cl.emit8(opSetVariadicLen, len(variadicArgs))
+	}
+
 	cl.emit16(opCallNative, int(funcID))
 	return true
 }

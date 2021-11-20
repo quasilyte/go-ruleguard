@@ -14,6 +14,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo/internal/evaltest"
+	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo/stdlib/qfmt"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo/stdlib/qstrconv"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo/stdlib/qstrings"
 )
@@ -276,6 +277,7 @@ func TestEvalFile(t *testing.T) {
 
 		qstrings.ImportAll(env)
 		qstrconv.ImportAll(env)
+		qfmt.ImportAll(env)
 
 		var mainFunc *quasigo.Func
 		for _, decl := range parsed.ast.Decls {

@@ -330,11 +330,32 @@ func TestCompile(t *testing.T) {
 			`  SetLocal 0 # err`,
 			`  SetIntLocal 1 # v`,
 			`  PushIntLocal 1 # v`,
-			`  CallNative 3 # builtin.PrintInt`,
+			`  CallNative 4 # builtin.PrintInt`,
 			`  PushLocal 0 # err`,
 			`  IsNil`,
-			`  CallNative 4 # builtin.Print`,
+			`  CallNative 5 # builtin.Print`,
 			`  PushLocal 0 # err`,
+			`  ReturnTop`,
+		},
+
+		`v := sprintf("no formatting"); return v`: {
+			`  PushConst 0 # value="no formatting"`,
+			`  SetVariadicLen 0`,
+			`  CallNative 3 # testpkg.sprintf`,
+			`  SetLocal 0 # v`,
+			`  PushLocal 0 # v`,
+			`  ReturnTop`,
+		},
+
+		`v := sprintf("%s:%d", "foo", 5); return v`: {
+			`  PushConst 0 # value="%s:%d"`,
+			`  PushConst 1 # value="foo"`,
+			`  PushIntConst 0 # value=5`,
+			`  ConvIntToIface`,
+			`  SetVariadicLen 2`,
+			`  CallNative 3 # testpkg.sprintf`,
+			`  SetLocal 0 # v`,
+			`  PushLocal 0 # v`,
 			`  ReturnTop`,
 		},
 	}
@@ -348,6 +369,7 @@ func TestCompile(t *testing.T) {
 		  func imul(x, y int) int
 		  func idiv(x, y int) int
 		  func atoi(s string) (int, error)
+		  func sprintf(format string, args ...interface{}) string
 		  `
 	}
 
@@ -359,6 +381,9 @@ func TestCompile(t *testing.T) {
 		panic("should not be called")
 	})
 	env.AddNativeFunc(testPackage, "atoi", func(stack *quasigo.ValueStack) {
+		panic("should not be called")
+	})
+	env.AddNativeFunc(testPackage, "sprintf", func(stack *quasigo.ValueStack) {
 		panic("should not be called")
 	})
 	env.AddNativeFunc("builtin", "PrintInt", func(stack *quasigo.ValueStack) {
