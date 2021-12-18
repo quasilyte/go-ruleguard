@@ -364,7 +364,7 @@ func (rr *rulesRunner) renderMessage(msg string, m matchData, truncate bool) str
 		// Don't interpolate strings that are too long.
 		var replacement string
 		if truncate && buf.Len() > 60 {
-			replacement = key
+			replacement = string([]rune(buf.String())[:60]) + "..."
 		} else {
 			replacement = buf.String()
 		}
