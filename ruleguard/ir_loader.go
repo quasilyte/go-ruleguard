@@ -11,13 +11,13 @@ import (
 	"io/ioutil"
 	"regexp"
 
-	"github.com/quasilyte/go-ruleguard/internal/gogrep"
-	"github.com/quasilyte/go-ruleguard/nodetag"
 	"github.com/quasilyte/go-ruleguard/ruleguard/goutil"
 	"github.com/quasilyte/go-ruleguard/ruleguard/ir"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
 	"github.com/quasilyte/go-ruleguard/ruleguard/textmatch"
 	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
+	"github.com/quasilyte/gogrep"
+	"github.com/quasilyte/gogrep/nodetag"
 )
 
 type irLoaderConfig struct {
@@ -316,7 +316,13 @@ func (l *irLoader) loadSyntaxRule(resultProto goRule, filterInfo filterInfo, rul
 	result := resultProto
 	result.line = line
 
-	pat, info, err := gogrep.Compile(l.gogrepFset, src, false)
+	gogrepConfig := gogrep.CompileConfig{
+		Fset:      l.gogrepFset,
+		Src:       src,
+		Strict:    false,
+		WithTypes: true,
+	}
+	pat, info, err := gogrep.Compile(gogrepConfig)
 	if err != nil {
 		return l.errorf(rule.Line, err, "parse match pattern")
 	}

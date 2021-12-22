@@ -4,9 +4,9 @@ go 1.15
 
 require (
 	github.com/go-toolsmith/astcopy v1.0.0
-	github.com/go-toolsmith/astequal v1.0.1
-	github.com/google/go-cmp v0.5.2
+	github.com/google/go-cmp v0.5.6
 	github.com/quasilyte/go-ruleguard/dsl v0.3.10
 	github.com/quasilyte/go-ruleguard/rules v0.0.0-20211022131956-028d6511ab71
+	github.com/quasilyte/gogrep v0.0.0-20211222143908-ba25d0f7d6bf
 	golang.org/x/tools v0.0.0-20201230224404-63754364767c
 )
