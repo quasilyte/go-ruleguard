@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/quasilyte/go-ruleguard/internal/gogrep"
+	"github.com/quasilyte/gogrep"
 )
 
 func TestRenderMessage(t *testing.T) {

@@ -7,12 +7,12 @@ import (
 	"go/types"
 	"path/filepath"
 
-	"github.com/quasilyte/go-ruleguard/internal/gogrep"
 	"github.com/quasilyte/go-ruleguard/internal/xtypes"
-	"github.com/quasilyte/go-ruleguard/nodetag"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
 	"github.com/quasilyte/go-ruleguard/ruleguard/textmatch"
 	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
+	"github.com/quasilyte/gogrep"
+	"github.com/quasilyte/gogrep/nodetag"
 )
 
 const filterSuccess = matchFilterResult("")
