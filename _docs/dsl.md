@@ -30,7 +30,7 @@ Every **matcher function** accepts exactly 1 argument, a [`dsl.Matcher`](https:/
 
 Every **rule** definition starts with a [`Match()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Match) or [`MatchComment()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.MatchComment) method call.
 
-* For `Match()`, you specify one or more [AST patterns](https://github.com/mvdan/gogrep) that should represent what kind of Go code a rule is supposed to match.
+* For `Match()`, you specify one or more [AST patterns](https://github.com/quasilyte/gogrep) that should represent what kind of Go code a rule is supposed to match.
 * For `MatchComment()`, you provide one or more regular expressions that should match a comment of interest.
 
 Another mandatory part is [`Report()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Report) or [`Suggest()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Suggest) that describe a rule match action. `Report()` will print a warning message while `Suggest()` can be used to provide a quickfix action (a syntax rewrite pattern).
