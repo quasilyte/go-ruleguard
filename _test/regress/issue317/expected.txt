@@ -1,0 +1,2 @@
+/root/target.go:10:2: uncheckedTypeAssert: avoid unchecked type assertions as they can panic (rules.go:27)
+/root/target.go:11:7: unusedFormatting: use function alternative without formatting (rules.go:12)
