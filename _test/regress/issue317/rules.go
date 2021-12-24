@@ -4,12 +4,12 @@
 package main
 
 import (
-	rules "github.com/delivery-club/delivery-club-rules"
 	"github.com/quasilyte/go-ruleguard/dsl"
+	corerules "github.com/quasilyte/go-ruleguard/rules"
 	uber "github.com/quasilyte/uber-rules"
 )
 
 func init() {
-	dsl.ImportRules("", rules.Bundle)
+	dsl.ImportRules("", corerules.Bundle)
 	dsl.ImportRules("", uber.Bundle)
 }
