@@ -19,6 +19,7 @@ test-master:
 	cd _test/install/gitclone && docker build --no-cache .
 	cd _test/regress/issue103 && docker build --no-cache .
 	cd _test/regress/issue193 && docker build --no-cache .
+	cd _test/regress/issue317 && docker build --no-cache .
 	@echo "everything is OK"
 
 test-release:

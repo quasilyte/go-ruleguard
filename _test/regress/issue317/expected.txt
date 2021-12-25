@@ -1,0 +1,2 @@
+/root/target.go:11:2: uncheckedTypeAssert: avoid unchecked type assertions as they can panic (rules.go:27)
+/root/target.go:13:19: badCond: statement always true (diag.go:14)
