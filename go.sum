@@ -15,8 +15,8 @@ github.com/quasilyte/go-ruleguard/dsl v0.3.10/go.mod h1:KeCP03KrjuSO0H1kTuZQCWlQ
 github.com/quasilyte/go-ruleguard/rules v0.0.0-20201231183845-9e62ed36efe1/go.mod h1:7JTjp89EGyU1d6XfBiXihJNG37wB2VRkd125Q1u7Plc=
 github.com/quasilyte/go-ruleguard/rules v0.0.0-20211022131956-028d6511ab71 h1:CNooiryw5aisadVfzneSZPswRWvnVW8hF1bS/vo8ReI=
 github.com/quasilyte/go-ruleguard/rules v0.0.0-20211022131956-028d6511ab71/go.mod h1:4cgAphtvu7Ftv7vOT2ZOYhC6CvBxZixcasr8qIOTA50=
-github.com/quasilyte/gogrep v0.0.0-20211222143908-ba25d0f7d6bf h1:qDEThQwGIJN/ynrZdLgg4K8EwDRN7cFtRTJlxYtR7AY=
-github.com/quasilyte/gogrep v0.0.0-20211222143908-ba25d0f7d6bf/go.mod h1:4t4AtVhIG+MC/9AZyzpdbEp0qn3LRMcJgsAa6BsGF+k=
+github.com/quasilyte/gogrep v0.0.0-20211226113550-e12a97c7d96d h1:HUyLC9v8wzT8PBFdZjGehLLNSPzQMXDsbREsMHxwma8=
+github.com/quasilyte/gogrep v0.0.0-20211226113550-e12a97c7d96d/go.mod h1:wSEyW6O61xRV6zb6My3HxrQ5/8ke7NE2OayqCHa3xRM=
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
