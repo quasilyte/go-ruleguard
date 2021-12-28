@@ -303,10 +303,11 @@ func (w *astWalker) walk(n ast.Node) {
 		}
 
 	case *ast.FuncDecl:
+		prevFunc := w.filterParams.currentFunc
+		w.filterParams.currentFunc = n
 		if n.Doc != nil {
 			w.walk(n.Doc)
 		}
-		prevFunc := w.filterParams.currentFunc
 		if n.Recv != nil {
 			w.walk(n.Recv)
 		}
