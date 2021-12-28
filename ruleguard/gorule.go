@@ -67,6 +67,8 @@ type filterParams struct {
 
 	deadcode bool
 
+	currentFunc *ast.FuncDecl
+
 	// varname is set only for custom filters before bytecode function is called.
 	varname string
 }

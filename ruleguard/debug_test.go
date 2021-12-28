@@ -254,7 +254,7 @@ func newDebugTestRunner(input string) (*debugTestRunner, error) {
 		Types: &info,
 		Sizes: types.SizesFor("gc", runtime.GOARCH),
 		Fset:  fset,
-		Report: func(info GoRuleInfo, n ast.Node, msg string, s *Suggestion) {
+		Report: func(data *ReportData) {
 			// Do nothing.
 		},
 	}

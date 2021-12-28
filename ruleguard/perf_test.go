@@ -49,7 +49,7 @@ func benchRunContext(b *testing.B, src string) (*RunContext, *ast.File) {
 		Types: typesInfo,
 		Sizes: types.SizesFor("gc", runtime.GOARCH),
 		Fset:  fset,
-		Report: func(info GoRuleInfo, n ast.Node, msg string, s *Suggestion) {
+		Report: func(data *ReportData) {
 			// Do nothing.
 		},
 	}
