@@ -306,6 +306,7 @@ func (w *astWalker) walk(n ast.Node) {
 		if n.Doc != nil {
 			w.walk(n.Doc)
 		}
+		prevFunc := w.filterParams.currentFunc
 		if n.Recv != nil {
 			w.walk(n.Recv)
 		}
@@ -314,6 +315,7 @@ func (w *astWalker) walk(n ast.Node) {
 		if n.Body != nil {
 			w.walk(n.Body)
 		}
+		w.filterParams.currentFunc = prevFunc
 
 	case *ast.File:
 		w.walk(n.Name)

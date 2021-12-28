@@ -2,7 +2,6 @@ package testanalyzer
 
 import (
 	"fmt"
-	"go/ast"
 	"go/token"
 	"path/filepath"
 
@@ -26,11 +25,13 @@ func New(ruleSet *ir.File) *analysis.Analyzer {
 			Types: pass.TypesInfo,
 			Sizes: pass.TypesSizes,
 			Fset:  pass.Fset,
-			Report: func(info ruleguard.GoRuleInfo, n ast.Node, msg string, s *ruleguard.Suggestion) {
+			Report: func(data *ruleguard.ReportData) {
+				info := data.RuleInfo
+				msg := data.Message
 				fullMessage := fmt.Sprintf("%s: %s (%s:%d)",
 					info.Group.Name, msg, filepath.Base(info.Group.Filename), info.Line)
 				pass.Report(analysis.Diagnostic{
-					Pos:     n.Pos(),
+					Pos:     data.Node.Pos(),
 					Message: fullMessage,
 				})
 			},

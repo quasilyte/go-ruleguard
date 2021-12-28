@@ -3,7 +3,6 @@ package analyzer
 import (
 	"bytes"
 	"fmt"
-	"go/ast"
 	"go/token"
 	"io/ioutil"
 	"os"
@@ -105,17 +104,19 @@ func runAnalyzer(pass *analysis.Pass) (interface{}, error) {
 		Sizes:        pass.TypesSizes,
 		Fset:         pass.Fset,
 		GoVersion:    goVersion,
-		Report: func(info ruleguard.GoRuleInfo, n ast.Node, msg string, s *ruleguard.Suggestion) {
-			fullMessage := msg
+		Report: func(data *ruleguard.ReportData) {
+			fullMessage := data.Message
+			info := data.RuleInfo
 			if printRuleLocation {
 				fullMessage = fmt.Sprintf("%s: %s (%s:%d)",
-					info.Group.Name, msg, filepath.Base(info.Group.Filename), info.Line)
+					info.Group.Name, data.Message, filepath.Base(info.Group.Filename), info.Line)
 			}
 			diag := analysis.Diagnostic{
-				Pos:     n.Pos(),
+				Pos:     data.Node.Pos(),
 				Message: fullMessage,
 			}
-			if s != nil {
+			if data.Suggestion != nil {
+				s := data.Suggestion
 				diag.SuggestedFixes = []analysis.SuggestedFix{
 					{
 						Message: "suggested replacement",

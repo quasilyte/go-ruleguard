@@ -23,6 +23,8 @@ type rulesRunner struct {
 	ctx   *RunContext
 	rules *goRuleSet
 
+	reportData ReportData
+
 	gogrepState gogrep.MatcherState
 
 	importer *goImporter
@@ -291,7 +293,12 @@ func (rr *rulesRunner) handleCommentMatch(rule goCommentRule, m commentMatchData
 		Group: rule.base.group,
 		Line:  rule.base.line,
 	}
-	rr.ctx.Report(info, node, message, suggestion)
+	rr.reportData.RuleInfo = info
+	rr.reportData.Node = node
+	rr.reportData.Message = message
+	rr.reportData.Suggestion = suggestion
+
+	rr.ctx.Report(&rr.reportData)
 	return true
 }
 
@@ -322,7 +329,14 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 		Group: rule.group,
 		Line:  rule.line,
 	}
-	rr.ctx.Report(info, node, message, suggestion)
+	rr.reportData.RuleInfo = info
+	rr.reportData.Node = node
+	rr.reportData.Message = message
+	rr.reportData.Suggestion = suggestion
+
+	rr.reportData.Func = rr.filterParams.currentFunc
+
+	rr.ctx.Report(&rr.reportData)
 	return true
 }
 
