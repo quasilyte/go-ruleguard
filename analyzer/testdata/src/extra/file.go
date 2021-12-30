@@ -328,7 +328,7 @@ func testYodaExpr() {
 	if nil != clusterContext.PostInstallData.CoreDNSUpdateFunction { // want `\Qsuggestion: clusterContext.PostInstallData.CoreDNSUpdateFunction != nil`
 	}
 	// This is far too long, so it's shortened in the output.
-	if nil != clusterContext.PostInstallData.AnotherNestedStruct.DeeplyNestedField { // want `\Qsuggestion: $s != nil`
+	if nil != clusterContext.PostInstallData.AnotherNestedStruct.DeeplyNestedField { // want `\QclusterContext.PostInstallD<...>stedStruct.DeeplyNestedField != nil`
 	}
 }
 

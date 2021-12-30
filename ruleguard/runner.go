@@ -375,14 +375,24 @@ func (rr *rulesRunner) renderMessage(msg string, m matchData, truncate bool) str
 		}
 		buf.Reset()
 		buf.Write(rr.nodeText(n))
-		// Don't interpolate strings that are too long.
-		var replacement string
-		if truncate && buf.Len() > 60 {
-			replacement = key
-		} else {
-			replacement = buf.String()
+		replacement := buf.String()
+		if truncate {
+			replacement = truncateText(replacement, 60)
 		}
 		msg = strings.ReplaceAll(msg, key, replacement)
 	}
 	return msg
+}
+
+func truncateText(s string, maxLen int) string {
+	const placeholder = "<...>"
+	if len(s) <= maxLen-len(placeholder) {
+		return s
+	}
+	maxLen -= len(placeholder)
+	leftLen := maxLen / 2
+	rightLen := (maxLen % 2) + leftLen
+	left := s[:leftLen]
+	right := s[len(s)-rightLen:]
+	return left + placeholder + right
 }
