@@ -309,6 +309,103 @@ func detectType() {
 		typeTest(1, "no", 3, "variadic underlying int") // want `false`
 		typeTest(1, 2, "no", "variadic underlying int") // want `false`
 	}
+
+	{
+		type myInt int
+		typeTest(1, "is numeric") // want `true`
+		typeTest(myInt(1), "is numeric")
+		typeTest("not numeric", "is numeric")
+
+		typeTest(1, "underlying is numeric")        // want `true`
+		typeTest(1.63, "underlying is numeric")     // want `true`
+		typeTest(myInt(1), "underlying is numeric") // want `true`
+		typeTest("not", "underlying is numeric")
+		typeTest([]int{1}, "underlying is numeric")
+
+		typeTest(uintptr(5), "is unsigned") // want `true`
+		typeTest(uint(5), "is unsigned")    // want `true`
+		typeTest(uint8(5), "is unsigned")   // want `true`
+		typeTest(uint16(5), "is unsigned")  // want `true`
+		typeTest(uint32(5), "is unsigned")  // want `true`
+		typeTest(uint64(5), "is unsigned")  // want `true`
+		typeTest(5, "is unsigned")
+		typeTest(int32(5), "is unsigned")
+		typeTest(int(5), "is unsigned")
+		typeTest(rune(5), "is unsigned")
+		typeTest("934", "is unsigned")
+		typeTest(4.6, "is unsigned")
+
+		typeTest(uint(5), "is signed")
+		typeTest(uint8(5), "is signed")
+		typeTest(uint16(5), "is signed")
+		typeTest(uint32(5), "is signed")
+		typeTest(uint64(5), "is signed")
+		typeTest(uintptr(5), "is signed")
+		typeTest(5, "is signed")        // want `true`
+		typeTest(int8(5), "is signed")  // want `true`
+		typeTest(int16(5), "is signed") // want `true`
+		typeTest(int32(5), "is signed") // want `true`
+		typeTest(int64(5), "is signed") // want `true`
+		typeTest(int(5), "is signed")   // want `true`
+		typeTest(rune(5), "is signed")  // want `true`
+		typeTest("934", "is signed")
+		typeTest(4.6, "is signed")
+		typeTest([]int{225}, "is signed")
+
+		typeTest(uint(5), "is float")
+		typeTest(uint8(5), "is float")
+		typeTest(uint16(5), "is float")
+		typeTest(uint32(5), "is float")
+		typeTest(uint64(5), "is float")
+		typeTest(uintptr(5), "is float")
+		typeTest(5, "is float")
+		typeTest(int8(5), "is float")
+		typeTest(int16(5), "is float")
+		typeTest(int32(5), "is float")
+		typeTest(int64(5), "is float")
+		typeTest(int(5), "is float")
+		typeTest("934", "is float")
+		typeTest(4.6, "is float")          // want `true`
+		typeTest(float32(4.6), "is float") // want `true`
+		typeTest(float64(4.6), "is float") // want `true`
+		typeTest([]int{225}, "is float")
+
+		typeTest(5, "is int")        // want `true`
+		typeTest(int8(1), "is int")  // want `true`
+		typeTest(int16(1), "is int") // want `true`
+		typeTest(int32(1), "is int") // want `true`
+		typeTest(int64(1), "is int") // want `true`
+		typeTest(rune(1), "is int")  // want `true`
+		typeTest(byte(1), "is int")
+		typeTest(uint(1), "is int")
+		typeTest(uint8(1), "is int")
+		typeTest(uint16(1), "is int")
+		typeTest(uint32(1), "is int")
+		typeTest(uint64(1), "is int")
+		typeTest([]int{3}, "is int")
+		typeTest("ds", "is int")
+		typeTest(54.2, "is int")
+		typeTest(float64(5.3), "is int")
+		typeTest(float32(5.3), "is int")
+
+		typeTest(5, "is uint")
+		typeTest(int8(1), "is uint")
+		typeTest(int16(1), "is uint")
+		typeTest(int32(1), "is uint")
+		typeTest(int64(1), "is uint")
+		typeTest(rune(1), "is uint")
+		typeTest(byte(1), "is uint")   // want `true`
+		typeTest(uint(1), "is uint")   // want `true`
+		typeTest(uint8(1), "is uint")  // want `true`
+		typeTest(uint16(1), "is uint") // want `true`
+		typeTest(uint32(1), "is uint") // want `true`
+		typeTest(uint64(1), "is uint") // want `true`
+		typeTest([]int{3}, "is uint")
+		typeTest("ds", "is uint")
+		typeTest(54.2, "is uint")
+		typeTest(float64(5.3), "is uint")
+		typeTest(float32(5.3), "is uint")
+	}
 }
 
 func detectAddressable(x int, xs []int) {

@@ -377,6 +377,11 @@ func TestParseFilterError(t *testing.T) {
 		},
 
 		{
+			`m["x"].Type.OfKind("badkind")`,
+			`unknown kind badkind`,
+		},
+
+		{
 			`m["x"].Node.Is("abc")`,
 			`abc is not a valid go/ast type name`,
 		},

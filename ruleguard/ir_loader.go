@@ -460,6 +460,25 @@ func (l *irLoader) unwrapStringExpr(filter ir.FilterExpr) string {
 	return ""
 }
 
+func (l *irLoader) stringToBasicKind(s string) types.BasicInfo {
+	switch s {
+	case "integer":
+		return types.IsInteger
+	case "unsigned":
+		return types.IsUnsigned
+	case "float":
+		return types.IsFloat
+	case "complex":
+		return types.IsComplex
+	case "untyped":
+		return types.IsUnsigned
+	case "numeric":
+		return types.IsNumeric
+	default:
+		return 0
+	}
+}
+
 func (l *irLoader) newFilter(filter ir.FilterExpr, info *filterInfo) (matchFilter, error) {
 	if filter.HasVar() {
 		info.Vars[filter.Value.(string)] = struct{}{}
@@ -512,6 +531,27 @@ func (l *irLoader) newFilter(filter ir.FilterExpr, info *filterInfo) (matchFilte
 			return result, err
 		}
 		result.fn = makeNodeIsFilter(result.src, filter.Value.(string), tag)
+
+	case ir.FilterVarTypeOfKindOp, ir.FilterVarTypeUnderlyingOfKindOp:
+		kindString := l.unwrapStringExpr(filter.Args[0])
+		if kindString == "" {
+			return result, l.errorf(filter.Line, nil, "expected a non-empty string argument")
+		}
+		underlying := filter.Op == ir.FilterVarTypeUnderlyingOfKindOp
+		switch kindString {
+		case "signed":
+			result.fn = makeTypeIsSignedFilter(result.src, filter.Value.(string), underlying)
+		case "int":
+			result.fn = makeTypeIsIntUintFilter(result.src, filter.Value.(string), underlying, types.Int)
+		case "uint":
+			result.fn = makeTypeIsIntUintFilter(result.src, filter.Value.(string), underlying, types.Uint)
+		default:
+			kind := l.stringToBasicKind(kindString)
+			if kind == 0 {
+				return result, l.errorf(filter.Line, nil, "unknown kind %s", kindString)
+			}
+			result.fn = makeTypeOfKindFilter(result.src, filter.Value.(string), underlying, kind)
+		}
 
 	case ir.FilterVarTypeIsOp, ir.FilterVarTypeUnderlyingIsOp:
 		typeString := l.unwrapStringExpr(filter.Args[0])

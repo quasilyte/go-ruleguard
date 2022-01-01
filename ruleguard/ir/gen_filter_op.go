@@ -53,6 +53,8 @@ func main() {
 		{name: "VarObjectIs", comment: "m[$Value].Object.Is($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarTypeIs", comment: "m[$Value].Type.Is($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarTypeUnderlyingIs", comment: "m[$Value].Type.Underlying().Is($Args[0])", valueType: "string", flags: flagHasVar},
+		{name: "VarTypeOfKind", comment: "m[$Value].Type.OfKind($Args[0])", valueType: "string", flags: flagHasVar},
+		{name: "VarTypeUnderlyingOfKind", comment: "m[$Value].Type.Underlying().OfKind($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarTypeConvertibleTo", comment: "m[$Value].Type.ConvertibleTo($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarTypeAssignableTo", comment: "m[$Value].Type.AssignableTo($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarTypeImplements", comment: "m[$Value].Type.Implements($Args[0])", valueType: "string", flags: flagHasVar},
