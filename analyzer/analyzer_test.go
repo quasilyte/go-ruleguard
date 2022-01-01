@@ -14,11 +14,12 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"golang.org/x/tools/go/analysis/analysistest"
+
 	"github.com/quasilyte/go-ruleguard/analyzer"
 	"github.com/quasilyte/go-ruleguard/ruleguard/goutil"
 	"github.com/quasilyte/go-ruleguard/ruleguard/irconv"
 	"github.com/quasilyte/go-ruleguard/ruleguard/irprint"
-	"golang.org/x/tools/go/analysis/analysistest"
 )
 
 var tests = []struct {
@@ -176,7 +177,10 @@ var rulesFile = %s
 			if err != nil {
 				t.Fatal(err)
 			}
-			defer os.Remove(mainFile.Name())
+			defer func() {
+				mainFile.Close()
+				os.Remove(mainFile.Name())
+			}()
 			_, err = mainFile.WriteString(fmt.Sprintf(analyzerTemplate, irfileBuf.String()))
 			if err != nil {
 				t.Fatal(err)
