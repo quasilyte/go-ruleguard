@@ -2,6 +2,7 @@ package ruleguard
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"go/ast"
 	"go/build"
@@ -13,12 +14,15 @@ import (
 	"strings"
 
 	"github.com/quasilyte/go-ruleguard/ruleguard/goutil"
+	"github.com/quasilyte/go-ruleguard/ruleguard/profiling"
 	"github.com/quasilyte/gogrep"
 	"github.com/quasilyte/gogrep/nodetag"
 )
 
 type rulesRunner struct {
 	state *engineState
+
+	bgContext context.Context
 
 	ctx   *RunContext
 	rules *goRuleSet
@@ -60,6 +64,7 @@ func newRulesRunner(ctx *RunContext, buildContext *build.Context, state *engineS
 	gogrepState := gogrep.NewMatcherState()
 	gogrepState.Types = ctx.Types
 	rr := &rulesRunner{
+		bgContext:   context.Background(),
 		ctx:         ctx,
 		importer:    importer,
 		rules:       rules,
@@ -209,12 +214,25 @@ func (rr *rulesRunner) runCommentRules(comment *ast.Comment) {
 }
 
 func (rr *rulesRunner) runRules(n ast.Node) {
+	// profiling.LabelsEnabled is constant, so labels-related
+	// code should be a no-op inside normal build.
+	// To enable labels, use "-tags pproflabels" build tag.
+
 	tag := nodetag.FromNode(n)
 	for _, rule := range rr.rules.universal.rulesByTag[tag] {
+		if profiling.LabelsEnabled {
+			profiling.EnterWithLabels(rr.bgContext, rule.group.Name)
+		}
+
 		matched := false
 		rule.pat.MatchNode(&rr.gogrepState, n, func(m gogrep.MatchData) {
 			matched = rr.handleMatch(rule, m)
 		})
+
+		if profiling.LabelsEnabled {
+			profiling.Leave(rr.bgContext)
+		}
+
 		if matched {
 			break
 		}
