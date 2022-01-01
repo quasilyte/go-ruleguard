@@ -189,6 +189,53 @@ func makeTypeImplementsFilter(src, varname string, iface *types.Interface) filte
 	}
 }
 
+func makeTypeIsIntUintFilter(src, varname string, underlying bool, kind types.BasicKind) filterFunc {
+	return func(params *filterParams) matchFilterResult {
+		typ := params.typeofNode(params.subExpr(varname))
+		if underlying {
+			typ = typ.Underlying()
+		}
+		if basicType, ok := typ.(*types.Basic); ok {
+			first := kind
+			last := kind + 4
+			if basicType.Kind() >= first && basicType.Kind() <= last {
+				return filterSuccess
+			}
+		}
+		return filterFailure(src)
+	}
+}
+
+func makeTypeIsSignedFilter(src, varname string, underlying bool) filterFunc {
+	return func(params *filterParams) matchFilterResult {
+		typ := params.typeofNode(params.subExpr(varname))
+		if underlying {
+			typ = typ.Underlying()
+		}
+		if basicType, ok := typ.(*types.Basic); ok {
+			if basicType.Info()&types.IsInteger != 0 && basicType.Info()&types.IsUnsigned == 0 {
+				return filterSuccess
+			}
+		}
+		return filterFailure(src)
+	}
+}
+
+func makeTypeOfKindFilter(src, varname string, underlying bool, kind types.BasicInfo) filterFunc {
+	return func(params *filterParams) matchFilterResult {
+		typ := params.typeofNode(params.subExpr(varname))
+		if underlying {
+			typ = typ.Underlying()
+		}
+		if basicType, ok := typ.(*types.Basic); ok {
+			if basicType.Info()&kind != 0 {
+				return filterSuccess
+			}
+		}
+		return filterFailure(src)
+	}
+}
+
 func makeTypeIsFilter(src, varname string, underlying bool, pat *typematch.Pattern) filterFunc {
 	if underlying {
 		return func(params *filterParams) matchFilterResult {

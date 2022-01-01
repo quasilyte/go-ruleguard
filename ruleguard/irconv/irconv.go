@@ -696,6 +696,10 @@ func (conv *converter) convertFilterExprImpl(e ast.Expr) ir.FilterExpr {
 			return ir.FilterExpr{Op: ir.FilterVarTypeIsOp, Value: op.varName, Args: args}
 		case "Type.Underlying.Is":
 			return ir.FilterExpr{Op: ir.FilterVarTypeUnderlyingIsOp, Value: op.varName, Args: args}
+		case "Type.OfKind":
+			return ir.FilterExpr{Op: ir.FilterVarTypeOfKindOp, Value: op.varName, Args: args}
+		case "Type.Underlying.OfKind":
+			return ir.FilterExpr{Op: ir.FilterVarTypeUnderlyingOfKindOp, Value: op.varName, Args: args}
 		case "Type.ConvertibleTo":
 			return ir.FilterExpr{Op: ir.FilterVarTypeConvertibleToOp, Value: op.varName, Args: args}
 		case "Type.AssignableTo":

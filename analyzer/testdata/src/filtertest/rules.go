@@ -202,4 +202,32 @@ func testRules(m dsl.Matcher) {
 	m.Match(`textTest("", "root text test")`).
 		Where(m["$$"].Text == `textTest("", "root text test")`).
 		Report(`true`)
+
+	m.Match(`typeTest($x, "is numeric")`).
+		Where(m["x"].Type.OfKind("numeric")).
+		Report(`true`)
+
+	m.Match(`typeTest($x, "underlying is numeric")`).
+		Where(m["x"].Type.Underlying().OfKind("numeric")).
+		Report(`true`)
+
+	m.Match(`typeTest($x, "is unsigned")`).
+		Where(m["x"].Type.Underlying().OfKind("unsigned")).
+		Report(`true`)
+
+	m.Match(`typeTest($x, "is signed")`).
+		Where(m["x"].Type.Underlying().OfKind("signed")).
+		Report(`true`)
+
+	m.Match(`typeTest($x, "is float")`).
+		Where(m["x"].Type.Underlying().OfKind("float")).
+		Report(`true`)
+
+	m.Match(`typeTest($x, "is int")`).
+		Where(m["x"].Type.Underlying().OfKind("int")).
+		Report(`true`)
+
+	m.Match(`typeTest($x, "is uint")`).
+		Where(m["x"].Type.Underlying().OfKind("uint")).
+		Report(`true`)
 }
