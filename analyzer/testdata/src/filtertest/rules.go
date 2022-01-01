@@ -230,4 +230,12 @@ func testRules(m dsl.Matcher) {
 	m.Match(`typeTest($x, "is uint")`).
 		Where(m["x"].Type.Underlying().OfKind("uint")).
 		Report(`true`)
+
+	m.Match(`typeTest($x, "pointer-free")`).
+		Where(!m["x"].Type.HasPointers()).
+		Report(`true`)
+
+	m.Match(`typeTest($x, "has pointers")`).
+		Where(m["x"].Type.HasPointers()).
+		Report(`true`)
 }

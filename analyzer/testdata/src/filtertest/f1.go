@@ -3,6 +3,7 @@ package filtertest
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"time"
 	"unsafe"
@@ -405,6 +406,80 @@ func detectType() {
 		typeTest(54.2, "is uint")
 		typeTest(float64(5.3), "is uint")
 		typeTest(float32(5.3), "is uint")
+	}
+
+	{
+		const untypedStr = "123"
+		type myString string
+
+		type scalarObject struct {
+			x int
+			y int
+		}
+
+		type withPointers struct {
+			x int
+			y *int
+		}
+
+		var intarr [4]int
+		var intptrarr [4]*int
+		var r io.Reader
+		var ch chan int
+
+		typeTest(1, "pointer-free")                  // want `true`
+		typeTest(1.6, "pointer-free")                // want `true`
+		typeTest(true, "pointer-free")               // want `true`
+		typeTest(scalarObject{1, 2}, "pointer-free") // want `true`
+		typeTest(intarr, "pointer-free")             // want `true`
+		typeTest([2]scalarObject{}, "pointer-free")  // want `true`
+
+		typeTest(withPointers{}, "pointer-free")
+		typeTest(&withPointers{}, "pointer-free")
+		typeTest(ch, "pointer-free")
+		typeTest(r, "pointer-free")
+		typeTest(&r, "pointer-free")
+		typeTest(&intarr, "pointer-free")
+		typeTest(intptrarr, "pointer-free")
+		typeTest(&intptrarr, "pointer-free")
+		typeTest(&scalarObject{1, 2}, "pointer-free")
+		typeTest("str", "pointer-free")
+		typeTest(untypedStr, "pointer-free")
+		typeTest(myString("123"), "pointer-free")
+		typeTest(unsafe.Pointer(nil), "pointer-free")
+		typeTest(nil, "pointer-free")
+		typeTest([]int{1}, "pointer-free")
+		typeTest([]string{""}, "pointer-free")
+		typeTest(map[string]string{}, "pointer-free")
+		typeTest(new(int), "pointer-free")
+		typeTest(new(string), "pointer-free")
+
+		typeTest(1, "has pointers")
+		typeTest(1.6, "has pointers")
+		typeTest(true, "has pointers")
+		typeTest(scalarObject{1, 2}, "has pointers")
+		typeTest(intarr, "has pointers")
+		typeTest([2]scalarObject{}, "has pointers")
+
+		typeTest(withPointers{}, "has pointers")      // want `true`
+		typeTest(&withPointers{}, "has pointers")     // want `true`
+		typeTest(ch, "has pointers")                  // want `true`
+		typeTest(r, "has pointers")                   // want `true`
+		typeTest(&r, "has pointers")                  // want `true`
+		typeTest(&intarr, "has pointers")             // want `true`
+		typeTest(intptrarr, "has pointers")           // want `true`
+		typeTest(&intptrarr, "has pointers")          // want `true`
+		typeTest(&scalarObject{1, 2}, "has pointers") // want `true`
+		typeTest("str", "has pointers")               // want `true`
+		typeTest(untypedStr, "has pointers")          // want `true`
+		typeTest(myString("123"), "has pointers")     // want `true`
+		typeTest(unsafe.Pointer(nil), "has pointers") // want `true`
+		typeTest(nil, "has pointers")                 // want `true`
+		typeTest([]int{1}, "has pointers")            // want `true`
+		typeTest([]string{""}, "has pointers")        // want `true`
+		typeTest(map[string]string{}, "has pointers") // want `true`
+		typeTest(new(int), "has pointers")            // want `true`
+		typeTest(new(string), "has pointers")         // want `true`
 	}
 }
 
