@@ -216,6 +216,27 @@ func (ExprType) Implements(typ typeName) bool { return boolResult }
 // Is reports whether a type is identical to a given type.
 func (ExprType) Is(typ string) bool { return boolResult }
 
+// OfKind reports whether a matched expr type is compatible with the specified kind.
+//
+// Only a few "kinds" are recognized, the list is provided below.
+//
+//	"integer"  -- typ is *types.Basic, where typ.Info()&types.Integer != 0
+//	"unsigned" -- typ is *types.Basic, where typ.Info()&types.Unsigned != 0
+//	"float"    -- typ is *types.Basic, where typ.Info()&types.Float != 0
+//	"complex"  -- typ is *types.Basic, where typ.Info()&types.Complex != 0
+//	"untyped"  -- typ is *types.Basic, where typ.Info()&types.Untyped != 0
+//	"numeric"  -- typ is *types.Basic, where typ.Info()&types.Numeric != 0
+//  "signed"   -- identical to `OfKind("integer") && !OfKind("unsigned")`
+//  "int"      -- int, int8, int16, int32, int64
+//  "uint"     -- uint, uint8, uint16, uint32, uint64
+//
+// Note: "int" will include "rune" as well, as it's an alias.
+// In the same manner, "uint" includes the "byte" type.
+//
+// Using OfKind("unsigned") is more efficient (and concise) than using a set
+// of or-conditions with Is("uint8"), Is("uint16") and so on.
+func (ExprType) OfKind(kind string) bool { return boolResult }
+
 // MatchedText represents a source text associated with a matched node.
 type MatchedText string
 
