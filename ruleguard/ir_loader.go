@@ -532,6 +532,9 @@ func (l *irLoader) newFilter(filter ir.FilterExpr, info *filterInfo) (matchFilte
 		}
 		result.fn = makeNodeIsFilter(result.src, filter.Value.(string), tag)
 
+	case ir.FilterVarTypeHasPointersOp:
+		result.fn = makeTypeHasPointersFilter(result.src, filter.Value.(string))
+
 	case ir.FilterVarTypeOfKindOp, ir.FilterVarTypeUnderlyingOfKindOp:
 		kindString := l.unwrapStringExpr(filter.Args[0])
 		if kindString == "" {

@@ -47,6 +47,7 @@ func main() {
 		{name: "VarLine", comment: "m[$Value].Line", valueType: "string", flags: flagHasVar},
 		{name: "VarValueInt", comment: "m[$Value].Value.Int()", valueType: "string", flags: flagHasVar},
 		{name: "VarTypeSize", comment: "m[$Value].Type.Size", valueType: "string", flags: flagHasVar},
+		{name: "VarTypeHasPointers", comment: "m[$Value].Type.HasPointers()", valueType: "string", flags: flagHasVar},
 
 		{name: "VarFilter", comment: "m[$Value].Filter($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarNodeIs", comment: "m[$Value].Node.Is($Args[0])", valueType: "string", flags: flagHasVar},

@@ -189,6 +189,16 @@ func makeTypeImplementsFilter(src, varname string, iface *types.Interface) filte
 	}
 }
 
+func makeTypeHasPointersFilter(src, varname string) filterFunc {
+	return func(params *filterParams) matchFilterResult {
+		typ := params.typeofNode(params.subExpr(varname))
+		if typeHasPointers(typ) {
+			return filterSuccess
+		}
+		return filterFailure(src)
+	}
+}
+
 func makeTypeIsIntUintFilter(src, varname string, underlying bool, kind types.BasicKind) filterFunc {
 	return func(params *filterParams) matchFilterResult {
 		typ := params.typeofNode(params.subExpr(varname))
@@ -530,4 +540,32 @@ func nodeIs(n ast.Node, tag nodetag.Value) bool {
 		matched = (tag == nodetag.FromNode(n))
 	}
 	return matched
+}
+
+func typeHasPointers(typ types.Type) bool {
+	switch typ := typ.(type) {
+	case *types.Basic:
+		switch typ.Kind() {
+		case types.UnsafePointer, types.String, types.UntypedNil, types.UntypedString:
+			return true
+		}
+		return false
+
+	case *types.Named:
+		return typeHasPointers(typ.Underlying())
+
+	case *types.Struct:
+		for i := 0; i < typ.NumFields(); i++ {
+			if typeHasPointers(typ.Field(i).Type()) {
+				return true
+			}
+		}
+		return false
+
+	case *types.Array:
+		return typeHasPointers(typ.Elem())
+
+	default:
+		return true
+	}
 }
