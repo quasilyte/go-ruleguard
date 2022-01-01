@@ -216,6 +216,18 @@ func (ExprType) Implements(typ typeName) bool { return boolResult }
 // Is reports whether a type is identical to a given type.
 func (ExprType) Is(typ string) bool { return boolResult }
 
+// HasPointers reports whether a type contains at least one pointer.
+//
+// We try to be as close to the Go sense of pointer-free objects as possible,
+// therefore string type is not considered to be a pointer-free type.
+//
+// This function may return "true" for some complicated cases as a
+// conservative result. It never returns "false" for a type that
+// actually contains a pointer.
+//
+// So this function is mostly useful for !HasPointers() form.
+func (ExprType) HasPointers() bool { return boolResult }
+
 // OfKind reports whether a matched expr type is compatible with the specified kind.
 //
 // Only a few "kinds" are recognized, the list is provided below.
