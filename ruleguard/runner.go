@@ -138,8 +138,8 @@ func (rr *rulesRunner) run(f *ast.File) error {
 		var inspector astWalker
 		inspector.nodePath = &rr.nodePath
 		inspector.filterParams = &rr.filterParams
-		inspector.Walk(f, func(n ast.Node) {
-			rr.runRules(n)
+		inspector.Walk(f, func(n ast.Node, tag nodetag.Value) {
+			rr.runRules(n, tag)
 		})
 	}
 
@@ -213,12 +213,11 @@ func (rr *rulesRunner) runCommentRules(comment *ast.Comment) {
 	}
 }
 
-func (rr *rulesRunner) runRules(n ast.Node) {
+func (rr *rulesRunner) runRules(n ast.Node, tag nodetag.Value) {
 	// profiling.LabelsEnabled is constant, so labels-related
 	// code should be a no-op inside normal build.
 	// To enable labels, use "-tags pproflabels" build tag.
 
-	tag := nodetag.FromNode(n)
 	for _, rule := range rr.rules.universal.rulesByTag[tag] {
 		if profiling.LabelsEnabled {
 			profiling.EnterWithLabels(rr.bgContext, rule.group.Name)
