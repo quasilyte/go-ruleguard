@@ -1,3 +1,4 @@
+//go:build ignore
 // +build ignore
 
 package gorules
@@ -21,7 +22,7 @@ func issue72(m dsl.Matcher) {
 }
 
 func issue115(m dsl.Matcher) {
-	m.Match(`println($x)`).
+	m.Match(`println($x, "!constexpr int")`).
 		Where(!(m["x"].Const && m["x"].Type.Is("int"))).
 		Report("$x is not a constexpr int")
 }
@@ -44,4 +45,9 @@ func issue291(m dsl.Matcher) {
 		Where(m["iota"].Text == "iota").
 		At(m["iota"]).
 		Report("good, have explicit type")
+}
+
+func issue339(m dsl.Matcher) {
+	m.Match(`println("339"); println("x")`).Report("pattern1")
+	m.Match(`println("x"); println("339")`).Report("pattern2")
 }

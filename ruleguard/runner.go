@@ -233,7 +233,7 @@ func (rr *rulesRunner) runRules(n ast.Node) {
 			profiling.Leave(rr.bgContext)
 		}
 
-		if matched {
+		if matched && !multiMatchTags[tag] {
 			break
 		}
 	}
@@ -413,4 +413,11 @@ func truncateText(s string, maxLen int) string {
 	left := s[:leftLen]
 	right := s[len(s)-rightLen:]
 	return left + placeholder + right
+}
+
+var multiMatchTags = [nodetag.NumBuckets]bool{
+	nodetag.BlockStmt:  true,
+	nodetag.CaseClause: true,
+	nodetag.CommClause: true,
+	nodetag.File:       true,
 }
