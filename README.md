@@ -179,6 +179,7 @@ There can be additional calls in between these two. For example, a [`Where(cond)
 * [Damian Gryski](github.com/dgryski/) rule set: [github.com/dgryski/semgrep-go/ruleguard.rules.go](https://github.com/dgryski/semgrep-go)
 * [go-critic](https://github.com/go-critic/go-critic) rule set: [github.com/go-critic/go-critic/checkers/rules/rules.go](https://github.com/go-critic/go-critic/blob/master/checkers/rules/rules.go)
 * Partial [Uber-Go](https://github.com/uber-go/guide) style rule set: [github.com/quasilyte/uber-rules](https://github.com/quasilyte/uber-rules)
+* [go-perfguard](https://github.com/quasilyte/go-perfguard) rule set: [github.com/quasilyte/go-perfguard/perfguard/_rules/universal_rules.go](https://github.com/quasilyte/go-perfguard/blob/master/perfguard/_rules/universal_rules.go)
 
 Note: `go-critic` embeds the rules using the IR precompilation feature.
 
