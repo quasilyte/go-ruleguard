@@ -387,16 +387,16 @@ func (rr *rulesRunner) renderMessage(msg string, m matchData, truncate bool) str
 
 	for _, c := range capture {
 		n := c.Node
-		key := "$" + c.Name
-		if !strings.Contains(msg, key) {
-			continue
-		}
 		// Some captured nodes are typed, but nil.
 		// We can't really get their text, so skip them here.
 		// For example, pattern `func $_() $results { $*_ }` may
 		// match a nil *ast.FieldList for $results if executed
 		// against a function with no results.
 		if reflect.ValueOf(n).IsNil() {
+			continue
+		}
+		key := "$" + c.Name
+		if !strings.Contains(msg, key) {
 			continue
 		}
 		buf.Reset()
