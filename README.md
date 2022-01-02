@@ -22,7 +22,8 @@ You write the rules, `ruleguard` checks whether they are satisfied.
 * [Quickfix](_docs/dsl.md#suggestions-quickfix-support) actions support
 * Powerful match filtering features, like expression [type pattern matching](_docs/dsl.md#type-pattern-matching)
 * Not restricted to AST rules; it's possible to write a comment-related rule, for example
-* Rules can be installed as [Go modules](https://quasilyte.dev/blog/post/ruleguard-modules/)
+* Rules can be installed and distributed as [Go modules](https://quasilyte.dev/blog/post/ruleguard-modules/)
+* Rules can be developed, debugged and profiled using the conventional Go tooling
 * Integrated into [golangci-lint](https://github.com/golangci/golangci-lint)
 
 It can also be easily embedded into other static analyzers. [go-critic](https://github.com/go-critic/go-critic) can be used as an example.
