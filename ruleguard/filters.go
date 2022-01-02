@@ -254,7 +254,7 @@ func makeTypeIsFilter(src, varname string, underlying bool, pat *typematch.Patte
 					return pat.MatchIdentical(params.typeofNode(x).Underlying())
 				})
 			}
-			typ := params.typeofNode(params.subExpr(varname)).Underlying()
+			typ := params.typeofNode(params.subNode(varname)).Underlying()
 			if pat.MatchIdentical(typ) {
 				return filterSuccess
 			}
@@ -268,7 +268,7 @@ func makeTypeIsFilter(src, varname string, underlying bool, pat *typematch.Patte
 				return pat.MatchIdentical(params.typeofNode(x))
 			})
 		}
-		typ := params.typeofNode(params.subExpr(varname))
+		typ := params.typeofNode(params.subNode(varname))
 		if pat.MatchIdentical(typ) {
 			return filterSuccess
 		}

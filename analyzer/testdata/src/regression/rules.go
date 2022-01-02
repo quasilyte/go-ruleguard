@@ -51,3 +51,16 @@ func issue339(m dsl.Matcher) {
 	m.Match(`println("339"); println("x")`).Report("pattern1")
 	m.Match(`println("x"); println("339")`).Report("pattern2")
 }
+
+func issue315(m dsl.Matcher) {
+	m.Match(
+		`func $name($*_) $arg { $*_ }`,
+		`func $name($*_) ($arg, $_) { $*_ }`,
+		`func $name($*_) ($_, $arg, $_) { $*_ }`,
+		`func ($_ $_) $name($*_) ($arg, $_) { $*_ }`,
+	).Where(
+		m["name"].Text.Matches(`^[A-Z]`) &&
+			m["arg"].Type.Underlying().Is(`interface{ $*_ }`) &&
+			!m["arg"].Type.Is(`error`),
+	).Report(`return concrete type instead of $arg`).At(m["name"])
+}
