@@ -91,12 +91,16 @@ func (params *filterParams) subExpr(name string) ast.Expr {
 }
 
 func (params *filterParams) typeofNode(n ast.Node) types.Type {
-	if e, ok := n.(ast.Expr); ok {
-		if typ := params.ctx.Types.TypeOf(e); typ != nil {
-			return typ
-		}
+	var e ast.Expr
+	switch n := n.(type) {
+	case ast.Expr:
+		e = n
+	case *ast.Field:
+		e = n.Type
 	}
-
+	if typ := params.ctx.Types.TypeOf(e); typ != nil {
+		return typ
+	}
 	return types.Typ[types.Invalid]
 }
 
