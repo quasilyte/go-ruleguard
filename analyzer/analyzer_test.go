@@ -45,6 +45,7 @@ var tests = []struct {
 	{name: "uber"},
 	{name: "localfunc"},
 	{name: "goversion", flags: map[string]string{"go": "1.16"}},
+	{name: "imports"},
 }
 
 func TestDirectiveComments(t *testing.T) {
