@@ -181,7 +181,7 @@ There can be additional calls in between these two. For example, a [`Where(cond)
 * Partial [Uber-Go](https://github.com/uber-go/guide) style rule set: [github.com/quasilyte/uber-rules](https://github.com/quasilyte/uber-rules)
 * [go-perfguard](https://github.com/quasilyte/go-perfguard) rule set: [github.com/quasilyte/go-perfguard/perfguard/_rules/universal_rules.go](https://github.com/quasilyte/go-perfguard/blob/master/perfguard/_rules/universal_rules.go)
 
-Note: `go-critic` embeds the rules using the IR precompilation feature.
+Note: `go-critic` and `go-perfguard` embed the rules using the IR precompilation feature.
 
 ## Extra references
 
