@@ -1,3 +1,4 @@
+//go:build ignore
 // +build ignore
 
 package gorules
@@ -263,4 +264,14 @@ func equalFold(m dsl.Matcher) {
 		Where(m["x"].Pure && m["y"].Pure && m["x"].Text != m["y"].Text).
 		Suggest(`bytes.EqualFold($x, $y)]`).
 		Report(`consider replacing with bytes.EqualFold($x, $y)`)
+}
+
+func deferUnlambda(m dsl.Matcher) {
+	m.Match(`defer func() { $f($*args) }()`).
+		Where(m["f"].Node.Is(`Ident`) && m["f"].Text != "panic" && m["f"].Text != "recover" && m["args"].Const).
+		Report("can rewrite as `defer $f($args)`")
+
+	m.Match(`defer func() { $pkg.$f($*args) }()`).
+		Where(m["f"].Node.Is(`Ident`) && m["args"].Const && m["pkg"].Object.Is(`PkgName`)).
+		Report("can rewrite as `defer $pkg.$f($args)`")
 }
