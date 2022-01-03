@@ -1,5 +1,5 @@
 GOPATH_DIR=`go env GOPATH`
-RELEASE=v0.3.13
+RELEASE=v0.3.15
 BUILD_COMMIT=`git rev-parse HEAD`
 
 build:
@@ -8,7 +8,10 @@ build:
 
 build-release:
 	mkdir -p bin
-	go build -o bin/ruleguard -ldflags "-X 'github.com/quasilyte/go-ruleguard/analyzer.Version=$(RELEASE)'" ./cmd/ruleguard
+	go build -o bin/ruleguard \
+		-trimpath \
+		-ldflags "-X 'github.com/quasilyte/go-ruleguard/analyzer.Version=$(RELEASE)'" \
+		./cmd/ruleguard
 
 test:
 	go test -count 3 -coverpkg=./... -coverprofile=coverage.txt -covermode=atomic -race ./...
