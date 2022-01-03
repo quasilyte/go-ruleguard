@@ -392,7 +392,7 @@ func (rr *rulesRunner) renderMessage(msg string, m matchData, truncate bool) str
 		// For example, pattern `func $_() $results { $*_ }` may
 		// match a nil *ast.FieldList for $results if executed
 		// against a function with no results.
-		if reflect.ValueOf(n).IsNil() {
+		if reflect.ValueOf(n).IsNil() && !gogrep.IsEmptyNodeSlice(n) {
 			continue
 		}
 		key := "$" + c.Name
