@@ -21,6 +21,8 @@ github.com/quasilyte/gogrep v0.0.0-20220104130850-cde8b5d8257f h1:xzT0n2C5Iq+lh1
 github.com/quasilyte/gogrep v0.0.0-20220104130850-cde8b5d8257f/go.mod h1:wSEyW6O61xRV6zb6My3HxrQ5/8ke7NE2OayqCHa3xRM=
 github.com/quasilyte/gogrep v0.0.0-20220104144347-088f76da46d2 h1:hr4kq8yYFSpg2AUyN2M+uioocx/1afErqkFv58dAoyM=
 github.com/quasilyte/gogrep v0.0.0-20220104144347-088f76da46d2/go.mod h1:wSEyW6O61xRV6zb6My3HxrQ5/8ke7NE2OayqCHa3xRM=
+github.com/quasilyte/gogrep v0.0.0-20220104152328-4887d37f6772 h1:dmzvHgcx9aTM3lIzKhOZPNJjzdqVngqnssQEhX3Hryw=
+github.com/quasilyte/gogrep v0.0.0-20220104152328-4887d37f6772/go.mod h1:wSEyW6O61xRV6zb6My3HxrQ5/8ke7NE2OayqCHa3xRM=
 github.com/yuin/goldmark v1.1.32/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 github.com/yuin/goldmark v1.4.1/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1Zlc8k=
