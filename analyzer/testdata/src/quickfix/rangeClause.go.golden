@@ -1,0 +1,33 @@
+package quickfix
+
+func rangeRuneSlice(s string) {
+	for _, ch := range s { // want `\Qsuggestion: range s`
+		println(ch)
+	}
+
+	{
+		var ch rune
+		for _, ch = range s[:] { // want `\Qsuggestion: range s[:]`
+			println(ch)
+		}
+	}
+
+	{
+		var ch rune
+		for _, ch = range getString() { // want `\Qsuggestion: range getString()`
+			println(ch)
+		}
+	}
+
+	{
+		for _, ch1 := range "foo" { // want `\Qsuggestion: range "foo"`
+			for _, ch2 := range "123" { // want `\Qsuggestion: range "123"`
+				println(ch1, ch2)
+			}
+		}
+	}
+}
+
+func getString() string {
+	return "123"
+}
