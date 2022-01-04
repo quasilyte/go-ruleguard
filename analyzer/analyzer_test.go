@@ -23,8 +23,9 @@ import (
 )
 
 var tests = []struct {
-	name  string
-	flags map[string]string
+	name       string
+	flags      map[string]string
+	quickfixes bool
 }{
 	{name: "gocritic"},
 	{name: "filtertest"},
@@ -46,6 +47,8 @@ var tests = []struct {
 	{name: "localfunc"},
 	{name: "goversion", flags: map[string]string{"go": "1.16"}},
 	{name: "imports"},
+
+	{name: "quickfix", quickfixes: true},
 }
 
 func TestDirectiveComments(t *testing.T) {
@@ -102,7 +105,11 @@ func TestAnalyzer(t *testing.T) {
 					t.Fatalf("set rules flag: %v", err)
 				}
 			}
-			analysistest.Run(t, testdata, analyzer.Analyzer, test.name)
+			runFunc := analysistest.Run
+			if test.quickfixes {
+				runFunc = analysistest.RunWithSuggestedFixes
+			}
+			runFunc(t, testdata, analyzer.Analyzer, test.name)
 		})
 	}
 }
