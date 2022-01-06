@@ -48,14 +48,20 @@ func (p *printer) printFile(f *ir.File) {
 	}
 	p.writef("},\n")
 
-	p.printReflectElem("RuleGroups", reflect.ValueOf(f.RuleGroups))
+	p.printReflectElem("RuleGroups", reflect.ValueOf(f.RuleGroups), false)
 
 	p.writef("}\n")
 }
 
-func (p *printer) printReflectElem(key string, v reflect.Value) {
+func (p *printer) printReflectElem(key string, v reflect.Value, insideList bool) {
+	if p.printReflectElemNoNewline(key, v, insideList) {
+		p.buf.WriteByte('\n')
+	}
+}
+
+func (p *printer) printReflectElemNoNewline(key string, v reflect.Value, insideList bool) bool {
 	if v.IsZero() {
-		return
+		return false
 	}
 
 	if key != "" {
@@ -63,44 +69,73 @@ func (p *printer) printReflectElem(key string, v reflect.Value) {
 	}
 
 	if v.Type().Name() == "FilterOp" {
-		p.writef("ir.Filter%sOp,\n", v.Interface().(ir.FilterOp).String())
-		return
+		p.writef("ir.Filter%sOp,", v.Interface().(ir.FilterOp).String())
+		return true
 	}
 
-	// There are tons of this, print it in a compact way.
+	// There are tons of these, print them in a compact way.
 	if v.Type().Name() == "PatternString" {
 		v := v.Interface().(ir.PatternString)
-		p.writef("ir.PatternString{Line: %d, Value: %#v},\n", v.Line, v.Value)
-		return
+		if !insideList {
+			p.buf.WriteString("ir.PatternString")
+		}
+		p.writef("{Line: %d, Value: %#v},", v.Line, v.Value)
+		return true
 	}
 
 	if v.Type().Name() == "FilterExpr" {
 		v := v.Interface().(ir.FilterExpr)
 		if v.Op == ir.FilterStringOp || v.Op == ir.FilterVarPureOp || v.Op == ir.FilterVarTextOp {
-			p.writef("ir.FilterExpr{Line: %d, Op: ir.Filter%sOp, Src: %#v, Value: %#v},\n",
+			if !insideList {
+				p.buf.WriteString("ir.FilterExpr")
+			}
+			p.writef("{Line: %d, Op: ir.Filter%sOp, Src: %#v, Value: %#v},",
 				v.Line, v.Op.String(), v.Src, v.Value.(string))
-			return
+			return true
 		}
 	}
 
 	if v.Type().Kind() == reflect.Struct {
-		p.writef("%s{\n", v.Type().String())
+		if !insideList {
+			p.buf.WriteString(v.Type().String())
+		}
+		p.writef("{\n")
 		for i := 0; i < v.NumField(); i++ {
-			p.printReflectElem(v.Type().Field(i).Name, v.Field(i))
+			p.printReflectElem(v.Type().Field(i).Name, v.Field(i), false)
 		}
-		p.writef("},\n")
+		p.writef("},")
 	} else if v.Type().Kind() == reflect.Slice {
-		p.writef("%s{\n", v.Type().String())
-		for j := 0; j < v.Len(); j++ {
-			p.printReflectElem("", v.Index(j))
+		if isCompactSlice(v) {
+			p.writef("%s{", v.Type())
+			for j := 0; j < v.Len(); j++ {
+				p.printReflectElemNoNewline("", v.Index(j), true)
+			}
+			p.writef("},")
+		} else {
+			p.writef("%s{\n", v.Type().String())
+			for j := 0; j < v.Len(); j++ {
+				p.printReflectElem("", v.Index(j), true)
+			}
+			p.writef("},")
 		}
-		p.writef("},\n")
+
 	} else {
 		switch val := v.Interface().(type) {
 		case int64:
-			p.writef("int64(%v),\n", val)
+			p.writef("int64(%v),", val)
 		default:
-			p.writef("%#v,\n", val)
+			p.writef("%#v,", val)
 		}
+	}
+
+	return true
+}
+
+func isCompactSlice(v reflect.Value) bool {
+	switch v.Type().Elem().Kind() {
+	case reflect.String, reflect.Int:
+		return v.Len() <= 4
+	default:
+		return v.Len() <= 1
 	}
 }
