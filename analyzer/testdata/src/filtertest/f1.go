@@ -1,6 +1,7 @@
 package filtertest
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -480,6 +481,98 @@ func detectType() {
 		typeTest(map[string]string{}, "has pointers") // want `true`
 		typeTest(new(int), "has pointers")            // want `true`
 		typeTest(new(string), "has pointers")         // want `true`
+	}
+}
+
+func detectHasMethod() {
+	type embedsStringWriter struct {
+		io.StringWriter
+	}
+
+	type embedsBuffer struct {
+		bytes.Buffer
+	}
+
+	type embedsBufferPtr struct {
+		*bytes.Buffer
+	}
+
+	{
+		var buf bytes.Buffer
+		bufPtr := &buf
+		typeTest(buf, "has WriteString method")    // want `true`
+		typeTest(bufPtr, "has WriteString method") // want `true`
+		typeTest(buf, "has String method")         // want `true`
+		typeTest(bufPtr, "has String method")      // want `true`
+		buf.WriteString("")
+		bufPtr.WriteString("")
+	}
+	{
+		var w io.StringWriter
+		wPtr := &w
+		typeTest(w, "has WriteString method") // want `true`
+		typeTest(wPtr, "has WriteString method")
+		typeTest(w, "has String method")
+		typeTest(wPtr, "has String method")
+		w.WriteString("")
+	}
+	{
+		var e embedsStringWriter
+		ePtr := &e
+		typeTest(e, "has WriteString method")    // want `true`
+		typeTest(ePtr, "has WriteString method") // want `true`
+		typeTest(e, "has String method")
+		typeTest(ePtr, "has String method")
+		e.WriteString("")
+		ePtr.WriteString("")
+	}
+	{
+		var e embedsBuffer
+		ePtr := &e
+		typeTest(e, "has WriteString method")    // want `true`
+		typeTest(ePtr, "has WriteString method") // want `true`
+		typeTest(e, "has String method")         // want `true`
+		typeTest(ePtr, "has String method")      // want `true`
+		e.WriteString("")
+		ePtr.WriteString("")
+	}
+	{
+		var e embedsBufferPtr
+		ePtr := &e
+		typeTest(e, "has WriteString method")    // want `true`
+		typeTest(ePtr, "has WriteString method") // want `true`
+		typeTest(e, "has String method")         // want `true`
+		typeTest(ePtr, "has String method")      // want `true`
+		e.WriteString("")
+		ePtr.WriteString("")
+	}
+
+	{
+		typeTest(1, "has WriteString method")
+		typeTest("", "has WriteString method")
+		typeTest(1, "has String method")
+		typeTest("", "has String method")
+	}
+	{
+		var w io.Writer
+		typeTest(w, "has WriteString method")
+	}
+	{
+		type withBufferField struct {
+			buf *bytes.Buffer
+		}
+		var x withBufferField
+		xPtr := &x
+		typeTest(x, "has WriteString method")
+		typeTest(xPtr, "has WriteString method")
+		typeTest(x, "has String method")
+		typeTest(xPtr, "has String method")
+	}
+	{
+		var w io.StringWriter
+		var eface interface{} = w
+		typeTest(eface, "has WriteString method")
+		typeTest(eface, "has String method")
 	}
 }
 

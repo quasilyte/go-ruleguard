@@ -708,6 +708,8 @@ func (conv *converter) convertFilterExprImpl(e ast.Expr) ir.FilterExpr {
 			return ir.FilterExpr{Op: ir.FilterVarTypeAssignableToOp, Value: op.varName, Args: args}
 		case "Type.Implements":
 			return ir.FilterExpr{Op: ir.FilterVarTypeImplementsOp, Value: op.varName, Args: args}
+		case "Type.HasMethod":
+			return ir.FilterExpr{Op: ir.FilterVarTypeHasMethodOp, Value: op.varName, Args: args}
 		}
 	}
 

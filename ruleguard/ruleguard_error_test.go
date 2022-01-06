@@ -382,6 +382,21 @@ func TestParseFilterError(t *testing.T) {
 		},
 
 		{
+			`m["x"].Type.HasMethod("foo")`,
+			`unexpected *ast.Ident node`,
+		},
+
+		{
+			`m["x"].Type.HasMethod("foo.bar.baz")`,
+			`can't find foo.bar type`,
+		},
+
+		{
+			`m["x"].Type.HasMethod("WriteString(string) (int, error)")`,
+			`inline func signatures are not supported yet`,
+		},
+
+		{
 			`m["x"].Node.Is("abc")`,
 			`abc is not a valid go/ast type name`,
 		},
