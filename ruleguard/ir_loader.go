@@ -392,6 +392,57 @@ func (l *irLoader) unwrapTypeExpr(filter ir.FilterExpr) (types.Type, error) {
 	return typ, nil
 }
 
+func (l *irLoader) unwrapFuncRefExpr(filter ir.FilterExpr) (*types.Func, error) {
+	s := l.unwrapStringExpr(filter)
+	if s == "" {
+		return nil, l.errorf(filter.Line, nil, "expected a non-empty func ref string")
+	}
+
+	n, err := parser.ParseExpr(s)
+	if err != nil {
+		return nil, err
+	}
+
+	switch n := n.(type) {
+	case *ast.CallExpr:
+		// TODO: implement this.
+		return nil, l.errorf(filter.Line, nil, "inline func signatures are not supported yet")
+	case *ast.SelectorExpr:
+		funcName := n.Sel.Name
+		pkgAndType, ok := n.X.(*ast.SelectorExpr)
+		if !ok {
+			return nil, l.errorf(filter.Line, nil, "invalid selector expression")
+		}
+		pkgID, ok := pkgAndType.X.(*ast.Ident)
+		if !ok {
+			return nil, l.errorf(filter.Line, nil, "invalid package name selector part")
+		}
+		pkgName := pkgID.Name
+		typeName := pkgAndType.Sel.Name
+		fqn := pkgName + "." + typeName
+		typ, err := l.state.FindType(l.importer, l.pkg, fqn)
+		if err != nil {
+			return nil, l.errorf(filter.Line, nil, "can't find %s type", fqn)
+		}
+		switch typ := typ.Underlying().(type) {
+		case *types.Interface:
+			for i := 0; i < typ.NumMethods(); i++ {
+				fn := typ.Method(i)
+				if fn.Name() == funcName {
+					return fn, nil
+				}
+			}
+		default:
+			return nil, l.errorf(filter.Line, nil, "only interfaces are supported, but %s is %T", fqn, typ)
+		}
+
+	default:
+		return nil, l.errorf(filter.Line, nil, "unexpected %T node", n)
+	}
+
+	return nil, nil
+}
+
 func (l *irLoader) unwrapInterfaceExpr(filter ir.FilterExpr) (*types.Interface, error) {
 	typeString := l.unwrapStringExpr(filter)
 	if typeString == "" {
@@ -598,6 +649,16 @@ func (l *irLoader) newFilter(filter ir.FilterExpr, info *filterInfo) (matchFilte
 			return result, err
 		}
 		result.fn = makeTypeImplementsFilter(result.src, filter.Value.(string), iface)
+
+	case ir.FilterVarTypeHasMethodOp:
+		fn, err := l.unwrapFuncRefExpr(filter.Args[0])
+		if err != nil {
+			return result, err
+		}
+		if fn == nil {
+			return result, l.errorf(filter.Line, nil, "can't resolve HasMethod() argument")
+		}
+		result.fn = makeTypeHasMethodFilter(result.src, filter.Value.(string), fn)
 
 	case ir.FilterVarPureOp:
 		result.fn = makePureFilter(result.src, filter.Value.(string))

@@ -1,3 +1,4 @@
+//go:build ignore
 // +build ignore
 
 package gorules
@@ -237,5 +238,13 @@ func testRules(m dsl.Matcher) {
 
 	m.Match(`typeTest($x, "has pointers")`).
 		Where(m["x"].Type.HasPointers()).
+		Report(`true`)
+
+	m.Match(`typeTest($x, "has WriteString method")`).
+		Where(m["x"].Type.HasMethod(`io.StringWriter.WriteString`)).
+		Report(`true`)
+
+	m.Match(`typeTest($x, "has String method")`).
+		Where(m["x"].Type.HasMethod(`fmt.Stringer.String`)).
 		Report(`true`)
 }

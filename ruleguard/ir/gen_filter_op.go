@@ -59,6 +59,7 @@ func main() {
 		{name: "VarTypeConvertibleTo", comment: "m[$Value].Type.ConvertibleTo($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarTypeAssignableTo", comment: "m[$Value].Type.AssignableTo($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarTypeImplements", comment: "m[$Value].Type.Implements($Args[0])", valueType: "string", flags: flagHasVar},
+		{name: "VarTypeHasMethod", comment: "m[$Value].Type.HasMethod($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarTextMatches", comment: "m[$Value].Text.Matches($Args[0])", valueType: "string", flags: flagHasVar},
 
 		{name: "Deadcode", comment: "m.Deadcode()"},

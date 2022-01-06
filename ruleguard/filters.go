@@ -189,6 +189,16 @@ func makeTypeImplementsFilter(src, varname string, iface *types.Interface) filte
 	}
 }
 
+func makeTypeHasMethodFilter(src, varname string, fn *types.Func) filterFunc {
+	return func(params *filterParams) matchFilterResult {
+		typ := params.typeofNode(params.subNode(varname))
+		if typeHasMethod(typ, fn) {
+			return filterSuccess
+		}
+		return filterFailure(src)
+	}
+}
+
 func makeTypeHasPointersFilter(src, varname string) filterFunc {
 	return func(params *filterParams) matchFilterResult {
 		typ := params.typeofNode(params.subExpr(varname))
@@ -540,6 +550,15 @@ func nodeIs(n ast.Node, tag nodetag.Value) bool {
 		matched = (tag == nodetag.FromNode(n))
 	}
 	return matched
+}
+
+func typeHasMethod(typ types.Type, fn *types.Func) bool {
+	obj, _, _ := types.LookupFieldOrMethod(typ, true, fn.Pkg(), fn.Name())
+	fn2, ok := obj.(*types.Func)
+	if !ok {
+		return false
+	}
+	return xtypes.Identical(fn.Type(), fn2.Type())
 }
 
 func typeHasPointers(typ types.Type) bool {
