@@ -221,8 +221,8 @@ func (ExprType) Implements(typ typeName) bool { return boolResult }
 //
 // To avoid confusion with Implements() method, here is a hint when to use which:
 //
-//	- If you want to check if it's possible to call F on x, use HasMethod().
-//	- If you want to know if you can pass x as I interface, use Implements().
+//	- To check if it's possible to call F on x, use HasMethod(F)
+//	- To check if x can be passed as I interface, use Implements(I)
 func (ExprType) HasMethod(fn string) bool { return boolResult }
 
 // Is reports whether a type is identical to a given type.
