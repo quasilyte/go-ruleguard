@@ -213,6 +213,18 @@ func (ExprType) ConvertibleTo(typ string) bool { return boolResult }
 // See https://golang.org/pkg/go/types/#Implements.
 func (ExprType) Implements(typ typeName) bool { return boolResult }
 
+// HasMethod reports whether a type has a given method.
+// Unlike Implements(), it will work for both value and pointer types.
+//
+// fn argument is a function signature, like `WriteString(string) (int, error)`.
+// It can also be in form of a method reference for importable types: `io.StringWriter.WriteString`.
+//
+// To avoid confusion with Implements() method, here is a hint when to use which:
+//
+//	- If you want to check if it's possible to call F on x, use HasMethod().
+//	- If you want to know if you can pass x as I interface, use Implements().
+func (ExprType) HasMethod(fn string) bool { return boolResult }
+
 // Is reports whether a type is identical to a given type.
 func (ExprType) Is(typ string) bool { return boolResult }
 
