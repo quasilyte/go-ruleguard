@@ -252,7 +252,8 @@ func (l *irLoader) loadRuleGroup(group *ir.RuleGroup) error {
 		l.itab.Load(imported.Name, imported.Path)
 	}
 
-	for _, rule := range group.Rules {
+	for i := range group.Rules {
+		rule := &group.Rules[i]
 		if err := l.loadRule(group, rule); err != nil {
 			return err
 		}
@@ -261,7 +262,7 @@ func (l *irLoader) loadRuleGroup(group *ir.RuleGroup) error {
 	return nil
 }
 
-func (l *irLoader) loadRule(group *ir.RuleGroup, rule ir.Rule) error {
+func (l *irLoader) loadRule(group *ir.RuleGroup, rule *ir.Rule) error {
 	proto := goRule{
 		line:       rule.Line,
 		group:      l.group,
@@ -294,7 +295,7 @@ func (l *irLoader) loadRule(group *ir.RuleGroup, rule ir.Rule) error {
 	return nil
 }
 
-func (l *irLoader) loadCommentRule(resultProto goRule, rule ir.Rule, src string, line int) error {
+func (l *irLoader) loadCommentRule(resultProto goRule, rule *ir.Rule, src string, line int) error {
 	dst := l.res.universal
 	pat, err := regexp.Compile(src)
 	if err != nil {
@@ -312,7 +313,7 @@ func (l *irLoader) loadCommentRule(resultProto goRule, rule ir.Rule, src string,
 	return nil
 }
 
-func (l *irLoader) loadSyntaxRule(group *ir.RuleGroup, resultProto goRule, filterInfo filterInfo, rule ir.Rule, src string, line int) error {
+func (l *irLoader) loadSyntaxRule(group *ir.RuleGroup, resultProto goRule, filterInfo filterInfo, rule *ir.Rule, src string, line int) error {
 	result := resultProto
 	result.line = line
 
