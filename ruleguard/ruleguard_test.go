@@ -29,7 +29,7 @@ func TestTruncateText(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		have := truncateText(test.input, test.maxLen)
+		have := string(truncateText([]byte(test.input), test.maxLen))
 		if len(have) > test.maxLen {
 			t.Errorf("truncateText(%q, %v): len %d exceeeds max len",
 				test.input, test.maxLen, len(have))

@@ -10,3 +10,9 @@ func rangeRuneSlice(m dsl.Matcher) {
 		Where(m["s"].Type.Is(`string`)).
 		Suggest(`range $s`)
 }
+
+func writeString(m dsl.Matcher) {
+	m.Match(`io.WriteString($w, $s)`).
+		Where(m["w"].Type.HasMethod(`io.StringWriter.WriteString`)).
+		Suggest(`$w.WriteString($s)`)
+}
