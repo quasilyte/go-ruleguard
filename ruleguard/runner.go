@@ -29,6 +29,8 @@ type rulesRunner struct {
 	ctx   *RunContext
 	rules *goRuleSet
 
+	truncateLen int
+
 	reportData ReportData
 
 	gogrepState gogrep.MatcherState
@@ -72,11 +74,15 @@ func newRulesRunner(ctx *RunContext, buildContext *build.Context, state *engineS
 		rules:       rules,
 		gogrepState: gogrepState,
 		nodePath:    newNodePath(),
+		truncateLen: ctx.TruncateLen,
 		filterParams: filterParams{
 			env:      state.env.GetEvalEnv(),
 			importer: importer,
 			ctx:      ctx,
 		},
+	}
+	if ctx.TruncateLen == 0 {
+		rr.truncateLen = 60
 	}
 	rr.filterParams.nodeText = rr.nodeText
 	rr.filterParams.nodePath = &rr.nodePath
@@ -425,7 +431,7 @@ func (rr *rulesRunner) renderMessage(msg string, m matchData, truncate bool) str
 			text := rr.nodeText(n)
 			text = rr.fixedText(text, n, msg[dollarPos+1+nameLen:])
 			if truncate {
-				text = truncateText(text, 60)
+				text = truncateText(text, rr.truncateLen)
 			}
 			result = append(result, text...)
 		} else {

@@ -104,6 +104,17 @@ type RunContext struct {
 	Report func(*ReportData)
 
 	GoVersion GoVersion
+
+	// TruncateLen is a length threshold (in bytes) for interpolated vars in Report() templates.
+	//
+	// Truncation removes the part of the string in the middle and replaces it with <...>
+	// so it meets the max length constraint.
+	//
+	// The default value is 60 (implied if value is 0).
+	//
+	// Note that this value is ignored for Suggest templates.
+	// Ruleguard doesn't truncate suggested replacement candidates.
+	TruncateLen int
 }
 
 type ReportData struct {
