@@ -247,4 +247,8 @@ func testRules(m dsl.Matcher) {
 	m.Match(`typeTest($x, "has String method")`).
 		Where(m["x"].Type.HasMethod(`fmt.Stringer.String`)).
 		Report(`true`)
+
+	m.Match(`typeTest($x, $y, "same type sizes")`).
+		Where(m["x"].Type.Size == m["y"].Type.Size).
+		Report(`true`)
 }
