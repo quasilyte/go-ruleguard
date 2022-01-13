@@ -813,6 +813,8 @@ func (l *irLoader) newBinaryExprFilter(filter ir.FilterExpr, info *filterInfo) (
 	case ir.FilterVarTypeSizeOp:
 		if rhsValue != nil {
 			result.fn = makeTypeSizeConstFilter(result.src, lhs.Value.(string), tok, rhsValue)
+		} else {
+			result.fn = makeTypeSizeFilter(result.src, lhs.Value.(string), tok, rhs.Value.(string))
 		}
 	case ir.FilterVarValueIntOp:
 		if rhsValue != nil {

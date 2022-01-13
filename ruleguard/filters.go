@@ -375,6 +375,19 @@ func makeTypeSizeConstFilter(src, varname string, op token.Token, rhsValue const
 	}
 }
 
+func makeTypeSizeFilter(src, varname string, op token.Token, rhsVarname string) filterFunc {
+	return func(params *filterParams) matchFilterResult {
+		lhsTyp := params.typeofNode(params.subExpr(varname))
+		lhsValue := constant.MakeInt64(params.ctx.Sizes.Sizeof(lhsTyp))
+		rhsTyp := params.typeofNode(params.subExpr(rhsVarname))
+		rhsValue := constant.MakeInt64(params.ctx.Sizes.Sizeof(rhsTyp))
+		if constant.Compare(lhsValue, op, rhsValue) {
+			return filterSuccess
+		}
+		return filterFailure(src)
+	}
+}
+
 func makeValueIntConstFilter(src, varname string, op token.Token, rhsValue constant.Value) filterFunc {
 	return func(params *filterParams) matchFilterResult {
 		if list, ok := params.subNode(varname).(gogrep.ExprSlice); ok {

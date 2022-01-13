@@ -576,6 +576,51 @@ func detectHasMethod() {
 	}
 }
 
+func detectSameTypeSizes() {
+	{
+		typeTest(int8(1), int8(2), "same type sizes")         // want `true`
+		typeTest(float64(1), float64(2.5), "same type sizes") // want `true`
+		typeTest(float32(1), float64(2), "same type sizes")
+	}
+
+	{
+		var s string
+		var b []byte
+		typeTest(s, s, "same type sizes") // want `true`
+		typeTest(b, b, "same type sizes") // want `true`
+		typeTest(s, b, "same type sizes")
+	}
+
+	{
+		var a10 [10]byte
+		var a15 [15]byte
+		typeTest(a10, a10, "same type sizes")       // want `true`
+		typeTest(a15, a15, "same type sizes")       // want `true`
+		typeTest(a15[:], a15[:], "same type sizes") // want `true`
+		typeTest(a10[:], a15[:], "same type sizes") // want `true`
+		typeTest(a15[:], a10[:], "same type sizes") // want `true`
+		typeTest(a15, a10, "same type sizes")
+		typeTest(a10, a15, "same type sizes")
+	}
+
+	{
+		type vector2 struct {
+			x, y float64
+		}
+		type vector3 struct {
+			x, y, z float64
+		}
+		var a, b vector2
+		typeTest(a, b, "same type sizes")                 // want `true`
+		typeTest(vector2{}, vector2{}, "same type sizes") // want `true`
+		typeTest(vector3{}, vector3{}, "same type sizes") // want `true`
+		typeTest(vector2{}, vector3{}, "same type sizes")
+		typeTest(vector3{}, vector2{}, "same type sizes")
+		typeTest(vector2{}, 14, "same type sizes")
+		typeTest(14, vector2{}, "same type sizes")
+	}
+}
+
 func detectAddressable(x int, xs []int) {
 	typeTest("variadic addressable")               // want `true`
 	typeTest(x, "variadic addressable")            // want `true`
