@@ -64,3 +64,10 @@ func issue315(m dsl.Matcher) {
 			!m["arg"].Type.Is(`error`),
 	).Report(`return concrete type instead of $arg`).At(m["name"])
 }
+
+func issue360(m dsl.Matcher) {
+	m.Match(`$_{$*_, $_: strings.Compare($s1, $_), $*_}`,
+		`$_{$*_, strings.Compare($s1, $_): $_, $*_}`).
+		Report(`don't use strings.Compare`).
+		At(m["s1"])
+}
