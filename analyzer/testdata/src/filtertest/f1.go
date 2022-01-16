@@ -39,6 +39,35 @@ func _() {
 	fileTest("f1.go") // want `true`
 }
 
+func detectFunc() {
+	var fn func()
+
+	{
+		typeTest((func(int) bool)(nil), "is predicate func")    // want `true`
+		typeTest((func(string) bool)(nil), "is predicate func") // want `true`
+		typeTest((func() bool)(nil), "is predicate func")
+		typeTest((func(int) string)(nil), "is predicate func")
+		typeTest(fn, "is predicate func")
+		typeTest(&fn, "is predicate func")
+		typeTest(10, "is predicate func")
+		typeTest("str", "is predicate func")
+	}
+
+	{
+		typeTest((func(int) bool)(nil), "is func")    // want `true`
+		typeTest((func(string) bool)(nil), "is func") // want `true`
+		typeTest((func() bool)(nil), "is func")       // want `true`
+		typeTest((func(int) string)(nil), "is func")  // want `true`
+		typeTest((func())(nil), "is func")            // want `true`
+		typeTest(func() {}, "is func")                // want `true`
+		typeTest(fn, "is func")                       // want `true`
+		typeTest(&fn, "is func")
+		typeTest(53, "is func")
+		typeTest([]int{1}, "is func")
+
+	}
+}
+
 func detectObject() {
 	var vec vector2D
 
