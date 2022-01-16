@@ -251,4 +251,12 @@ func testRules(m dsl.Matcher) {
 	m.Match(`typeTest($x, $y, "same type sizes")`).
 		Where(m["x"].Type.Size == m["y"].Type.Size).
 		Report(`true`)
+
+	m.Match(`typeTest($x, "is predicate func")`).
+		Where(m["x"].Type.Is(`func ($_) bool`)).
+		Report(`true`)
+
+	m.Match(`typeTest($x, "is func")`).
+		Where(m["x"].Type.Is(`func ($*_) $*_`)).
+		Report(`true`)
 }

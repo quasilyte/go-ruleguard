@@ -24,6 +24,7 @@ const (
 	opArray
 	opMap
 	opChan
+	opFuncNoSeq
 	opFunc
 	opStructNoSeq
 	opStruct
@@ -253,6 +254,7 @@ func parseExpr(ctx *Context, e ast.Expr) *pattern {
 		return parseExpr(ctx, e.X)
 
 	case *ast.FuncType:
+		hasSeq := false
 		var params []*pattern
 		var results []*pattern
 		if e.Params != nil {
@@ -263,6 +265,9 @@ func parseExpr(ctx *Context, e ast.Expr) *pattern {
 				}
 				if len(field.Names) != 0 {
 					return nil
+				}
+				if p.op == opVarSeq {
+					hasSeq = true
 				}
 				params = append(params, p)
 			}
@@ -276,11 +281,18 @@ func parseExpr(ctx *Context, e ast.Expr) *pattern {
 				if len(field.Names) != 0 {
 					return nil
 				}
+				if p.op == opVarSeq {
+					hasSeq = true
+				}
 				results = append(results, p)
 			}
 		}
+		op := opFuncNoSeq
+		if hasSeq {
+			op = opFunc
+		}
 		return &pattern{
-			op:    opFunc,
+			op:    op,
 			value: len(params),
 			subs:  append(params, results...),
 		}
@@ -485,7 +497,7 @@ func (p *Pattern) matchIdentical(sub *pattern, typ types.Type) bool {
 		path := strings.SplitAfter(obj.Pkg().Path(), "/vendor/")
 		return path[len(path)-1] == pkgPath && typeName == obj.Name()
 
-	case opFunc:
+	case opFuncNoSeq:
 		typ, ok := typ.(*types.Signature)
 		if !ok {
 			return false
@@ -508,6 +520,24 @@ func (p *Pattern) matchIdentical(sub *pattern, typ types.Type) bool {
 			if !p.matchIdentical(results[i], typ.Results().At(i).Type()) {
 				return false
 			}
+		}
+		return true
+
+	case opFunc:
+		typ, ok := typ.(*types.Signature)
+		if !ok {
+			return false
+		}
+		numParams := sub.value.(int)
+		params := sub.subs[:numParams]
+		results := sub.subs[numParams:]
+		adapter := tupleFielder{x: typ.Params()}
+		if !p.matchIdenticalFielder(params, &adapter) {
+			return false
+		}
+		adapter.x = typ.Results()
+		if !p.matchIdenticalFielder(results, &adapter) {
+			return false
 		}
 		return true
 
@@ -549,3 +579,10 @@ type fielder interface {
 	Field(i int) *types.Var
 	NumFields() int
 }
+
+type tupleFielder struct {
+	x *types.Tuple
+}
+
+func (tup *tupleFielder) Field(i int) *types.Var { return tup.x.At(i) }
+func (tup *tupleFielder) NumFields() int         { return tup.x.Len() }

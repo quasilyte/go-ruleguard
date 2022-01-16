@@ -104,8 +104,17 @@ func TestIdentical(t *testing.T) {
 		{`func($_) int`, types.NewSignature(nil, types.NewTuple(intVar), types.NewTuple(intVar), false)},
 		{`func($_) int`, types.NewSignature(nil, types.NewTuple(stringVar), types.NewTuple(intVar), false)},
 
+		{`func($*_) int`, types.NewSignature(nil, types.NewTuple(stringVar), types.NewTuple(intVar), false)},
+		{`func($*_) int`, types.NewSignature(nil, nil, types.NewTuple(intVar), false)},
+		{`func($*_) $_`, types.NewSignature(nil, nil, types.NewTuple(intVar), false)},
+
 		{`func($t, $t)`, types.NewSignature(nil, types.NewTuple(stringVar, stringVar), nil, false)},
 		{`func($t, $t)`, types.NewSignature(nil, types.NewTuple(intVar, intVar), nil, false)},
+
+		// Any func.
+		{`func($*_) $*_`, types.NewSignature(nil, nil, nil, false)},
+		{`func($*_) $*_`, types.NewSignature(nil, types.NewTuple(stringVar, stringVar), nil, false)},
+		{`func($*_) $*_`, types.NewSignature(nil, types.NewTuple(stringVar), types.NewTuple(intVar), false)},
 
 		{`struct{}`, typeEstruct},
 		{`struct{int}`, types.NewStruct([]*types.Var{intVar}, nil)},
@@ -196,6 +205,14 @@ func TestIdenticalNegative(t *testing.T) {
 
 		{`func($t, $t)`, types.NewSignature(nil, types.NewTuple(intVar, stringVar), nil, false)},
 		{`func($t, $t)`, types.NewSignature(nil, types.NewTuple(stringVar, intVar), nil, false)},
+
+		{`func($*_) int`, types.NewSignature(nil, types.NewTuple(stringVar), types.NewTuple(stringVar), false)},
+		{`func($*_) int`, types.NewSignature(nil, nil, nil, false)},
+		{`func($*_) $_`, types.NewSignature(nil, nil, nil, false)},
+
+		// Any func negative.
+		{`func($*_) $*_`, typeInt},
+		{`func($*_) $*_`, types.NewTuple(intVar)},
 
 		{`struct{}`, typeInt},
 		{`struct{}`, types.NewStruct([]*types.Var{intVar}, nil)},
