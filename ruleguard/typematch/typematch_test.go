@@ -8,11 +8,12 @@ import (
 )
 
 var (
-	typeInt     = types.Typ[types.Int]
-	typeString  = types.Typ[types.String]
-	typeInt32   = types.Typ[types.Int32]
-	typeUint8   = types.Typ[types.Uint8]
-	typeEstruct = types.NewStruct(nil, nil)
+	typeInt       = types.Typ[types.Int]
+	typeString    = types.Typ[types.String]
+	typeInt32     = types.Typ[types.Int32]
+	typeUint8     = types.Typ[types.Uint8]
+	typeUnsafePtr = types.Typ[types.UnsafePointer]
+	typeEstruct   = types.NewStruct(nil, nil)
 
 	stringerIface = types.NewInterfaceType([]*types.Func{
 		types.NewFunc(token.NoPos, nil, "String",
@@ -90,6 +91,9 @@ func TestIdentical(t *testing.T) {
 		{`rune`, typeInt32},
 		{`[]rune`, types.NewSlice(typeInt32)},
 		{`[8]byte`, types.NewArray(typeUint8, 8)},
+
+		{`unsafe.Pointer`, typeUnsafePtr},
+		{`[]unsafe.Pointer`, types.NewSlice(typeUnsafePtr)},
 
 		{`func()`, types.NewSignature(nil, nil, nil, false)},
 		{`func(int)`, types.NewSignature(nil, types.NewTuple(intVar), nil, false)},
@@ -175,6 +179,10 @@ func TestIdenticalNegative(t *testing.T) {
 		{`map[int]int`, types.NewMap(typeString, typeString)},
 		{`map[int]int`, types.NewMap(typeString, typeInt)},
 		{`map[int]int`, types.NewMap(typeInt, typeString)},
+
+		{`unsafe.Pointer`, typeInt},
+		{`unsafe.Pointer`, types.NewPointer(typeInt)},
+		{`[]unsafe.Pointer`, types.NewSlice(typeInt)},
 
 		{`interface{}`, typeInt},
 		{`interface{ $*_ }`, typeString},

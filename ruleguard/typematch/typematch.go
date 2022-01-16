@@ -168,6 +168,9 @@ func parseExpr(ctx *Context, e ast.Expr) *pattern {
 		if !ok {
 			return nil
 		}
+		if pkg.Name == "unsafe" && e.Sel.Name == "Pointer" {
+			return &pattern{op: opBuiltinType, value: types.Typ[types.UnsafePointer]}
+		}
 		pkgPath, ok := ctx.Itab.Lookup(pkg.Name)
 		if !ok {
 			return nil
