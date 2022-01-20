@@ -84,91 +84,95 @@ const (
 	// $Value type: string
 	FilterVarTypeIsOp FilterOp = 22
 
+	// m[$Value].Type.IdenticalTo($Args[0])
+	// $Value type: string
+	FilterVarTypeIdenticalToOp FilterOp = 23
+
 	// m[$Value].Type.Underlying().Is($Args[0])
 	// $Value type: string
-	FilterVarTypeUnderlyingIsOp FilterOp = 23
+	FilterVarTypeUnderlyingIsOp FilterOp = 24
 
 	// m[$Value].Type.OfKind($Args[0])
 	// $Value type: string
-	FilterVarTypeOfKindOp FilterOp = 24
+	FilterVarTypeOfKindOp FilterOp = 25
 
 	// m[$Value].Type.Underlying().OfKind($Args[0])
 	// $Value type: string
-	FilterVarTypeUnderlyingOfKindOp FilterOp = 25
+	FilterVarTypeUnderlyingOfKindOp FilterOp = 26
 
 	// m[$Value].Type.ConvertibleTo($Args[0])
 	// $Value type: string
-	FilterVarTypeConvertibleToOp FilterOp = 26
+	FilterVarTypeConvertibleToOp FilterOp = 27
 
 	// m[$Value].Type.AssignableTo($Args[0])
 	// $Value type: string
-	FilterVarTypeAssignableToOp FilterOp = 27
+	FilterVarTypeAssignableToOp FilterOp = 28
 
 	// m[$Value].Type.Implements($Args[0])
 	// $Value type: string
-	FilterVarTypeImplementsOp FilterOp = 28
+	FilterVarTypeImplementsOp FilterOp = 29
 
 	// m[$Value].Type.HasMethod($Args[0])
 	// $Value type: string
-	FilterVarTypeHasMethodOp FilterOp = 29
+	FilterVarTypeHasMethodOp FilterOp = 30
 
 	// m[$Value].Text.Matches($Args[0])
 	// $Value type: string
-	FilterVarTextMatchesOp FilterOp = 30
+	FilterVarTextMatchesOp FilterOp = 31
 
 	// m[$Value].Contains($Args[0])
 	// $Value type: string
-	FilterVarContainsOp FilterOp = 31
+	FilterVarContainsOp FilterOp = 32
 
 	// m.Deadcode()
-	FilterDeadcodeOp FilterOp = 32
+	FilterDeadcodeOp FilterOp = 33
 
 	// m.GoVersion().Eq($Value)
 	// $Value type: string
-	FilterGoVersionEqOp FilterOp = 33
+	FilterGoVersionEqOp FilterOp = 34
 
 	// m.GoVersion().LessThan($Value)
 	// $Value type: string
-	FilterGoVersionLessThanOp FilterOp = 34
+	FilterGoVersionLessThanOp FilterOp = 35
 
 	// m.GoVersion().GreaterThan($Value)
 	// $Value type: string
-	FilterGoVersionGreaterThanOp FilterOp = 35
+	FilterGoVersionGreaterThanOp FilterOp = 36
 
 	// m.GoVersion().LessEqThan($Value)
 	// $Value type: string
-	FilterGoVersionLessEqThanOp FilterOp = 36
+	FilterGoVersionLessEqThanOp FilterOp = 37
 
 	// m.GoVersion().GreaterEqThan($Value)
 	// $Value type: string
-	FilterGoVersionGreaterEqThanOp FilterOp = 37
+	FilterGoVersionGreaterEqThanOp FilterOp = 38
 
 	// m.File.Imports($Value)
 	// $Value type: string
-	FilterFileImportsOp FilterOp = 38
+	FilterFileImportsOp FilterOp = 39
 
 	// m.File.PkgPath.Matches($Value)
 	// $Value type: string
-	FilterFilePkgPathMatchesOp FilterOp = 39
+	FilterFilePkgPathMatchesOp FilterOp = 40
 
 	// m.File.Name.Matches($Value)
 	// $Value type: string
-	FilterFileNameMatchesOp FilterOp = 40
+	FilterFileNameMatchesOp FilterOp = 41
 
 	// $Value holds a function name
 	// $Value type: string
-	FilterFilterFuncRefOp FilterOp = 41
+	FilterFilterFuncRefOp FilterOp = 42
 
 	// $Value holds a string constant
 	// $Value type: string
-	FilterStringOp FilterOp = 42
+	FilterStringOp FilterOp = 43
 
 	// $Value holds an int64 constant
 	// $Value type: int64
-	FilterIntOp FilterOp = 43
+	FilterIntOp FilterOp = 44
 
 	// m[`$$`].Node.Parent().Is($Args[0])
-	FilterRootNodeParentIsOp FilterOp = 44
+	FilterRootNodeParentIsOp FilterOp = 45
 )
 
 var filterOpNames = map[FilterOp]string{
@@ -195,6 +199,7 @@ var filterOpNames = map[FilterOp]string{
 	FilterVarNodeIsOp:               `VarNodeIs`,
 	FilterVarObjectIsOp:             `VarObjectIs`,
 	FilterVarTypeIsOp:               `VarTypeIs`,
+	FilterVarTypeIdenticalToOp:      `VarTypeIdenticalTo`,
 	FilterVarTypeUnderlyingIsOp:     `VarTypeUnderlyingIs`,
 	FilterVarTypeOfKindOp:           `VarTypeOfKind`,
 	FilterVarTypeUnderlyingOfKindOp: `VarTypeUnderlyingOfKind`,
@@ -240,6 +245,7 @@ var filterOpFlags = map[FilterOp]uint64{
 	FilterVarNodeIsOp:               flagHasVar,
 	FilterVarObjectIsOp:             flagHasVar,
 	FilterVarTypeIsOp:               flagHasVar,
+	FilterVarTypeIdenticalToOp:      flagHasVar,
 	FilterVarTypeUnderlyingIsOp:     flagHasVar,
 	FilterVarTypeOfKindOp:           flagHasVar,
 	FilterVarTypeUnderlyingOfKindOp: flagHasVar,

@@ -278,6 +278,17 @@ func makeTypeOfKindFilter(src, varname string, underlying bool, kind types.Basic
 	}
 }
 
+func makeTypesIdenticalFilter(src, lhsVarname, rhsVarname string) filterFunc {
+	return func(params *filterParams) matchFilterResult {
+		lhsType := params.typeofNode(params.subNode(lhsVarname))
+		rhsType := params.typeofNode(params.subNode(rhsVarname))
+		if xtypes.Identical(lhsType, rhsType) {
+			return filterSuccess
+		}
+		return filterFailure(src)
+	}
+}
+
 func makeTypeIsFilter(src, varname string, underlying bool, pat *typematch.Pattern) filterFunc {
 	if underlying {
 		return func(params *filterParams) matchFilterResult {

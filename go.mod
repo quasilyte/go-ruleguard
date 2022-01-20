@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/go-toolsmith/astcopy v1.0.0
 	github.com/google/go-cmp v0.5.6
-	github.com/quasilyte/go-ruleguard/dsl v0.3.14
+	github.com/quasilyte/go-ruleguard/dsl v0.3.15
 	github.com/quasilyte/go-ruleguard/rules v0.0.0-20211022131956-028d6511ab71
 	github.com/quasilyte/gogrep v0.0.0-20220120141003-628d8b3623b5
 	golang.org/x/tools v0.1.9-0.20211228192929-ee1ca4ffc4da

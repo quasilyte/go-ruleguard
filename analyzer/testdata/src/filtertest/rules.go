@@ -259,4 +259,8 @@ func testRules(m dsl.Matcher) {
 	m.Match(`typeTest($x, "is func")`).
 		Where(m["x"].Type.Is(`func ($*_) $*_`)).
 		Report(`true`)
+
+	m.Match(`typeTest($x, $y, "identical types")`).
+		Where(m["x"].Type.IdenticalTo(m["y"])).
+		Report(`true`)
 }

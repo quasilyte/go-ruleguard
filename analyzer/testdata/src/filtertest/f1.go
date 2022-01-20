@@ -674,6 +674,47 @@ func detectConvertibleTo(x int, xs []int) {
 	typeTest("", xs[:], "variadic convertible to string") // want `false`
 }
 
+func detectIdenticalTypes() {
+	{
+		typeTest(1, 1, "identical types")                  // want `true`
+		typeTest("a", "b", "identical types")              // want `true`
+		typeTest([]int{}, []int{1}, "identical types")     // want `true`
+		typeTest([]int32{}, []int32{1}, "identical types") // want `true`
+		typeTest([]int32{}, []rune{}, "identical types")   // want `true`
+		typeTest([4]int{}, [4]int{}, "identical types")    // want `true`
+
+		typeTest(1, 1.5, "identical types")
+		typeTest("ok", 1.5, "identical types")
+		typeTest([]int{}, []int32{1}, "identical types")
+		typeTest([4]int{}, [3]int{}, "identical types")
+
+		type point struct {
+			x, y float64
+		}
+		type myString string
+		var s string
+		var myStr myString
+		var pt point
+		ppt := &point{}
+		var eface interface{}
+		var i int
+		typeTest([]point{}, []point{}, "identical types") // want `true`
+		typeTest(s, s, "identical types")                 // want `true`
+		typeTest(myStr, myStr, "identical types")         // want `true`
+		typeTest(pt, pt, "identical types")               // want `true`
+		typeTest(&pt, ppt, "identical types")             // want `true`
+		typeTest(eface, eface, "identical types")         // want `true`
+		typeTest([]point{}, [1]point{}, "identical types")
+		typeTest(myStr, s, "identical types")
+		typeTest(s, myStr, "identical types")
+		typeTest(ppt, pt, "identical types")
+		typeTest(eface, pt, "identical types")
+		typeTest(eface, ppt, "identical types")
+		typeTest(i, eface, "identical types")
+		typeTest(eface, i, "identical types")
+	}
+}
+
 func detectAssignableTo(x int, xs []int) {
 	type newString string
 	type stringAlias = string
