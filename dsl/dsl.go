@@ -206,6 +206,12 @@ type ExprType struct {
 	Size int
 }
 
+// IdenticalTo applies types.Identical(this, v.Type) operation.
+// See https://golang.org/pkg/go/types/#Identical function documentation.
+//
+// Experimental: this function is not part of the stable API.
+func (ExprType) IdenticalTo(v Var) bool { return boolResult }
+
 // Underlying returns expression type underlying type.
 // See https://golang.org/pkg/go/types/#Type Underlying() method documentation.
 // Read https://golang.org/ref/spec#Types section to learn more about underlying types.
