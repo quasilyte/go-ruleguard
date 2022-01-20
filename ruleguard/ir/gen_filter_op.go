@@ -62,6 +62,8 @@ func main() {
 		{name: "VarTypeHasMethod", comment: "m[$Value].Type.HasMethod($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarTextMatches", comment: "m[$Value].Text.Matches($Args[0])", valueType: "string", flags: flagHasVar},
 
+		{name: "VarContains", comment: "m[$Value].Contains($Args[0])", valueType: "string", flags: flagHasVar},
+
 		{name: "Deadcode", comment: "m.Deadcode()"},
 
 		{name: "GoVersionEq", comment: "m.GoVersion().Eq($Value)", valueType: "string"},

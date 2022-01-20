@@ -272,7 +272,8 @@ func (l *irLoader) loadRule(group *ir.RuleGroup, rule *ir.Rule) error {
 	}
 
 	info := filterInfo{
-		Vars: make(map[string]struct{}),
+		Vars:  make(map[string]struct{}),
+		group: group,
 	}
 	if rule.WhereExpr.IsValid() {
 		filter, err := l.newFilter(rule.WhereExpr, &info)
@@ -313,10 +314,7 @@ func (l *irLoader) loadCommentRule(resultProto goRule, rule *ir.Rule, src string
 	return nil
 }
 
-func (l *irLoader) loadSyntaxRule(group *ir.RuleGroup, resultProto goRule, filterInfo filterInfo, rule *ir.Rule, src string, line int) error {
-	result := resultProto
-	result.line = line
-
+func (l *irLoader) gogrepCompile(group *ir.RuleGroup, src string) (*gogrep.Pattern, gogrep.PatternInfo, error) {
 	var imports map[string]string
 	if len(group.Imports) != 0 {
 		imports = make(map[string]string)
@@ -332,7 +330,14 @@ func (l *irLoader) loadSyntaxRule(group *ir.RuleGroup, resultProto goRule, filte
 		WithTypes: true,
 		Imports:   imports,
 	}
-	pat, info, err := gogrep.Compile(gogrepConfig)
+	return gogrep.Compile(gogrepConfig)
+}
+
+func (l *irLoader) loadSyntaxRule(group *ir.RuleGroup, resultProto goRule, filterInfo filterInfo, rule *ir.Rule, src string, line int) error {
+	result := resultProto
+	result.line = line
+
+	pat, info, err := l.gogrepCompile(group, src)
 	if err != nil {
 		return l.errorf(rule.Line, err, "parse match pattern")
 	}
@@ -721,6 +726,14 @@ func (l *irLoader) newFilter(filter ir.FilterExpr, info *filterInfo) (matchFilte
 		}
 		result.fn = makeFileNameMatchesFilter(result.src, re)
 
+	case ir.FilterVarContainsOp:
+		src := filter.Args[0].Value.(string)
+		pat, _, err := l.gogrepCompile(info.group, src)
+		if err != nil {
+			return result, l.errorf(filter.Line, err, "parse contains pattern")
+		}
+		result.fn = makeVarContainsFilter(result.src, filter.Value.(string), pat)
+
 	case ir.FilterVarFilterOp:
 		funcName := filter.Args[0].Value.(string)
 		userFn := l.state.env.GetFunc(l.file.PkgPath, funcName)
@@ -839,4 +852,6 @@ func (l *irLoader) newBinaryExprFilter(filter ir.FilterExpr, info *filterInfo) (
 
 type filterInfo struct {
 	Vars map[string]struct{}
+
+	group *ir.RuleGroup
 }
