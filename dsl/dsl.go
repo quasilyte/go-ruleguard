@@ -154,6 +154,16 @@ type Var struct {
 // For example, `VarFilterContext.Type` is mapped to `Var.Type`.
 func (Var) Filter(pred func(*VarFilterContext) bool) bool { return boolResult }
 
+// Contains runs a sub-search from a given pattern using the captured
+// vars from the original pattern match.
+//
+// For example, given the Match(`$lhs = append($lhs, $x)`) pattern,
+// we can do m["lhs"].Contains(`$x`) and learn whether $lhs contains
+// $x as its sub-expression.
+//
+// Experimental: this function is not part of the stable API.
+func (Var) Contains(pattern string) bool { return boolResult }
+
 // MatchedNode represents an AST node associated with a named submatch.
 type MatchedNode struct{}
 
