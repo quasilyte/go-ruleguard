@@ -33,7 +33,8 @@ type rulesRunner struct {
 
 	reportData ReportData
 
-	gogrepState gogrep.MatcherState
+	gogrepState    gogrep.MatcherState
+	gogrepSubState gogrep.MatcherState
 
 	importer *goImporter
 
@@ -67,14 +68,17 @@ func newRulesRunner(ctx *RunContext, buildContext *build.Context, state *engineS
 	})
 	gogrepState := gogrep.NewMatcherState()
 	gogrepState.Types = ctx.Types
+	gogrepSubState := gogrep.NewMatcherState()
+	gogrepSubState.Types = ctx.Types
 	rr := &rulesRunner{
-		bgContext:   context.Background(),
-		ctx:         ctx,
-		importer:    importer,
-		rules:       rules,
-		gogrepState: gogrepState,
-		nodePath:    newNodePath(),
-		truncateLen: ctx.TruncateLen,
+		bgContext:      context.Background(),
+		ctx:            ctx,
+		importer:       importer,
+		rules:          rules,
+		gogrepState:    gogrepState,
+		gogrepSubState: gogrepSubState,
+		nodePath:       newNodePath(),
+		truncateLen:    ctx.TruncateLen,
 		filterParams: filterParams{
 			env:      state.env.GetEvalEnv(),
 			importer: importer,
@@ -86,6 +90,7 @@ func newRulesRunner(ctx *RunContext, buildContext *build.Context, state *engineS
 	}
 	rr.filterParams.nodeText = rr.nodeText
 	rr.filterParams.nodePath = &rr.nodePath
+	rr.filterParams.gogrepSubState = &rr.gogrepSubState
 	return rr
 }
 
