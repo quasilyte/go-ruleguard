@@ -116,55 +116,59 @@ const (
 	// $Value type: string
 	FilterVarTextMatchesOp FilterOp = 30
 
+	// m[$Value].Contains($Args[0])
+	// $Value type: string
+	FilterVarContainsOp FilterOp = 31
+
 	// m.Deadcode()
-	FilterDeadcodeOp FilterOp = 31
+	FilterDeadcodeOp FilterOp = 32
 
 	// m.GoVersion().Eq($Value)
 	// $Value type: string
-	FilterGoVersionEqOp FilterOp = 32
+	FilterGoVersionEqOp FilterOp = 33
 
 	// m.GoVersion().LessThan($Value)
 	// $Value type: string
-	FilterGoVersionLessThanOp FilterOp = 33
+	FilterGoVersionLessThanOp FilterOp = 34
 
 	// m.GoVersion().GreaterThan($Value)
 	// $Value type: string
-	FilterGoVersionGreaterThanOp FilterOp = 34
+	FilterGoVersionGreaterThanOp FilterOp = 35
 
 	// m.GoVersion().LessEqThan($Value)
 	// $Value type: string
-	FilterGoVersionLessEqThanOp FilterOp = 35
+	FilterGoVersionLessEqThanOp FilterOp = 36
 
 	// m.GoVersion().GreaterEqThan($Value)
 	// $Value type: string
-	FilterGoVersionGreaterEqThanOp FilterOp = 36
+	FilterGoVersionGreaterEqThanOp FilterOp = 37
 
 	// m.File.Imports($Value)
 	// $Value type: string
-	FilterFileImportsOp FilterOp = 37
+	FilterFileImportsOp FilterOp = 38
 
 	// m.File.PkgPath.Matches($Value)
 	// $Value type: string
-	FilterFilePkgPathMatchesOp FilterOp = 38
+	FilterFilePkgPathMatchesOp FilterOp = 39
 
 	// m.File.Name.Matches($Value)
 	// $Value type: string
-	FilterFileNameMatchesOp FilterOp = 39
+	FilterFileNameMatchesOp FilterOp = 40
 
 	// $Value holds a function name
 	// $Value type: string
-	FilterFilterFuncRefOp FilterOp = 40
+	FilterFilterFuncRefOp FilterOp = 41
 
 	// $Value holds a string constant
 	// $Value type: string
-	FilterStringOp FilterOp = 41
+	FilterStringOp FilterOp = 42
 
 	// $Value holds an int64 constant
 	// $Value type: int64
-	FilterIntOp FilterOp = 42
+	FilterIntOp FilterOp = 43
 
 	// m[`$$`].Node.Parent().Is($Args[0])
-	FilterRootNodeParentIsOp FilterOp = 43
+	FilterRootNodeParentIsOp FilterOp = 44
 )
 
 var filterOpNames = map[FilterOp]string{
@@ -199,6 +203,7 @@ var filterOpNames = map[FilterOp]string{
 	FilterVarTypeImplementsOp:       `VarTypeImplements`,
 	FilterVarTypeHasMethodOp:        `VarTypeHasMethod`,
 	FilterVarTextMatchesOp:          `VarTextMatches`,
+	FilterVarContainsOp:             `VarContains`,
 	FilterDeadcodeOp:                `Deadcode`,
 	FilterGoVersionEqOp:             `GoVersionEq`,
 	FilterGoVersionLessThanOp:       `GoVersionLessThan`,
@@ -243,6 +248,7 @@ var filterOpFlags = map[FilterOp]uint64{
 	FilterVarTypeImplementsOp:       flagHasVar,
 	FilterVarTypeHasMethodOp:        flagHasVar,
 	FilterVarTextMatchesOp:          flagHasVar,
+	FilterVarContainsOp:             flagHasVar,
 	FilterStringOp:                  flagIsBasicLit,
 	FilterIntOp:                     flagIsBasicLit,
 }

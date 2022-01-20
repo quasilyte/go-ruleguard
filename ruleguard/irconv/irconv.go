@@ -661,6 +661,16 @@ func (conv *converter) convertFilterExprImpl(e ast.Expr) ir.FilterExpr {
 		case "File.Name.Matches":
 			return ir.FilterExpr{Op: ir.FilterFileNameMatchesOp, Value: conv.parseStringArg(e.Args[0])}
 
+		case "Contains":
+			pat := conv.parseStringArg(e.Args[0])
+			return ir.FilterExpr{
+				Op:    ir.FilterVarContainsOp,
+				Value: op.varName,
+				Args: []ir.FilterExpr{
+					{Op: ir.FilterStringOp, Value: pat},
+				},
+			}
+
 		case "Filter":
 			funcName, ok := e.Args[0].(*ast.Ident)
 			if !ok {
