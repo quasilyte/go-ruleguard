@@ -53,6 +53,7 @@ func main() {
 		{name: "VarNodeIs", comment: "m[$Value].Node.Is($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarObjectIs", comment: "m[$Value].Object.Is($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarTypeIs", comment: "m[$Value].Type.Is($Args[0])", valueType: "string", flags: flagHasVar},
+		{name: "VarTypeIdenticalTo", comment: "m[$Value].Type.IdenticalTo($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarTypeUnderlyingIs", comment: "m[$Value].Type.Underlying().Is($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarTypeOfKind", comment: "m[$Value].Type.OfKind($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarTypeUnderlyingOfKind", comment: "m[$Value].Type.Underlying().OfKind($Args[0])", valueType: "string", flags: flagHasVar},

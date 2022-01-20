@@ -671,6 +671,18 @@ func (conv *converter) convertFilterExprImpl(e ast.Expr) ir.FilterExpr {
 				},
 			}
 
+		case "Type.IdenticalTo":
+			// TODO: reuse the code with parsing At() args?
+			index, ok := e.Args[0].(*ast.IndexExpr)
+			if !ok {
+				panic(conv.errorf(e.Args[0], "expected %s[`varname`] expression", conv.group.MatcherName))
+			}
+			rhsVarname := conv.parseStringArg(index.Index)
+			args := []ir.FilterExpr{
+				{Op: ir.FilterStringOp, Value: rhsVarname},
+			}
+			return ir.FilterExpr{Op: ir.FilterVarTypeIdenticalToOp, Value: op.varName, Args: args}
+
 		case "Filter":
 			funcName, ok := e.Args[0].(*ast.Ident)
 			if !ok {

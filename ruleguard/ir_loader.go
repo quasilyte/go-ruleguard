@@ -622,6 +622,11 @@ func (l *irLoader) newFilter(filter ir.FilterExpr, info *filterInfo) (matchFilte
 			result.fn = makeTypeOfKindFilter(result.src, filter.Value.(string), underlying, kind)
 		}
 
+	case ir.FilterVarTypeIdenticalToOp:
+		lhsVarname := filter.Value.(string)
+		rhsVarname := filter.Args[0].Value.(string)
+		result.fn = makeTypesIdenticalFilter(result.src, lhsVarname, rhsVarname)
+
 	case ir.FilterVarTypeIsOp, ir.FilterVarTypeUnderlyingIsOp:
 		typeString := l.unwrapStringExpr(filter.Args[0])
 		if typeString == "" {
