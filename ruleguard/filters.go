@@ -160,16 +160,14 @@ func makeAddressableFilter(src, varname string) filterFunc {
 }
 
 func makeVarContainsFilter(src, varname string, pat *gogrep.Pattern) filterFunc {
-	// TODO: use a shared state here as well?
-	state := gogrep.NewMatcherState()
 	return func(params *filterParams) matchFilterResult {
-		state.CapturePreset = params.match.CaptureList()
+		params.gogrepSubState.CapturePreset = params.match.CaptureList()
 		matched := false
 		gogrep.Walk(params.subNode(varname), func(n ast.Node) bool {
 			if matched {
 				return false
 			}
-			pat.MatchNode(&state, n, func(m gogrep.MatchData) {
+			pat.MatchNode(params.gogrepSubState, n, func(m gogrep.MatchData) {
 				matched = true
 			})
 			return true

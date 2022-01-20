@@ -58,7 +58,8 @@ type filterParams struct {
 	imports  map[string]struct{}
 	env      *quasigo.EvalEnv
 
-	importer *goImporter
+	importer       *goImporter
+	gogrepSubState *gogrep.MatcherState
 
 	match    matchData
 	nodePath *nodePath
