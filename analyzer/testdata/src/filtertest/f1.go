@@ -872,3 +872,9 @@ func detectNode() {
 	nodeTest(rows[0][5], "IndexExpr") // want `true`
 	nodeTest("42", "IndexExpr")
 }
+
+var globalVar string
+
+func GlobalVar() {
+	globalVar = time.Now().String() // want `global var`
+}
