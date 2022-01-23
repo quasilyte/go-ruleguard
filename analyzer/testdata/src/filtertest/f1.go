@@ -877,4 +877,12 @@ var globalVar string
 
 func GlobalVar() {
 	globalVar = time.Now().String() // want `global var`
+	{
+		globalVar := time.Now().String() // shadowed global var
+		print(globalVar)
+	}
+	{
+		var globalVar = time.Now().String() // shadowed global var
+		print(globalVar)
+	}
 }
