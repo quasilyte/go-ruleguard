@@ -145,6 +145,9 @@ type Var struct {
 	// Line is a source code line number that contains this match.
 	// If this match is multi-line, this is the first line number.
 	Line int
+
+	// Global reports whether the corresponding var is defined in global scope.
+	Global bool
 }
 
 // Filter applies a custom predicate function on a submatch.
