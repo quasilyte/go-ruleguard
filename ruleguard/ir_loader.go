@@ -11,13 +11,14 @@ import (
 	"io/ioutil"
 	"regexp"
 
+	"github.com/quasilyte/gogrep"
+	"github.com/quasilyte/gogrep/nodetag"
+
 	"github.com/quasilyte/go-ruleguard/ruleguard/goutil"
 	"github.com/quasilyte/go-ruleguard/ruleguard/ir"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
 	"github.com/quasilyte/go-ruleguard/ruleguard/textmatch"
 	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
-	"github.com/quasilyte/gogrep"
-	"github.com/quasilyte/gogrep/nodetag"
 )
 
 type irLoaderConfig struct {
@@ -675,6 +676,8 @@ func (l *irLoader) newFilter(filter ir.FilterExpr, info *filterInfo) (matchFilte
 		result.fn = makePureFilter(result.src, filter.Value.(string))
 	case ir.FilterVarConstOp:
 		result.fn = makeConstFilter(result.src, filter.Value.(string))
+	case ir.FilterVarGlobalOp:
+		result.fn = makeGlobalFilter(result.src, filter.Value.(string))
 	case ir.FilterVarConstSliceOp:
 		result.fn = makeConstSliceFilter(result.src, filter.Value.(string))
 	case ir.FilterVarAddressableOp:

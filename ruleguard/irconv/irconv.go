@@ -11,9 +11,10 @@ import (
 	"strings"
 
 	"github.com/go-toolsmith/astcopy"
+	"golang.org/x/tools/go/ast/astutil"
+
 	"github.com/quasilyte/go-ruleguard/ruleguard/goutil"
 	"github.com/quasilyte/go-ruleguard/ruleguard/ir"
-	"golang.org/x/tools/go/ast/astutil"
 )
 
 type Context struct {
@@ -637,6 +638,8 @@ func (conv *converter) convertFilterExprImpl(e ast.Expr) ir.FilterExpr {
 			return ir.FilterExpr{Op: ir.FilterVarAddressableOp, Value: op.varName}
 		case "Type.Size":
 			return ir.FilterExpr{Op: ir.FilterVarTypeSizeOp, Value: op.varName}
+		case "Global":
+			return ir.FilterExpr{Op: ir.FilterVarGlobalOp, Value: op.varName}
 		}
 
 	case *ast.CallExpr:

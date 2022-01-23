@@ -56,123 +56,127 @@ const (
 	// $Value type: string
 	FilterVarLineOp FilterOp = 15
 
+	// m[$Value].Global
+	// $Value type: bool
+	FilterVarGlobalOp FilterOp = 16
+
 	// m[$Value].Value.Int()
 	// $Value type: string
-	FilterVarValueIntOp FilterOp = 16
+	FilterVarValueIntOp FilterOp = 17
 
 	// m[$Value].Type.Size
 	// $Value type: string
-	FilterVarTypeSizeOp FilterOp = 17
+	FilterVarTypeSizeOp FilterOp = 18
 
 	// m[$Value].Type.HasPointers()
 	// $Value type: string
-	FilterVarTypeHasPointersOp FilterOp = 18
+	FilterVarTypeHasPointersOp FilterOp = 19
 
 	// m[$Value].Filter($Args[0])
 	// $Value type: string
-	FilterVarFilterOp FilterOp = 19
+	FilterVarFilterOp FilterOp = 20
 
 	// m[$Value].Node.Is($Args[0])
 	// $Value type: string
-	FilterVarNodeIsOp FilterOp = 20
+	FilterVarNodeIsOp FilterOp = 21
 
 	// m[$Value].Object.Is($Args[0])
 	// $Value type: string
-	FilterVarObjectIsOp FilterOp = 21
+	FilterVarObjectIsOp FilterOp = 22
 
 	// m[$Value].Type.Is($Args[0])
 	// $Value type: string
-	FilterVarTypeIsOp FilterOp = 22
+	FilterVarTypeIsOp FilterOp = 23
 
 	// m[$Value].Type.IdenticalTo($Args[0])
 	// $Value type: string
-	FilterVarTypeIdenticalToOp FilterOp = 23
+	FilterVarTypeIdenticalToOp FilterOp = 24
 
 	// m[$Value].Type.Underlying().Is($Args[0])
 	// $Value type: string
-	FilterVarTypeUnderlyingIsOp FilterOp = 24
+	FilterVarTypeUnderlyingIsOp FilterOp = 25
 
 	// m[$Value].Type.OfKind($Args[0])
 	// $Value type: string
-	FilterVarTypeOfKindOp FilterOp = 25
+	FilterVarTypeOfKindOp FilterOp = 26
 
 	// m[$Value].Type.Underlying().OfKind($Args[0])
 	// $Value type: string
-	FilterVarTypeUnderlyingOfKindOp FilterOp = 26
+	FilterVarTypeUnderlyingOfKindOp FilterOp = 27
 
 	// m[$Value].Type.ConvertibleTo($Args[0])
 	// $Value type: string
-	FilterVarTypeConvertibleToOp FilterOp = 27
+	FilterVarTypeConvertibleToOp FilterOp = 28
 
 	// m[$Value].Type.AssignableTo($Args[0])
 	// $Value type: string
-	FilterVarTypeAssignableToOp FilterOp = 28
+	FilterVarTypeAssignableToOp FilterOp = 29
 
 	// m[$Value].Type.Implements($Args[0])
 	// $Value type: string
-	FilterVarTypeImplementsOp FilterOp = 29
+	FilterVarTypeImplementsOp FilterOp = 30
 
 	// m[$Value].Type.HasMethod($Args[0])
 	// $Value type: string
-	FilterVarTypeHasMethodOp FilterOp = 30
+	FilterVarTypeHasMethodOp FilterOp = 31
 
 	// m[$Value].Text.Matches($Args[0])
 	// $Value type: string
-	FilterVarTextMatchesOp FilterOp = 31
+	FilterVarTextMatchesOp FilterOp = 32
 
 	// m[$Value].Contains($Args[0])
 	// $Value type: string
-	FilterVarContainsOp FilterOp = 32
+	FilterVarContainsOp FilterOp = 33
 
 	// m.Deadcode()
-	FilterDeadcodeOp FilterOp = 33
+	FilterDeadcodeOp FilterOp = 34
 
 	// m.GoVersion().Eq($Value)
 	// $Value type: string
-	FilterGoVersionEqOp FilterOp = 34
+	FilterGoVersionEqOp FilterOp = 35
 
 	// m.GoVersion().LessThan($Value)
 	// $Value type: string
-	FilterGoVersionLessThanOp FilterOp = 35
+	FilterGoVersionLessThanOp FilterOp = 36
 
 	// m.GoVersion().GreaterThan($Value)
 	// $Value type: string
-	FilterGoVersionGreaterThanOp FilterOp = 36
+	FilterGoVersionGreaterThanOp FilterOp = 37
 
 	// m.GoVersion().LessEqThan($Value)
 	// $Value type: string
-	FilterGoVersionLessEqThanOp FilterOp = 37
+	FilterGoVersionLessEqThanOp FilterOp = 38
 
 	// m.GoVersion().GreaterEqThan($Value)
 	// $Value type: string
-	FilterGoVersionGreaterEqThanOp FilterOp = 38
+	FilterGoVersionGreaterEqThanOp FilterOp = 39
 
 	// m.File.Imports($Value)
 	// $Value type: string
-	FilterFileImportsOp FilterOp = 39
+	FilterFileImportsOp FilterOp = 40
 
 	// m.File.PkgPath.Matches($Value)
 	// $Value type: string
-	FilterFilePkgPathMatchesOp FilterOp = 40
+	FilterFilePkgPathMatchesOp FilterOp = 41
 
 	// m.File.Name.Matches($Value)
 	// $Value type: string
-	FilterFileNameMatchesOp FilterOp = 41
+	FilterFileNameMatchesOp FilterOp = 42
 
 	// $Value holds a function name
 	// $Value type: string
-	FilterFilterFuncRefOp FilterOp = 42
+	FilterFilterFuncRefOp FilterOp = 43
 
 	// $Value holds a string constant
 	// $Value type: string
-	FilterStringOp FilterOp = 43
+	FilterStringOp FilterOp = 44
 
 	// $Value holds an int64 constant
 	// $Value type: int64
-	FilterIntOp FilterOp = 44
+	FilterIntOp FilterOp = 45
 
 	// m[`$$`].Node.Parent().Is($Args[0])
-	FilterRootNodeParentIsOp FilterOp = 45
+	FilterRootNodeParentIsOp FilterOp = 46
 )
 
 var filterOpNames = map[FilterOp]string{
@@ -192,6 +196,7 @@ var filterOpNames = map[FilterOp]string{
 	FilterVarConstSliceOp:           `VarConstSlice`,
 	FilterVarTextOp:                 `VarText`,
 	FilterVarLineOp:                 `VarLine`,
+	FilterVarGlobalOp:               "VarGlobal",
 	FilterVarValueIntOp:             `VarValueInt`,
 	FilterVarTypeSizeOp:             `VarTypeSize`,
 	FilterVarTypeHasPointersOp:      `VarTypeHasPointers`,
@@ -238,6 +243,7 @@ var filterOpFlags = map[FilterOp]uint64{
 	FilterVarConstSliceOp:           flagHasVar,
 	FilterVarTextOp:                 flagHasVar,
 	FilterVarLineOp:                 flagHasVar,
+	FilterVarGlobalOp:               flagHasVar,
 	FilterVarValueIntOp:             flagHasVar,
 	FilterVarTypeSizeOp:             flagHasVar,
 	FilterVarTypeHasPointersOp:      flagHasVar,
