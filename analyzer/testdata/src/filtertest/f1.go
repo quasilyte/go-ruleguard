@@ -875,7 +875,19 @@ func detectNode() {
 
 var globalVar string
 
-func GlobalVar() {
+func DetectGlobal() {
+	globalVar = time.Now().String() // want `global var`
+	{
+		globalVar := time.Now().String() // shadowed global var
+		print(globalVar)
+	}
+	{
+		var globalVar = time.Now().String() // shadowed global var
+		print(globalVar)
+	}
+}
+
+func detectGlobalVar() {
 	globalVar = time.Now().String() // want `global var`
 	{
 		globalVar := time.Now().String() // shadowed global var
