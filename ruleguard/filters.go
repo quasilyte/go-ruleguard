@@ -366,6 +366,12 @@ func makeLineFilter(src, varname string, op token.Token, rhsVarname string) filt
 
 func makeGlobalFilter(src, varname string) filterFunc {
 	return func(params *filterParams) matchFilterResult {
+		obj := params.ctx.Types.ObjectOf(identOf(params.subExpr(varname)))
+		globalScope := params.ctx.Pkg.Scope()
+		if obj.Parent() == globalScope {
+			return filterSuccess
+		}
+
 		return filterFailure(src)
 	}
 }
