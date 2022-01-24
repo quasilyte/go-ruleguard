@@ -880,7 +880,7 @@ var _ = time.Now().String()                 // false negative // TODO https://gi
 var _ string = time.Now().String()          // false negative // TODO https://github.com/quasilyte/go-ruleguard/issues/369
 var (
 	globalVar4 string
-	globalVar5 = time.Now().String() // false negative // TODO https://github.com/quasilyte/go-ruleguard/issues/369
+	globalVar5 = time.Now().String() // false negative
 )
 
 func detectGlobal() {
