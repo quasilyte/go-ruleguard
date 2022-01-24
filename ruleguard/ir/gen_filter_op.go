@@ -45,6 +45,7 @@ func main() {
 		{name: "VarConstSlice", comment: "m[$Value].ConstSlice", valueType: "string", flags: flagHasVar},
 		{name: "VarText", comment: "m[$Value].Text", valueType: "string", flags: flagHasVar},
 		{name: "VarLine", comment: "m[$Value].Line", valueType: "string", flags: flagHasVar},
+		{name: "VarGlobal", comment: "m[$Value].Global", valueType: "bool", flags: flagHasVar},
 		{name: "VarValueInt", comment: "m[$Value].Value.Int()", valueType: "string", flags: flagHasVar},
 		{name: "VarTypeSize", comment: "m[$Value].Type.Size", valueType: "string", flags: flagHasVar},
 		{name: "VarTypeHasPointers", comment: "m[$Value].Type.HasPointers()", valueType: "string", flags: flagHasVar},

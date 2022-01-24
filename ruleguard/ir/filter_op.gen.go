@@ -196,7 +196,7 @@ var filterOpNames = map[FilterOp]string{
 	FilterVarConstSliceOp:           `VarConstSlice`,
 	FilterVarTextOp:                 `VarText`,
 	FilterVarLineOp:                 `VarLine`,
-	FilterVarGlobalOp:               "VarGlobal",
+	FilterVarGlobalOp:               `VarGlobal`,
 	FilterVarValueIntOp:             `VarValueInt`,
 	FilterVarTypeSizeOp:             `VarTypeSize`,
 	FilterVarTypeHasPointersOp:      `VarTypeHasPointers`,
