@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/quasilyte/go-ruleguard/internal/xtypes"
+	"github.com/quasilyte/stdinfo"
 )
 
 //go:generate stringer -type=patternOp
@@ -60,8 +61,12 @@ type ImportsTab struct {
 	imports []map[string]string
 }
 
-func NewImportsTab(initial map[string]string) *ImportsTab {
-	return &ImportsTab{imports: []map[string]string{initial}}
+func NewImportsTab(initial []stdinfo.Package) *ImportsTab {
+	convertMap := make(map[string]string, 0)
+	for _, pack := range initial {
+		convertMap[pack.Name] = pack.Path
+	}
+	return &ImportsTab{imports: []map[string]string{convertMap}}
 }
 
 func (itab *ImportsTab) Lookup(pkgName string) (string, bool) {
