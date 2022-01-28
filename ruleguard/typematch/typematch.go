@@ -62,7 +62,7 @@ type ImportsTab struct {
 }
 
 func NewImportsTab(initial []stdinfo.Package) *ImportsTab {
-	convertMap := make(map[string]string, 0)
+	convertMap := make(map[string]string)
 	for _, pack := range initial {
 		convertMap[pack.Name] = pack.Path
 	}
