@@ -64,7 +64,7 @@ func (e *engine) Load(ctx *LoadContext, buildContext *build.Context, filename st
 		pkg:        pkg,
 		ctx:        ctx,
 		importer:   imp,
-		itab:       typematch.NewImportsTab(stdinfo.PackagesList),
+		itab:       typematch.NewImportsTab(stdinfo.PathByName),
 		gogrepFset: token.NewFileSet(),
 	}
 	l := newIRLoader(config)
@@ -97,7 +97,7 @@ func (e *engine) LoadFromIR(ctx *LoadContext, buildContext *build.Context, filen
 		state:      e.state,
 		ctx:        ctx,
 		importer:   imp,
-		itab:       typematch.NewImportsTab(stdinfo.PackagesList),
+		itab:       typematch.NewImportsTab(stdinfo.PathByName),
 		gogrepFset: token.NewFileSet(),
 	}
 	l := newIRLoader(config)
