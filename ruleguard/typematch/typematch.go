@@ -32,10 +32,32 @@ const (
 	opNamed
 )
 
-type Pattern struct {
+type MatcherState struct {
 	typeMatches  map[string]types.Type
 	int64Matches map[string]int64
+}
 
+func NewMatcherState() *MatcherState {
+	return &MatcherState{
+		typeMatches:  map[string]types.Type{},
+		int64Matches: map[string]int64{},
+	}
+}
+
+func (state *MatcherState) reset() {
+	if len(state.int64Matches) != 0 {
+		for k := range state.int64Matches {
+			delete(state.int64Matches, k)
+		}
+	}
+	if len(state.typeMatches) != 0 {
+		for k := range state.typeMatches {
+			delete(state.typeMatches, k)
+		}
+	}
+}
+
+type Pattern struct {
 	root *pattern
 }
 
@@ -107,9 +129,7 @@ func Parse(ctx *Context, s string) (*Pattern, error) {
 		return nil, fmt.Errorf("can't convert %s type expression", s)
 	}
 	p := &Pattern{
-		typeMatches:  map[string]types.Type{},
-		int64Matches: map[string]int64{},
-		root:         root,
+		root: root,
 	}
 	return p, nil
 }
@@ -345,21 +365,12 @@ func parseExpr(ctx *Context, e ast.Expr) *pattern {
 }
 
 // MatchIdentical returns true if the go typ matches pattern p.
-func (p *Pattern) MatchIdentical(typ types.Type) bool {
-	p.reset()
-	return p.matchIdentical(p.root, typ)
+func (p *Pattern) MatchIdentical(state *MatcherState, typ types.Type) bool {
+	state.reset()
+	return p.matchIdentical(state, p.root, typ)
 }
 
-func (p *Pattern) reset() {
-	if len(p.int64Matches) != 0 {
-		p.int64Matches = map[string]int64{}
-	}
-	if len(p.typeMatches) != 0 {
-		p.typeMatches = map[string]types.Type{}
-	}
-}
-
-func (p *Pattern) matchIdenticalFielder(subs []*pattern, f fielder) bool {
+func (p *Pattern) matchIdenticalFielder(state *MatcherState, subs []*pattern, f fielder) bool {
 	// TODO: do backtracking.
 
 	numFields := f.NumFields()
@@ -387,7 +398,7 @@ func (p *Pattern) matchIdenticalFielder(subs []*pattern, f fielder) bool {
 				matchAny = false
 				i++
 			// Lookahead for non-greedy matching.
-			case i+1 < len(subs) && p.matchIdentical(subs[i+1], f.Field(fieldsMatched).Type()):
+			case i+1 < len(subs) && p.matchIdentical(state, subs[i+1], f.Field(fieldsMatched).Type()):
 				matchAny = false
 				i += 2
 				fieldsMatched++
@@ -397,7 +408,7 @@ func (p *Pattern) matchIdenticalFielder(subs []*pattern, f fielder) bool {
 			continue
 		}
 
-		if fieldsLeft == 0 || !p.matchIdentical(pat, f.Field(fieldsMatched).Type()) {
+		if fieldsLeft == 0 || !p.matchIdentical(state, pat, f.Field(fieldsMatched).Type()) {
 			return false
 		}
 		i++
@@ -407,16 +418,16 @@ func (p *Pattern) matchIdenticalFielder(subs []*pattern, f fielder) bool {
 	return numFields == fieldsMatched
 }
 
-func (p *Pattern) matchIdentical(sub *pattern, typ types.Type) bool {
+func (p *Pattern) matchIdentical(state *MatcherState, sub *pattern, typ types.Type) bool {
 	switch sub.op {
 	case opVar:
 		name := sub.value.(string)
 		if name == "_" {
 			return true
 		}
-		y, ok := p.typeMatches[name]
+		y, ok := state.typeMatches[name]
 		if !ok {
-			p.typeMatches[name] = typ
+			state.typeMatches[name] = typ
 			return true
 		}
 		if y == nil {
@@ -432,14 +443,14 @@ func (p *Pattern) matchIdentical(sub *pattern, typ types.Type) bool {
 		if !ok {
 			return false
 		}
-		return p.matchIdentical(sub.subs[0], typ.Elem())
+		return p.matchIdentical(state, sub.subs[0], typ.Elem())
 
 	case opSlice:
 		typ, ok := typ.(*types.Slice)
 		if !ok {
 			return false
 		}
-		return p.matchIdentical(sub.subs[0], typ.Elem())
+		return p.matchIdentical(state, sub.subs[0], typ.Elem())
 
 	case opArray:
 		typ, ok := typ.(*types.Array)
@@ -453,25 +464,25 @@ func (p *Pattern) matchIdentical(sub *pattern, typ types.Type) bool {
 				wantLen = typ.Len()
 				break
 			}
-			length, ok := p.int64Matches[v]
+			length, ok := state.int64Matches[v]
 			if ok {
 				wantLen = length
 			} else {
-				p.int64Matches[v] = typ.Len()
+				state.int64Matches[v] = typ.Len()
 				wantLen = typ.Len()
 			}
 		case int64:
 			wantLen = v
 		}
-		return wantLen == typ.Len() && p.matchIdentical(sub.subs[0], typ.Elem())
+		return wantLen == typ.Len() && p.matchIdentical(state, sub.subs[0], typ.Elem())
 
 	case opMap:
 		typ, ok := typ.(*types.Map)
 		if !ok {
 			return false
 		}
-		return p.matchIdentical(sub.subs[0], typ.Key()) &&
-			p.matchIdentical(sub.subs[1], typ.Elem())
+		return p.matchIdentical(state, sub.subs[0], typ.Key()) &&
+			p.matchIdentical(state, sub.subs[1], typ.Elem())
 
 	case opChan:
 		typ, ok := typ.(*types.Chan)
@@ -479,7 +490,7 @@ func (p *Pattern) matchIdentical(sub *pattern, typ types.Type) bool {
 			return false
 		}
 		dir := sub.value.(types.ChanDir)
-		return dir == typ.Dir() && p.matchIdentical(sub.subs[0], typ.Elem())
+		return dir == typ.Dir() && p.matchIdentical(state, sub.subs[0], typ.Elem())
 
 	case opNamed:
 		typ, ok := typ.(*types.Named)
@@ -515,12 +526,12 @@ func (p *Pattern) matchIdentical(sub *pattern, typ types.Type) bool {
 			return false
 		}
 		for i := 0; i < typ.Params().Len(); i++ {
-			if !p.matchIdentical(params[i], typ.Params().At(i).Type()) {
+			if !p.matchIdentical(state, params[i], typ.Params().At(i).Type()) {
 				return false
 			}
 		}
 		for i := 0; i < typ.Results().Len(); i++ {
-			if !p.matchIdentical(results[i], typ.Results().At(i).Type()) {
+			if !p.matchIdentical(state, results[i], typ.Results().At(i).Type()) {
 				return false
 			}
 		}
@@ -535,11 +546,11 @@ func (p *Pattern) matchIdentical(sub *pattern, typ types.Type) bool {
 		params := sub.subs[:numParams]
 		results := sub.subs[numParams:]
 		adapter := tupleFielder{x: typ.Params()}
-		if !p.matchIdenticalFielder(params, &adapter) {
+		if !p.matchIdenticalFielder(state, params, &adapter) {
 			return false
 		}
 		adapter.x = typ.Results()
-		if !p.matchIdenticalFielder(results, &adapter) {
+		if !p.matchIdenticalFielder(state, results, &adapter) {
 			return false
 		}
 		return true
@@ -553,7 +564,7 @@ func (p *Pattern) matchIdentical(sub *pattern, typ types.Type) bool {
 			return false
 		}
 		for i, member := range sub.subs {
-			if !p.matchIdentical(member, typ.Field(i).Type()) {
+			if !p.matchIdentical(state, member, typ.Field(i).Type()) {
 				return false
 			}
 		}
@@ -564,7 +575,7 @@ func (p *Pattern) matchIdentical(sub *pattern, typ types.Type) bool {
 		if !ok {
 			return false
 		}
-		if !p.matchIdenticalFielder(sub.subs, typ) {
+		if !p.matchIdenticalFielder(state, sub.subs, typ) {
 			return false
 		}
 		return true

@@ -17,6 +17,7 @@ import (
 
 	"github.com/quasilyte/go-ruleguard/ruleguard/goutil"
 	"github.com/quasilyte/go-ruleguard/ruleguard/profiling"
+	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
 	"github.com/quasilyte/gogrep"
 	"github.com/quasilyte/gogrep/nodetag"
 )
@@ -80,9 +81,10 @@ func newRulesRunner(ctx *RunContext, buildContext *build.Context, state *engineS
 		nodePath:       newNodePath(),
 		truncateLen:    ctx.TruncateLen,
 		filterParams: filterParams{
-			env:      state.env.GetEvalEnv(),
-			importer: importer,
-			ctx:      ctx,
+			typematchState: typematch.NewMatcherState(),
+			env:            state.env.GetEvalEnv(),
+			importer:       importer,
+			ctx:            ctx,
 		},
 	}
 	if ctx.TruncateLen == 0 {

@@ -71,3 +71,9 @@ func issue360(m dsl.Matcher) {
 		Report(`don't use strings.Compare`).
 		At(m["s1"])
 }
+
+func issue372(m dsl.Matcher) {
+	m.Match("$x{}", "make($x)").
+		Where(m["x"].Type.Is("map[$k]$v")).
+		Report("creating a map")
+}
