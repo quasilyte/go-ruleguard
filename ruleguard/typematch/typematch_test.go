@@ -5,6 +5,8 @@ import (
 	"go/types"
 	"path"
 	"testing"
+
+	"github.com/quasilyte/stdinfo"
 )
 
 var (
@@ -14,6 +16,10 @@ var (
 	typeUint8     = types.Typ[types.Uint8]
 	typeUnsafePtr = types.Typ[types.UnsafePointer]
 	typeEstruct   = types.NewStruct(nil, nil)
+	packages      = [2]stdinfo.Package{
+		{Name: "io", Path: "io"},
+		{Name: "syntax", Path: "regexp/syntax"},
+	}
 
 	stringerIface = types.NewInterfaceType([]*types.Func{
 		types.NewFunc(token.NoPos, nil, "String",
@@ -26,10 +32,7 @@ var (
 	stringVar  = types.NewVar(token.NoPos, nil, "_", typeString)
 
 	testContext = &Context{
-		Itab: NewImportsTab(map[string]string{
-			"io":     "io",
-			"syntax": "regexp/syntax",
-		}),
+		Itab: NewImportsTab(packages[:]),
 	}
 )
 
