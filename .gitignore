@@ -1,5 +1,5 @@
 .idea
 .vscode
-test-ruleguard
-test-ruleguard-ir
+test-ruleguard.exe
+test-ruleguard-ir.exe
 coverage.txt

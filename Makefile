@@ -14,7 +14,8 @@ build-release:
 		./cmd/ruleguard
 
 test:
-	go test -count 3 -coverpkg=./... -coverprofile=coverage.txt -covermode=atomic -race ./...
+	go test -timeout=10m -count=1 -race -coverpkg=./... -coverprofile=coverage.txt -covermode=atomic ./...
+	go test -count=3 -run=TestE2E ./analyzer
 	cd rules && go test -v .
 	@echo "everything is OK"
 
