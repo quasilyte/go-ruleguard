@@ -81,7 +81,7 @@ const (
 	FilterVarObjectIsOp FilterOp = 21
 
 	// m[$Value].Object.IsGlobal()
-	// $Value type: bool
+	// $Value type: string
 	FilterVarObjectIsGlobalOp FilterOp = 22
 
 	// m[$Value].Type.Is($Args[0])
