@@ -268,6 +268,6 @@ func testRules(m dsl.Matcher) {
 		`var $x = time.Now().String()`,
 		`var $x $_ = time.Now().String()`,
 		`$x := time.Now().String()`).
-		Where(m["x"].Global).
+		Where(m["x"].Object.IsGlobal()).
 		Report(`global var`)
 }

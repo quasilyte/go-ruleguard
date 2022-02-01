@@ -1,3 +1,4 @@
+//go:build generate
 // +build generate
 
 package main
@@ -45,7 +46,6 @@ func main() {
 		{name: "VarConstSlice", comment: "m[$Value].ConstSlice", valueType: "string", flags: flagHasVar},
 		{name: "VarText", comment: "m[$Value].Text", valueType: "string", flags: flagHasVar},
 		{name: "VarLine", comment: "m[$Value].Line", valueType: "string", flags: flagHasVar},
-		{name: "VarGlobal", comment: "m[$Value].Global", valueType: "bool", flags: flagHasVar},
 		{name: "VarValueInt", comment: "m[$Value].Value.Int()", valueType: "string", flags: flagHasVar},
 		{name: "VarTypeSize", comment: "m[$Value].Type.Size", valueType: "string", flags: flagHasVar},
 		{name: "VarTypeHasPointers", comment: "m[$Value].Type.HasPointers()", valueType: "string", flags: flagHasVar},
@@ -53,6 +53,7 @@ func main() {
 		{name: "VarFilter", comment: "m[$Value].Filter($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarNodeIs", comment: "m[$Value].Node.Is($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarObjectIs", comment: "m[$Value].Object.Is($Args[0])", valueType: "string", flags: flagHasVar},
+		{name: "VarObjectIsGlobal", comment: "m[$Value].Object.IsGlobal()", valueType: "bool", flags: flagHasVar},
 		{name: "VarTypeIs", comment: "m[$Value].Type.Is($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarTypeIdenticalTo", comment: "m[$Value].Type.IdenticalTo($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarTypeUnderlyingIs", comment: "m[$Value].Type.Underlying().Is($Args[0])", valueType: "string", flags: flagHasVar},

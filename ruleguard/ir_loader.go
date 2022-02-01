@@ -676,8 +676,8 @@ func (l *irLoader) newFilter(filter ir.FilterExpr, info *filterInfo) (matchFilte
 		result.fn = makePureFilter(result.src, filter.Value.(string))
 	case ir.FilterVarConstOp:
 		result.fn = makeConstFilter(result.src, filter.Value.(string))
-	case ir.FilterVarGlobalOp:
-		result.fn = makeGlobalFilter(result.src, filter.Value.(string))
+	case ir.FilterVarObjectIsGlobalOp:
+		result.fn = makeObjectIsGlobalFilter(result.src, filter.Value.(string))
 	case ir.FilterVarConstSliceOp:
 		result.fn = makeConstSliceFilter(result.src, filter.Value.(string))
 	case ir.FilterVarAddressableOp:

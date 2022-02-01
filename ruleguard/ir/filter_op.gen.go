@@ -56,33 +56,33 @@ const (
 	// $Value type: string
 	FilterVarLineOp FilterOp = 15
 
-	// m[$Value].Global
-	// $Value type: bool
-	FilterVarGlobalOp FilterOp = 16
-
 	// m[$Value].Value.Int()
 	// $Value type: string
-	FilterVarValueIntOp FilterOp = 17
+	FilterVarValueIntOp FilterOp = 16
 
 	// m[$Value].Type.Size
 	// $Value type: string
-	FilterVarTypeSizeOp FilterOp = 18
+	FilterVarTypeSizeOp FilterOp = 17
 
 	// m[$Value].Type.HasPointers()
 	// $Value type: string
-	FilterVarTypeHasPointersOp FilterOp = 19
+	FilterVarTypeHasPointersOp FilterOp = 18
 
 	// m[$Value].Filter($Args[0])
 	// $Value type: string
-	FilterVarFilterOp FilterOp = 20
+	FilterVarFilterOp FilterOp = 19
 
 	// m[$Value].Node.Is($Args[0])
 	// $Value type: string
-	FilterVarNodeIsOp FilterOp = 21
+	FilterVarNodeIsOp FilterOp = 20
 
 	// m[$Value].Object.Is($Args[0])
 	// $Value type: string
-	FilterVarObjectIsOp FilterOp = 22
+	FilterVarObjectIsOp FilterOp = 21
+
+	// m[$Value].Object.IsGlobal()
+	// $Value type: bool
+	FilterVarObjectIsGlobalOp FilterOp = 22
 
 	// m[$Value].Type.Is($Args[0])
 	// $Value type: string
@@ -196,13 +196,13 @@ var filterOpNames = map[FilterOp]string{
 	FilterVarConstSliceOp:           `VarConstSlice`,
 	FilterVarTextOp:                 `VarText`,
 	FilterVarLineOp:                 `VarLine`,
-	FilterVarGlobalOp:               `VarGlobal`,
 	FilterVarValueIntOp:             `VarValueInt`,
 	FilterVarTypeSizeOp:             `VarTypeSize`,
 	FilterVarTypeHasPointersOp:      `VarTypeHasPointers`,
 	FilterVarFilterOp:               `VarFilter`,
 	FilterVarNodeIsOp:               `VarNodeIs`,
 	FilterVarObjectIsOp:             `VarObjectIs`,
+	FilterVarObjectIsGlobalOp:       `VarObjectIsGlobal`,
 	FilterVarTypeIsOp:               `VarTypeIs`,
 	FilterVarTypeIdenticalToOp:      `VarTypeIdenticalTo`,
 	FilterVarTypeUnderlyingIsOp:     `VarTypeUnderlyingIs`,
@@ -243,13 +243,13 @@ var filterOpFlags = map[FilterOp]uint64{
 	FilterVarConstSliceOp:           flagHasVar,
 	FilterVarTextOp:                 flagHasVar,
 	FilterVarLineOp:                 flagHasVar,
-	FilterVarGlobalOp:               flagHasVar,
 	FilterVarValueIntOp:             flagHasVar,
 	FilterVarTypeSizeOp:             flagHasVar,
 	FilterVarTypeHasPointersOp:      flagHasVar,
 	FilterVarFilterOp:               flagHasVar,
 	FilterVarNodeIsOp:               flagHasVar,
 	FilterVarObjectIsOp:             flagHasVar,
+	FilterVarObjectIsGlobalOp:       flagHasVar,
 	FilterVarTypeIsOp:               flagHasVar,
 	FilterVarTypeIdenticalToOp:      flagHasVar,
 	FilterVarTypeUnderlyingIsOp:     flagHasVar,

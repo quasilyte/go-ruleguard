@@ -145,9 +145,6 @@ type Var struct {
 	// Line is a source code line number that contains this match.
 	// If this match is multi-line, this is the first line number.
 	Line int
-
-	// Global reports whether the corresponding var is defined in global scope.
-	Global bool
 }
 
 // Filter applies a custom predicate function on a submatch.
@@ -202,6 +199,9 @@ type TypesObject struct{}
 // Examples: "Func", "Var", "Const", "TypeName", "Label", "PkgName", "Builtin", "Nil"
 // See https://golang.org/pkg/go/types/.
 func (TypesObject) Is(typ string) bool { return boolResult }
+
+// IsGlobal reports whether an associated types.Object is defined in global scope.
+func (TypesObject) IsGlobal() bool { return boolResult }
 
 // ExprType describes a type of a matcher expr.
 type ExprType struct {
