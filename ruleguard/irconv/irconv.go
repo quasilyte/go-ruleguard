@@ -11,9 +11,10 @@ import (
 	"strings"
 
 	"github.com/go-toolsmith/astcopy"
+	"golang.org/x/tools/go/ast/astutil"
+
 	"github.com/quasilyte/go-ruleguard/ruleguard/goutil"
 	"github.com/quasilyte/go-ruleguard/ruleguard/ir"
-	"golang.org/x/tools/go/ast/astutil"
 )
 
 type Context struct {
@@ -714,6 +715,8 @@ func (conv *converter) convertFilterExprImpl(e ast.Expr) ir.FilterExpr {
 			return ir.FilterExpr{Op: ir.FilterRootNodeParentIsOp, Args: args}
 		case "Object.Is":
 			return ir.FilterExpr{Op: ir.FilterVarObjectIsOp, Value: op.varName, Args: args}
+		case "Object.IsGlobal":
+			return ir.FilterExpr{Op: ir.FilterVarObjectIsGlobalOp, Value: op.varName}
 		case "Type.HasPointers":
 			return ir.FilterExpr{Op: ir.FilterVarTypeHasPointersOp, Value: op.varName}
 		case "Type.Is":

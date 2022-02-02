@@ -1,3 +1,4 @@
+//go:build generate
 // +build generate
 
 package main
@@ -52,6 +53,7 @@ func main() {
 		{name: "VarFilter", comment: "m[$Value].Filter($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarNodeIs", comment: "m[$Value].Node.Is($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarObjectIs", comment: "m[$Value].Object.Is($Args[0])", valueType: "string", flags: flagHasVar},
+		{name: "VarObjectIsGlobal", comment: "m[$Value].Object.IsGlobal()", valueType: "string", flags: flagHasVar},
 		{name: "VarTypeIs", comment: "m[$Value].Type.Is($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarTypeIdenticalTo", comment: "m[$Value].Type.IdenticalTo($Args[0])", valueType: "string", flags: flagHasVar},
 		{name: "VarTypeUnderlyingIs", comment: "m[$Value].Type.Underlying().Is($Args[0])", valueType: "string", flags: flagHasVar},

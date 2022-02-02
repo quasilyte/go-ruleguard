@@ -7,12 +7,13 @@ import (
 	"go/types"
 	"path/filepath"
 
+	"github.com/quasilyte/gogrep"
+	"github.com/quasilyte/gogrep/nodetag"
+
 	"github.com/quasilyte/go-ruleguard/internal/xtypes"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
 	"github.com/quasilyte/go-ruleguard/ruleguard/textmatch"
 	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
-	"github.com/quasilyte/gogrep"
-	"github.com/quasilyte/gogrep/nodetag"
 )
 
 const filterSuccess = matchFilterResult("")
@@ -359,6 +360,18 @@ func makeLineFilter(src, varname string, op token.Token, rhsVarname string) filt
 		if constant.Compare(lhsValue, op, rhsValue) {
 			return filterSuccess
 		}
+		return filterFailure(src)
+	}
+}
+
+func makeObjectIsGlobalFilter(src, varname string) filterFunc {
+	return func(params *filterParams) matchFilterResult {
+		obj := params.ctx.Types.ObjectOf(identOf(params.subExpr(varname)))
+		globalScope := params.ctx.Pkg.Scope()
+		if obj.Parent() == globalScope {
+			return filterSuccess
+		}
+
 		return filterFailure(src)
 	}
 }

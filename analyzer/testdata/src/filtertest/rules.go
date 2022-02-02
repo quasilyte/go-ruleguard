@@ -263,4 +263,11 @@ func testRules(m dsl.Matcher) {
 	m.Match(`typeTest($x, $y, "identical types")`).
 		Where(m["x"].Type.IdenticalTo(m["y"])).
 		Report(`true`)
+
+	m.Match(`$x = time.Now().String()`,
+		`var $x = time.Now().String()`,
+		`var $x $_ = time.Now().String()`,
+		`$x := time.Now().String()`).
+		Where(m["x"].Object.IsGlobal()).
+		Report(`global var`)
 }

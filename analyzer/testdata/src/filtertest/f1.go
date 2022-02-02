@@ -872,3 +872,23 @@ func detectNode() {
 	nodeTest(rows[0][5], "IndexExpr") // want `true`
 	nodeTest("42", "IndexExpr")
 }
+
+var globalVar string
+var globalVar2 string = time.Now().String() // want `\Qglobal var`
+var globalVar3 = time.Now().String()        // want `\Qglobal var`
+var (
+	globalVar4 string
+)
+
+func detectGlobal() {
+	globalVar = time.Now().String()  // want `\Qglobal var`
+	globalVar4 = time.Now().String() // want `\Qglobal var`
+	{
+		globalVar := time.Now().String() // shadowed global var
+		print(globalVar)
+	}
+	{
+		var globalVar = time.Now().String() // shadowed global var
+		print(globalVar)
+	}
+}
