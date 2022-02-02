@@ -2,14 +2,10 @@ module github.com/quasilyte/go-ruleguard
 
 go 1.17
 
-replace (
-	github.com/quasilyte/go-ruleguard/dsl v0.3.15 => ./dsl
-)
-
 require (
 	github.com/go-toolsmith/astcopy v1.0.0
 	github.com/google/go-cmp v0.5.6
-	github.com/quasilyte/go-ruleguard/dsl v0.3.15
+	github.com/quasilyte/go-ruleguard/dsl v0.3.16
 	github.com/quasilyte/go-ruleguard/rules v0.0.0-20211022131956-028d6511ab71
 	github.com/quasilyte/gogrep v0.0.0-20220120141003-628d8b3623b5
 	github.com/quasilyte/stdinfo v0.0.0-20220114132959-f7386bf02567
