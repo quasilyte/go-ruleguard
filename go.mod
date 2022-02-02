@@ -12,6 +12,7 @@ require (
 	github.com/quasilyte/go-ruleguard/dsl v0.3.15
 	github.com/quasilyte/go-ruleguard/rules v0.0.0-20211022131956-028d6511ab71
 	github.com/quasilyte/gogrep v0.0.0-20220120141003-628d8b3623b5
+	github.com/quasilyte/stdinfo v0.0.0-20220114132959-f7386bf02567
 	golang.org/x/tools v0.1.9-0.20211228192929-ee1ca4ffc4da
 )
 

@@ -152,13 +152,14 @@ func TestIdentical(t *testing.T) {
 		{`struct{$*_; $x; $*_; $x; $*_}`, structType(intVar, int32Var, stringVar, intVar)},
 	}
 
+	state := NewMatcherState()
 	for _, test := range tests {
 		pat, err := Parse(testContext, test.expr)
 		if err != nil {
 			t.Errorf("parse('%s'): %v", test.expr, err)
 			continue
 		}
-		if !pat.MatchIdentical(test.typ) {
+		if !pat.MatchIdentical(state, test.typ) {
 			t.Errorf("identical('%s', %s): expected a match",
 				test.expr, test.typ.String())
 		}
@@ -258,13 +259,14 @@ func TestIdenticalNegative(t *testing.T) {
 		//{`struct{$*x; int; $*x}`, structType(stringVar, intVar, intVar)},
 	}
 
+	state := NewMatcherState()
 	for _, test := range tests {
 		pat, err := Parse(testContext, test.expr)
 		if err != nil {
 			t.Errorf("parse('%s'): %v", test.expr, err)
 			continue
 		}
-		if pat.MatchIdentical(test.typ) {
+		if pat.MatchIdentical(state, test.typ) {
 			t.Errorf("identical('%s', %s): unexpected match",
 				test.expr, test.typ.String())
 		}

@@ -293,11 +293,11 @@ func makeTypeIsFilter(src, varname string, underlying bool, pat *typematch.Patte
 		return func(params *filterParams) matchFilterResult {
 			if list, ok := params.subNode(varname).(gogrep.ExprSlice); ok {
 				return exprListFilterApply(src, list, func(x ast.Expr) bool {
-					return pat.MatchIdentical(params.typeofNode(x).Underlying())
+					return pat.MatchIdentical(params.typematchState, params.typeofNode(x).Underlying())
 				})
 			}
 			typ := params.typeofNode(params.subNode(varname)).Underlying()
-			if pat.MatchIdentical(typ) {
+			if pat.MatchIdentical(params.typematchState, typ) {
 				return filterSuccess
 			}
 			return filterFailure(src)
@@ -307,11 +307,11 @@ func makeTypeIsFilter(src, varname string, underlying bool, pat *typematch.Patte
 	return func(params *filterParams) matchFilterResult {
 		if list, ok := params.subNode(varname).(gogrep.ExprSlice); ok {
 			return exprListFilterApply(src, list, func(x ast.Expr) bool {
-				return pat.MatchIdentical(params.typeofNode(x))
+				return pat.MatchIdentical(params.typematchState, params.typeofNode(x))
 			})
 		}
 		typ := params.typeofNode(params.subNode(varname))
-		if pat.MatchIdentical(typ) {
+		if pat.MatchIdentical(params.typematchState, typ) {
 			return filterSuccess
 		}
 		return filterFailure(src)
