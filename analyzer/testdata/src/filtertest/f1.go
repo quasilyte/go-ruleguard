@@ -876,8 +876,6 @@ func detectNode() {
 var globalVar string
 var globalVar2 string = time.Now().String() // want `\Qglobal var`
 var globalVar3 = time.Now().String()        // want `\Qglobal var`
-var _ = time.Now().String()                 // false negative // TODO https://github.com/quasilyte/go-ruleguard/issues/369
-var _ string = time.Now().String()          // false negative // TODO https://github.com/quasilyte/go-ruleguard/issues/369
 var (
 	globalVar4 string
 )
