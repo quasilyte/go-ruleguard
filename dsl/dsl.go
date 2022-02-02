@@ -200,6 +200,9 @@ type TypesObject struct{}
 // See https://golang.org/pkg/go/types/.
 func (TypesObject) Is(typ string) bool { return boolResult }
 
+// IsGlobal reports whether an associated types.Object is defined in global scope.
+func (TypesObject) IsGlobal() bool { return boolResult }
+
 // ExprType describes a type of a matcher expr.
 type ExprType struct {
 	// Size represents expression type size in bytes.
