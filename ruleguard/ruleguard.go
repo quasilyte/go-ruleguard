@@ -83,7 +83,7 @@ type LoadContext struct {
 	// If function returns false, that group will not be included
 	// in the resulting rules set.
 	// Nil filter accepts all rule groups.
-	GroupFilter func(string) bool
+	GroupFilter func(*GoRuleGroup) bool
 
 	Fset *token.FileSet
 }

@@ -10,12 +10,13 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/quasilyte/go-ruleguard/ruleguard"
 	"golang.org/x/tools/go/analysis"
+
+	"github.com/quasilyte/go-ruleguard/ruleguard"
 )
 
 // Version contains extra version info.
-// It's is initialized via ldflags -X when ruleguard is built with Make.
+// It's initialized via ldflags -X when ruleguard is built with Make.
 // Can contain a git hash (dev builds) or a version tag (release builds).
 var Version string
 
@@ -27,7 +28,7 @@ func docString() string {
 	return doc + " (" + Version + ")"
 }
 
-// Analyzer exports ruleguard as a analysis-compatible object.
+// Analyzer exports ruleguard as an analysis-compatible object.
 var Analyzer = &analysis.Analyzer{
 	Name: "ruleguard",
 	Doc:  docString(),
@@ -191,20 +192,20 @@ func newEngine() (*ruleguard.Engine, error) {
 		DebugFilter:  flagDebugFilter,
 		DebugImports: flagDebugImports,
 		DebugPrint:   debugPrint,
-		GroupFilter: func(g string) bool {
+		GroupFilter: func(g *ruleguard.GoRuleGroup) bool {
 			whyDisabled := ""
-			enabled := flagEnable == "<all>" || enabledGroups[g]
+			enabled := flagEnable == "<all>" || enabledGroups[g.Name]
 			switch {
 			case !enabled:
 				whyDisabled = "not enabled by -enabled flag"
-			case disabledGroups[g]:
+			case disabledGroups[g.Name]:
 				whyDisabled = "disabled by -disable flag"
 			}
 			if flagDebugEnableDisable {
 				if whyDisabled != "" {
-					debugPrint(fmt.Sprintf("(-) %s is %s", g, whyDisabled))
+					debugPrint(fmt.Sprintf("(-) %s is %s", g.Name, whyDisabled))
 				} else {
-					debugPrint(fmt.Sprintf("(+) %s is enabled", g))
+					debugPrint(fmt.Sprintf("(+) %s is enabled", g.Name))
 				}
 			}
 			return whyDisabled == ""
