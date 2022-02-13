@@ -238,7 +238,7 @@ func (l *irLoader) loadRuleGroup(group *ir.RuleGroup) error {
 		l.group.Name = l.prefix + "/" + l.group.Name
 	}
 
-	if l.ctx.GroupFilter != nil && !l.ctx.GroupFilter(l.group.Name) {
+	if l.ctx.GroupFilter != nil && !l.ctx.GroupFilter(l.group) {
 		return nil // Skip this group
 	}
 	if _, ok := l.res.groups[l.group.Name]; ok {
