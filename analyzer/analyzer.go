@@ -54,13 +54,13 @@ var (
 	flagGoVersion string
 
 	flagDebug              string
-	flagDebugFilter        string
+	flagDebugFunc          string
 	flagDebugImports       bool
 	flagDebugEnableDisable bool
 )
 
 func init() {
-	Analyzer.Flags.StringVar(&flagDebugFilter, "debug-filter", "", "[experimental!] enable debug for the specified filter function")
+	Analyzer.Flags.StringVar(&flagDebugFunc, "debug-func", "", "[experimental!] enable debug for the specified bytecode function")
 	Analyzer.Flags.StringVar(&flagDebug, "debug-group", "", "[experimental!] enable debug for the specified matcher function")
 	Analyzer.Flags.BoolVar(&flagDebugImports, "debug-imports", false, "[experimental!] enable debug for rules compile-time package lookups")
 	Analyzer.Flags.BoolVar(&flagDebugEnableDisable, "debug-enable-disable", false, "[experimental!] enable debug for -enable/-disable related info")
@@ -189,7 +189,7 @@ func newEngine() (*ruleguard.Engine, error) {
 
 	ctx := &ruleguard.LoadContext{
 		Fset:         fset,
-		DebugFilter:  flagDebugFilter,
+		DebugFunc:    flagDebugFunc,
 		DebugImports: flagDebugImports,
 		DebugPrint:   debugPrint,
 		GroupFilter: func(g *ruleguard.GoRuleGroup) bool {

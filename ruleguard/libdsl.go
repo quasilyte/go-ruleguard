@@ -1,6 +1,7 @@
 package ruleguard
 
 import (
+	"fmt"
 	"go/types"
 
 	"github.com/quasilyte/go-ruleguard/internal/xtypes"
@@ -28,6 +29,9 @@ import (
 
 func initEnv(state *engineState, env *quasigo.Env) {
 	nativeTypes := map[string]quasigoNative{
+		`*github.com/quasilyte/go-ruleguard/dsl.MatchedText`:      dslMatchedText{},
+		`*github.com/quasilyte/go-ruleguard/dsl.DoVar`:            dslDoVar{},
+		`*github.com/quasilyte/go-ruleguard/dsl.DoContext`:        dslDoContext{},
 		`*github.com/quasilyte/go-ruleguard/dsl.VarFilterContext`: dslVarFilterContext{state: state},
 		`github.com/quasilyte/go-ruleguard/dsl/types.Type`:        dslTypesType{},
 		`*github.com/quasilyte/go-ruleguard/dsl/types.Interface`:  dslTypesInterface{},
@@ -224,6 +228,73 @@ func (dslTypesPackage) AsPointer(stack *quasigo.ValueStack) {
 func (dslTypesPackage) AsInterface(stack *quasigo.ValueStack) {
 	typ, _ := stack.Pop().(types.Type).(*types.Interface)
 	stack.Push(typ)
+}
+
+type dslDoContext struct{}
+
+func (native dslDoContext) funcs() map[string]func(*quasigo.ValueStack) {
+	return map[string]func(*quasigo.ValueStack){
+		"SetReport":  native.SetReport,
+		"SetSuggest": native.SetSuggest,
+		"Var":        native.Var,
+	}
+}
+
+func (native dslDoContext) Var(stack *quasigo.ValueStack) {
+	s := stack.Pop().(string)
+	params := stack.Pop().(*filterParams)
+	stack.Push(&dslDoVarRepr{params: params, name: s})
+}
+
+func (native dslDoContext) SetReport(stack *quasigo.ValueStack) {
+	s := stack.Pop().(string)
+	params := stack.Pop().(*filterParams)
+	params.reportString = s
+}
+
+func (native dslDoContext) SetSuggest(stack *quasigo.ValueStack) {
+	s := stack.Pop().(string)
+	params := stack.Pop().(*filterParams)
+	params.suggestString = s
+}
+
+type dslMatchedText struct{}
+
+func (native dslMatchedText) funcs() map[string]func(*quasigo.ValueStack) {
+	return map[string]func(*quasigo.ValueStack){
+		"String": native.String,
+	}
+}
+
+func (dslMatchedText) String(stack *quasigo.ValueStack) {
+	fmt.Printf("%T\n", stack.Pop())
+	stack.Push("ok2")
+}
+
+type dslDoVarRepr struct {
+	params *filterParams
+	name   string
+}
+
+type dslDoVar struct{}
+
+func (native dslDoVar) funcs() map[string]func(*quasigo.ValueStack) {
+	return map[string]func(*quasigo.ValueStack){
+		"Text": native.Text,
+		"Type": native.Type,
+	}
+}
+
+func (dslDoVar) Text(stack *quasigo.ValueStack) {
+	v := stack.Pop().(*dslDoVarRepr)
+	params := v.params
+	stack.Push(params.nodeString(params.subNode(v.name)))
+}
+
+func (dslDoVar) Type(stack *quasigo.ValueStack) {
+	v := stack.Pop().(*dslDoVarRepr)
+	params := v.params
+	stack.Push(params.typeofNode(params.subNode(v.name)))
 }
 
 type dslVarFilterContext struct {

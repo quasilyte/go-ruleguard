@@ -38,6 +38,7 @@ type goRule struct {
 	location   string
 	suggestion string
 	filter     matchFilter
+	do         *quasigo.Func
 }
 
 type matchFilterResult string
@@ -66,7 +67,8 @@ type filterParams struct {
 	match    matchData
 	nodePath *nodePath
 
-	nodeText func(n ast.Node) []byte
+	nodeText   func(n ast.Node) []byte
+	nodeString func(n ast.Node) string
 
 	deadcode bool
 
@@ -74,6 +76,10 @@ type filterParams struct {
 
 	// varname is set only for custom filters before bytecode function is called.
 	varname string
+
+	// Both of these are Do() function related fields.
+	reportString  string
+	suggestString string
 }
 
 func (params *filterParams) subNode(name string) ast.Node {

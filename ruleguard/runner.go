@@ -17,6 +17,7 @@ import (
 
 	"github.com/quasilyte/go-ruleguard/ruleguard/goutil"
 	"github.com/quasilyte/go-ruleguard/ruleguard/profiling"
+	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
 	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
 	"github.com/quasilyte/gogrep"
 	"github.com/quasilyte/gogrep/nodetag"
@@ -93,9 +94,15 @@ func newRulesRunner(ctx *RunContext, buildContext *build.Context, state *engineS
 		rr.truncateLen = 60
 	}
 	rr.filterParams.nodeText = rr.nodeText
+	rr.filterParams.nodeString = rr.nodeString
 	rr.filterParams.nodePath = &rr.nodePath
 	rr.filterParams.gogrepSubState = &rr.gogrepSubState
 	return rr
+}
+
+func (rr *rulesRunner) nodeString(n ast.Node) string {
+	b := rr.nodeText(n)
+	return string(b)
 }
 
 func (rr *rulesRunner) nodeText(n ast.Node) []byte {
@@ -337,8 +344,11 @@ func (rr *rulesRunner) handleCommentMatch(rule goCommentRule, m commentMatchData
 }
 
 func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
-	if rule.filter.fn != nil {
+	if rule.filter.fn != nil || rule.do != nil {
 		rr.filterParams.match = astMatchData{match: m}
+	}
+
+	if rule.filter.fn != nil {
 		filterResult := rule.filter.fn(&rr.filterParams)
 		if !filterResult.Matched() {
 			rr.reject(rule, filterResult.RejectReason(), astMatchData{match: m})
@@ -346,26 +356,51 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 		}
 	}
 
-	message := rr.renderMessage(rule.msg, astMatchData{match: m}, true)
 	node := m.Node
 	if rule.location != "" {
 		node, _ = m.CapturedByName(rule.location)
 	}
+
+	var messageText string
+	var suggestText string
+	if rule.do != nil {
+		rr.filterParams.reportString = ""
+		rr.filterParams.suggestString = ""
+		_ = quasigo.Call(rr.filterParams.env, rule.do)
+		messageText = rr.filterParams.reportString
+		if messageText == "" {
+			if rr.filterParams.suggestString != "" {
+				messageText = "suggestion: " + rr.filterParams.suggestString
+			} else {
+				messageText = "<empty message>"
+			}
+		}
+		if rr.filterParams.suggestString != "" {
+			suggestText = rr.filterParams.suggestString
+		}
+	} else {
+		messageText = rr.renderMessage(rule.msg, astMatchData{match: m}, true)
+		if rule.suggestion != "" {
+			suggestText = rr.renderMessage(rule.suggestion, astMatchData{match: m}, false)
+		}
+	}
+
 	var suggestion *Suggestion
-	if rule.suggestion != "" {
+	if suggestText != "" {
 		suggestion = &Suggestion{
-			Replacement: []byte(rr.renderMessage(rule.suggestion, astMatchData{match: m}, false)),
+			Replacement: []byte(suggestText),
 			From:        node.Pos(),
 			To:          node.End(),
 		}
 	}
+
 	info := GoRuleInfo{
 		Group: rule.group,
 		Line:  rule.line,
 	}
 	rr.reportData.RuleInfo = info
 	rr.reportData.Node = node
-	rr.reportData.Message = message
+	rr.reportData.Message = messageText
 	rr.reportData.Suggestion = suggestion
 
 	rr.reportData.Func = rr.filterParams.currentFunc

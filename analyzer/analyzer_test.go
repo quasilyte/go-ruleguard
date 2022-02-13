@@ -39,6 +39,7 @@ var tests = []struct {
 	{name: "regression"},
 	{name: "testvendored"},
 	{name: "quasigo"},
+	{name: "do"},
 	{name: "matching"},
 	{name: "dgryski"},
 	{name: "comments"},
