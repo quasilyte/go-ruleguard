@@ -39,6 +39,10 @@ func disasm(env *Env, fn *Func) string {
 			id := decode16(code, pc+1)
 			arg = id
 			comment = env.nativeFuncs[id].name
+		case opCall, opIntCall, opVoidCall:
+			id := decode16(code, pc+1)
+			arg = id
+			comment = env.userFuncs[id].name
 		case opPushParam:
 			index := int(code[pc+1])
 			arg = index

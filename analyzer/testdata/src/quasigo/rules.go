@@ -1,3 +1,4 @@
+//go:build ignore
 // +build ignore
 
 package gorules
@@ -7,12 +8,16 @@ import (
 	"github.com/quasilyte/go-ruleguard/dsl/types"
 )
 
+func derefPointer(ptr *types.Pointer) *types.Pointer {
+	return types.AsPointer(ptr.Elem())
+}
+
 func tooManyPointers(ctx *dsl.VarFilterContext) bool {
 	indir := 0
 	ptr := types.AsPointer(ctx.Type)
 	for ptr != nil {
 		indir++
-		ptr = types.AsPointer(ptr.Elem())
+		ptr = derefPointer(ptr)
 	}
 	return indir >= 3
 }
@@ -33,9 +38,14 @@ func isPointer(ctx *dsl.VarFilterContext) bool {
 	return ptr != nil
 }
 
-func isInterface(ctx *dsl.VarFilterContext) bool {
+func isInterfaceImpl(ctx *dsl.VarFilterContext) bool {
 	// Nil can be used on either side.
 	return nil != types.AsInterface(ctx.Type.Underlying())
+}
+
+func isInterface(ctx *dsl.VarFilterContext) bool {
+	// Forwarding a call to other function.
+	return isInterfaceImpl(ctx)
 }
 
 func isError(ctx *dsl.VarFilterContext) bool {

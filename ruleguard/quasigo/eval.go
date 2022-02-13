@@ -129,6 +129,23 @@ func eval(env *EvalEnv, fn *Func, top, intTop int) CallResult {
 			fn := env.nativeFuncs[id].mappedFunc
 			fn(stack)
 			pc += 3
+		case opCall:
+			id := decode16(code, pc+1)
+			fn := env.userFuncs[id]
+			result := eval(env, fn, len(stack.objects)-fn.numObjectParams, len(stack.ints)-fn.numIntParams)
+			stack.Push(result.Value())
+			pc += 3
+		case opIntCall:
+			id := decode16(code, pc+1)
+			fn := env.userFuncs[id]
+			result := eval(env, fn, len(stack.objects)-fn.numObjectParams, len(stack.ints)-fn.numIntParams)
+			stack.PushInt(result.IntValue())
+			pc += 3
+		case opVoidCall:
+			id := decode16(code, pc+1)
+			fn := env.userFuncs[id]
+			eval(env, fn, len(stack.objects)-fn.numObjectParams, len(stack.ints)-fn.numIntParams)
+			pc += 3
 
 		case opJump:
 			offset := decode16(code, pc+1)
