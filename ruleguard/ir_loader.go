@@ -178,12 +178,12 @@ func (l *irLoader) compileFilterFuncs(filename string, irfile *ir.File) error {
 	buf.WriteString("package gorules\n")
 	buf.WriteString("import \"github.com/quasilyte/go-ruleguard/dsl\"\n")
 	buf.WriteString("import \"github.com/quasilyte/go-ruleguard/dsl/types\"\n")
-	buf.WriteString("type _ = dsl.Matcher\n")
-	buf.WriteString("type _ = types.Type\n")
 	for _, src := range irfile.CustomDecls {
 		buf.WriteString(src)
 		buf.WriteString("\n")
 	}
+	buf.WriteString("type _ = dsl.Matcher\n")
+	buf.WriteString("type _ = types.Type\n")
 
 	fset := token.NewFileSet()
 	f, err := goutil.LoadGoFile(goutil.LoadConfig{
@@ -215,7 +215,7 @@ func (l *irLoader) compileFilterFuncs(filename string, irfile *ir.File) error {
 		if err != nil {
 			return err
 		}
-		if l.ctx.DebugFilter == decl.Name.String() {
+		if l.ctx.DebugFunc == decl.Name.String() {
 			l.ctx.DebugPrint(quasigo.Disasm(l.state.env, compiled))
 		}
 		ctx.Env.AddFunc(f.Pkg.Path(), decl.Name.String(), compiled)
@@ -271,6 +271,14 @@ func (l *irLoader) loadRule(group *ir.RuleGroup, rule *ir.Rule) error {
 		suggestion: rule.SuggestTemplate,
 		msg:        rule.ReportTemplate,
 		location:   rule.LocationVar,
+	}
+
+	if rule.DoFuncName != "" {
+		doFn := l.state.env.GetFunc(l.file.PkgPath, rule.DoFuncName)
+		if doFn == nil {
+			return l.errorf(rule.Line, nil, "can't find a compiled version of %s", rule.DoFuncName)
+		}
+		proto.do = doFn
 	}
 
 	info := filterInfo{

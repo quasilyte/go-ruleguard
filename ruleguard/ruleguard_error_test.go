@@ -217,7 +217,12 @@ func TestParseRuleError(t *testing.T) {
 
 		{
 			`m.Match("$x").Where(m["x"].Pure)`,
-			`\Qmissing Report() or Suggest() call`,
+			`\Qmissing Report(), Suggest() or Do() call`,
+		},
+
+		{
+			`m.MatchComment("").Do(doFunc)`,
+			`\Qcan't use Do() with MatchComment() yet`,
 		},
 
 		{
@@ -294,7 +299,9 @@ func TestParseRuleError(t *testing.T) {
 			import "github.com/quasilyte/go-ruleguard/dsl"
 			func testrule(m dsl.Matcher) {
 				%s
-			}`,
+			}
+			func doFunc(ctx *dsl.DoContext) {}
+			`,
 			test.expr)
 		e := NewEngine()
 		ctx := &LoadContext{

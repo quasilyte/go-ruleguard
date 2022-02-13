@@ -9,6 +9,8 @@ import (
 func ImportAll(env *quasigo.Env) {
 	env.AddNativeFunc(`strings`, `Replace`, Replace)
 	env.AddNativeFunc(`strings`, `ReplaceAll`, ReplaceAll)
+	env.AddNativeFunc(`strings`, `TrimPrefix`, TrimPrefix)
+	env.AddNativeFunc(`strings`, `TrimSuffix`, TrimSuffix)
 	env.AddNativeFunc(`strings`, `HasPrefix`, HasPrefix)
 	env.AddNativeFunc(`strings`, `HasSuffix`, HasSuffix)
 	env.AddNativeFunc(`strings`, `Contains`, Contains)
@@ -27,6 +29,18 @@ func ReplaceAll(stack *quasigo.ValueStack) {
 	oldPart := stack.Pop().(string)
 	s := stack.Pop().(string)
 	stack.Push(strings.ReplaceAll(s, oldPart, newPart))
+}
+
+func TrimPrefix(stack *quasigo.ValueStack) {
+	prefix := stack.Pop().(string)
+	s := stack.Pop().(string)
+	stack.Push(strings.TrimPrefix(s, prefix))
+}
+
+func TrimSuffix(stack *quasigo.ValueStack) {
+	prefix := stack.Pop().(string)
+	s := stack.Pop().(string)
+	stack.Push(strings.TrimSuffix(s, prefix))
 }
 
 func HasPrefix(stack *quasigo.ValueStack) {
