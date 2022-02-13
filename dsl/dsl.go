@@ -78,6 +78,10 @@ func (m Matcher) Suggest(suggestion string) Matcher {
 	return m
 }
 
+func (m Matcher) Do(fn func(*DoContext)) Matcher {
+	return m
+}
+
 // At binds the reported node to a named submatch.
 // If no explicit location is given, the outermost node ($$) is used.
 func (m Matcher) At(v Var) Matcher {
