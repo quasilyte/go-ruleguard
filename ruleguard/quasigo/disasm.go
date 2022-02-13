@@ -39,10 +39,14 @@ func disasm(env *Env, fn *Func) string {
 			id := decode16(code, pc+1)
 			arg = id
 			comment = env.nativeFuncs[id].name
-		case opPushParam, opPushIntParam:
+		case opPushParam:
 			index := int(code[pc+1])
 			arg = index
 			comment = dbg.paramNames[index]
+		case opPushIntParam:
+			index := int(code[pc+1])
+			arg = index
+			comment = dbg.intParamNames[index]
 		case opSetLocal, opSetIntLocal, opPushLocal, opPushIntLocal, opIncLocal, opDecLocal:
 			index := int(code[pc+1])
 			arg = index

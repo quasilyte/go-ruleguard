@@ -38,22 +38,22 @@ func (s *ValueStack) dup() { s.objects = append(s.objects, s.objects[len(s.objec
 // Identical to s.Pop() without using the result.
 func (s *ValueStack) discard() { s.objects = s.objects[:len(s.objects)-1] }
 
-func eval(env *EvalEnv, fn *Func, args []interface{}) CallResult {
+func eval(env *EvalEnv, fn *Func, top, intTop int) CallResult {
 	pc := 0
 	code := fn.code
-	stack := env.stack
+	stack := &env.Stack
 	var locals [maxFuncLocals]interface{}
 	var intLocals [maxFuncLocals]int
 
 	for {
 		switch op := opcode(code[pc]); op {
 		case opPushParam:
-			index := code[pc+1]
-			stack.Push(args[index])
+			index := int(code[pc+1])
+			stack.Push(stack.objects[top+index])
 			pc += 2
 		case opPushIntParam:
-			index := code[pc+1]
-			stack.PushInt(args[index].(int))
+			index := int(code[pc+1])
+			stack.PushInt(stack.ints[intTop+index])
 			pc += 2
 
 		case opPushLocal:

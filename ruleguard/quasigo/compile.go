@@ -54,7 +54,9 @@ type compiler struct {
 	locals           map[string]int
 	constantsPool    map[interface{}]int
 	intConstantsPool map[int]int
-	params           map[string]int
+
+	params    map[string]int
+	intParams map[string]int
 
 	code         []byte
 	constants    []interface{}
@@ -89,20 +91,31 @@ func (cl *compiler) compileFunc(fn *ast.FuncDecl) *Func {
 		panic(cl.errorUnsupportedType(fn.Name, cl.retType, "function result"))
 	}
 
-	dbg := funcDebugInfo{
-		paramNames: make([]string, cl.fnType.Params().Len()),
-	}
-
 	cl.params = make(map[string]int, cl.fnType.Params().Len())
+	cl.intParams = make(map[string]int, cl.fnType.Params().Len())
 	for i := 0; i < cl.fnType.Params().Len(); i++ {
 		p := cl.fnType.Params().At(i)
 		paramName := p.Name()
 		paramType := p.Type()
-		cl.params[paramName] = i
-		dbg.paramNames[i] = paramName
 		if !cl.isSupportedType(paramType) {
 			panic(cl.errorUnsupportedType(fn.Name, paramType, paramName+" param"))
 		}
+		if typeIsInt(paramType) {
+			cl.intParams[paramName] = len(cl.intParams)
+		} else {
+			cl.params[paramName] = len(cl.params)
+		}
+	}
+
+	dbg := funcDebugInfo{
+		paramNames:    make([]string, len(cl.params)),
+		intParamNames: make([]string, len(cl.intParams)),
+	}
+	for paramName, i := range cl.params {
+		dbg.paramNames[i] = paramName
+	}
+	for paramName, i := range cl.intParams {
+		dbg.intParamNames[i] = paramName
 	}
 
 	cl.compileStmt(fn.Body)
@@ -298,10 +311,20 @@ func (cl *compiler) compileAssignStmt(assign *ast.AssignStmt) {
 	}
 }
 
+func (cl *compiler) isParamName(varname string) bool {
+	if _, ok := cl.params[varname]; ok {
+		return true
+	}
+	if _, ok := cl.intParams[varname]; ok {
+		return true
+	}
+	return false
+}
+
 func (cl *compiler) getLocal(v ast.Expr, varname string) int {
 	id, ok := cl.locals[varname]
 	if !ok {
-		if _, ok := cl.params[varname]; ok {
+		if cl.isParamName(varname) {
 			panic(cl.errorf(v, "can't assign to %s, params are readonly", varname))
 		}
 		panic(cl.errorf(v, "%s is not a writeable local variable", varname))
@@ -645,7 +668,11 @@ func (cl *compiler) compileIdent(ident *ast.Ident) {
 		return
 	}
 	if paramIndex, ok := cl.params[ident.String()]; ok {
-		cl.emit8(pickOp(typeIsInt(tv.Type), opPushIntParam, opPushParam), paramIndex)
+		cl.emit8(opPushParam, paramIndex)
+		return
+	}
+	if paramIndex, ok := cl.intParams[ident.String()]; ok {
+		cl.emit8(opPushIntParam, paramIndex)
 		return
 	}
 	if localIndex, ok := cl.locals[ident.String()]; ok {

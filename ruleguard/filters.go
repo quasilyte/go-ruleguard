@@ -186,7 +186,7 @@ func makeCustomVarFilter(src, varname string, fn *quasigo.Func) filterFunc {
 		// We should probably catch the panic here, print trace and return "false"
 		// from the filter (or even propagate that panic to let it crash).
 		params.varname = varname
-		result := quasigo.Call(params.env, fn, params)
+		result := quasigo.Call(params.env, fn)
 		if result.Value().(bool) {
 			return filterSuccess
 		}

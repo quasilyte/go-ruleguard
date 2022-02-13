@@ -25,7 +25,7 @@ func TestCompile(t *testing.T) {
 		},
 
 		`return b`: {
-			`  PushParam 2 # b`,
+			`  PushParam 1 # b`,
 			`  ReturnTop`,
 		},
 
@@ -55,7 +55,7 @@ func TestCompile(t *testing.T) {
 			`  EqInt`,
 			`  Dup`,
 			`  JumpFalse 8 # L0`,
-			`  PushParam 1 # s`,
+			`  PushParam 0 # s`,
 			`  PushConst 0 # value="foo"`,
 			`  EqString`,
 			`L0:`,
@@ -81,7 +81,7 @@ func TestCompile(t *testing.T) {
 		},
 
 		`if b { return 1 }; return 0`: {
-			`  PushParam 2 # b`,
+			`  PushParam 1 # b`,
 			`  JumpFalse 6 # L0`,
 			`  PushIntConst 0 # value=1`,
 			`  ReturnIntTop`,
@@ -91,7 +91,7 @@ func TestCompile(t *testing.T) {
 		},
 
 		`if b { return 1 } else { return 0 }`: {
-			`  PushParam 2 # b`,
+			`  PushParam 1 # b`,
 			`  JumpFalse 6 # L0`,
 			`  PushIntConst 0 # value=1`,
 			`  ReturnIntTop`,
@@ -103,7 +103,7 @@ func TestCompile(t *testing.T) {
 		`x := 0; if b { x = 5 } else { x = 50 }; return x`: {
 			`  PushIntConst 0 # value=0`,
 			`  SetIntLocal 0 # x`,
-			`  PushParam 2 # b`,
+			`  PushParam 1 # b`,
 			`  JumpFalse 10 # L0`,
 			`  PushIntConst 1 # value=5`,
 			`  SetIntLocal 0 # x`,
@@ -124,7 +124,7 @@ func TestCompile(t *testing.T) {
 			`  PushConst 0 # value="a"`,
 			`  ReturnTop`,
 			`L0:`,
-			`  PushParam 2 # b`,
+			`  PushParam 1 # b`,
 			`  JumpFalse 6 # L1`,
 			`  PushConst 1 # value="b"`,
 			`  ReturnTop`,
@@ -134,50 +134,50 @@ func TestCompile(t *testing.T) {
 		},
 
 		`return eface == nil`: {
-			`  PushParam 3 # eface`,
+			`  PushParam 2 # eface`,
 			`  IsNil`,
 			`  ReturnTop`,
 		},
 
 		`return nil == eface`: {
-			`  PushParam 3 # eface`,
+			`  PushParam 2 # eface`,
 			`  IsNil`,
 			`  ReturnTop`,
 		},
 
 		`return eface != nil`: {
-			`  PushParam 3 # eface`,
+			`  PushParam 2 # eface`,
 			`  IsNotNil`,
 			`  ReturnTop`,
 		},
 
 		`return nil != eface`: {
-			`  PushParam 3 # eface`,
+			`  PushParam 2 # eface`,
 			`  IsNotNil`,
 			`  ReturnTop`,
 		},
 
 		`return s[:]`: {
-			`  PushParam 1 # s`,
+			`  PushParam 0 # s`,
 			`  ReturnTop`,
 		},
 
 		`return s[1:]`: {
-			`  PushParam 1 # s`,
+			`  PushParam 0 # s`,
 			`  PushIntConst 0 # value=1`,
 			`  StringSliceFrom`,
 			`  ReturnTop`,
 		},
 
 		`return s[:1]`: {
-			`  PushParam 1 # s`,
+			`  PushParam 0 # s`,
 			`  PushIntConst 0 # value=1`,
 			`  StringSliceTo`,
 			`  ReturnTop`,
 		},
 
 		`return s[1:2]`: {
-			`  PushParam 1 # s`,
+			`  PushParam 0 # s`,
 			`  PushIntConst 0 # value=1`,
 			`  PushIntConst 1 # value=2`,
 			`  StringSlice`,
@@ -185,7 +185,7 @@ func TestCompile(t *testing.T) {
 		},
 
 		`return len(s) >= 0`: {
-			`  PushParam 1 # s`,
+			`  PushParam 0 # s`,
 			`  StringLen`,
 			`  PushIntConst 0 # value=0`,
 			`  GtEqInt`,
