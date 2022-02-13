@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"go/ast"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -170,7 +169,7 @@ func TestEval(t *testing.T) {
 			t.Fatalf("unexpected result type: %T", result)
 		}
 		return `
-		  package test
+		  package ` + testPackage + `
 		  import "github.com/quasilyte/go-ruleguard/ruleguard/quasigo/internal/evaltest"
 		  func target(i int, s string, b bool, foo, nilfoo *evaltest.Foo, nileface interface{}) ` + returnType + ` {
 		    ` + body + `
@@ -213,7 +212,7 @@ func TestEval(t *testing.T) {
 	for i := range tests {
 		test := tests[i]
 		src := makePackageSource(test.src, test.result)
-		parsed, err := parseGoFile(src)
+		parsed, err := parseGoFile(testPackage, src)
 		if err != nil {
 			t.Fatalf("parse %s: %v", test.src, err)
 		}
@@ -261,7 +260,7 @@ func TestEvalFile(t *testing.T) {
 			return "", err
 		}
 		env := quasigo.NewEnv()
-		parsed, err := parseGoFile(string(src))
+		parsed, err := parseGoFile("main", string(src))
 		if err != nil {
 			return "", fmt.Errorf("parse: %v", err)
 		}
@@ -284,24 +283,9 @@ func TestEvalFile(t *testing.T) {
 		qstrconv.ImportAll(env)
 		qfmt.ImportAll(env)
 
-		var mainFunc *quasigo.Func
-		for _, decl := range parsed.ast.Decls {
-			decl, ok := decl.(*ast.FuncDecl)
-			if !ok {
-				continue
-			}
-			ctx := &quasigo.CompileContext{
-				Env:   env,
-				Types: parsed.types,
-				Fset:  parsed.fset,
-			}
-			fn, err := quasigo.Compile(ctx, decl)
-			if err != nil {
-				return "", fmt.Errorf("compile %s func: %v", decl.Name, err)
-			}
-			if decl.Name.String() == "main" {
-				mainFunc = fn
-			}
+		mainFunc, err := compileTestFile(env, "main", "main", parsed)
+		if err != nil {
+			return "", err
 		}
 		if mainFunc == nil {
 			return "", errors.New("can't find main() function")

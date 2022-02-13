@@ -206,9 +206,10 @@ func (l *irLoader) compileFilterFuncs(filename string, irfile *ir.File) error {
 			continue
 		}
 		ctx := &quasigo.CompileContext{
-			Env:   l.state.env,
-			Types: f.Types,
-			Fset:  fset,
+			Env:     l.state.env,
+			Package: f.Pkg,
+			Types:   f.Types,
+			Fset:    fset,
 		}
 		compiled, err := quasigo.Compile(ctx, decl)
 		if err != nil {

@@ -358,11 +358,28 @@ func TestCompile(t *testing.T) {
 			`  PushLocal 0 # v`,
 			`  ReturnTop`,
 		},
+
+		`return add1(10)`: {
+			`  PushIntConst 0 # value=10`,
+			`  IntCall 0 # testpkg.add1`,
+			`  ReturnIntTop`,
+		},
+
+		`return concat(concat("x", "y"), "z")`: {
+			`  PushConst 0 # value="x"`,
+			`  PushConst 1 # value="y"`,
+			`  Call 1 # testpkg.concat`,
+			`  PushConst 2 # value="z"`,
+			`  Call 1 # testpkg.concat`,
+			`  ReturnTop`,
+		},
 	}
 
 	makePackageSource := func(body string) string {
 		return `
-		  package testpkg
+		  package ` + testPackage + `
+		  func add1(x int) int { return x + 1 }
+		  func concat(s1, s2 string) string { return s1 + s2 }
 		  func f(i int, s string, b bool, eface interface{}) interface{} {
 			` + body + `
 		  }
@@ -373,37 +390,37 @@ func TestCompile(t *testing.T) {
 		  `
 	}
 
-	env := quasigo.NewEnv()
-	env.AddNativeFunc(testPackage, "imul", func(stack *quasigo.ValueStack) {
-		panic("should not be called")
-	})
-	env.AddNativeFunc(testPackage, "idiv", func(stack *quasigo.ValueStack) {
-		panic("should not be called")
-	})
-	env.AddNativeFunc(testPackage, "atoi", func(stack *quasigo.ValueStack) {
-		panic("should not be called")
-	})
-	env.AddNativeFunc(testPackage, "sprintf", func(stack *quasigo.ValueStack) {
-		panic("should not be called")
-	})
-	env.AddNativeFunc("builtin", "PrintInt", func(stack *quasigo.ValueStack) {
-		panic("should not be called")
-	})
-	env.AddNativeFunc("builtin", "Print", func(stack *quasigo.ValueStack) {
-		panic("should not be called")
-	})
-
 	for testSrc, disasmLines := range tests {
+		env := quasigo.NewEnv()
+		env.AddNativeFunc(testPackage, "imul", func(stack *quasigo.ValueStack) {
+			panic("should not be called")
+		})
+		env.AddNativeFunc(testPackage, "idiv", func(stack *quasigo.ValueStack) {
+			panic("should not be called")
+		})
+		env.AddNativeFunc(testPackage, "atoi", func(stack *quasigo.ValueStack) {
+			panic("should not be called")
+		})
+		env.AddNativeFunc(testPackage, "sprintf", func(stack *quasigo.ValueStack) {
+			panic("should not be called")
+		})
+		env.AddNativeFunc("builtin", "PrintInt", func(stack *quasigo.ValueStack) {
+			panic("should not be called")
+		})
+		env.AddNativeFunc("builtin", "Print", func(stack *quasigo.ValueStack) {
+			panic("should not be called")
+		})
 		src := makePackageSource(testSrc)
-		parsed, err := parseGoFile(src)
+		parsed, err := parseGoFile(testPackage, src)
 		if err != nil {
-			t.Errorf("parse %s: %v", testSrc, err)
-			continue
+			t.Fatalf("parse %s: %v", testSrc, err)
 		}
-		compiled, err := compileTestFunc(env, "f", parsed)
+		compiled, err := compileTestFile(env, "f", testPackage, parsed)
 		if err != nil {
-			t.Errorf("compile %s: %v", testSrc, err)
-			continue
+			t.Fatal(err)
+		}
+		if compiled == nil {
+			t.Fatal("can't find f function")
 		}
 		want := disasmLines
 		have := strings.Split(quasigo.Disasm(env, compiled), "\n")

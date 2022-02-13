@@ -84,8 +84,9 @@ type CompileContext struct {
 	// being compiled; then it should be used to execute these functions.
 	Env *Env
 
-	Types *types.Info
-	Fset  *token.FileSet
+	Package *types.Package
+	Types   *types.Info
+	Fset    *token.FileSet
 }
 
 // Compile prepares an executable version of fn.
@@ -136,6 +137,11 @@ type Func struct {
 
 	constants    []interface{}
 	intConstants []int
+
+	numObjectParams int
+	numIntParams    int
+
+	name string
 }
 
 // ValueStack is used to manipulate runtime values during the evaluation.

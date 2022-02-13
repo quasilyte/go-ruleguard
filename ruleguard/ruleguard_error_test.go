@@ -55,10 +55,6 @@ func TestParseFilterFuncError(t *testing.T) {
 			`can't compile binary << yet`,
 		},
 		{
-			`return g(ctx)`,
-			`can't compile a call to gorules.g func`,
-		},
-		{
 			`return new(int) != nil`,
 			`can't compile new() builtin function call yet`,
 		},

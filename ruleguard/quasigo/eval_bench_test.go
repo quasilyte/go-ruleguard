@@ -143,7 +143,7 @@ func pushArgs(env *quasigo.EvalEnv, args ...interface{}) {
 func compileBenchFunc(t testing.TB, paramsSig, bodySrc string) (*quasigo.Env, *quasigo.Func) {
 	makePackageSource := func(body string) string {
 		return `
-		  package test
+		  package ` + testPackage + `
 		  import "fmt"
 		  var _ = fmt.Sprintf
 		  func f(` + paramsSig + `) interface{} {
@@ -161,7 +161,7 @@ func compileBenchFunc(t testing.TB, paramsSig, bodySrc string) (*quasigo.Env, *q
 	})
 	qfmt.ImportAll(env)
 	src := makePackageSource(bodySrc)
-	parsed, err := parseGoFile(src)
+	parsed, err := parseGoFile(testPackage, src)
 	if err != nil {
 		t.Fatalf("parse %s: %v", bodySrc, err)
 	}
