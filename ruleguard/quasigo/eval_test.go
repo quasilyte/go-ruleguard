@@ -210,20 +210,25 @@ func TestEval(t *testing.T) {
 		stack.Push(foo.Prefix)
 	})
 
-	for _, test := range tests {
+	for i := range tests {
+		test := tests[i]
 		src := makePackageSource(test.src, test.result)
 		parsed, err := parseGoFile(src)
 		if err != nil {
-			t.Errorf("parse %s: %v", test.src, err)
-			continue
+			t.Fatalf("parse %s: %v", test.src, err)
 		}
 		compiled, err := compileTestFunc(env, "target", parsed)
 		if err != nil {
-			t.Errorf("compile %s: %v", test.src, err)
-			continue
+			t.Fatalf("compile %s: %v", test.src, err)
 		}
-		result := quasigo.Call(env.GetEvalEnv(), compiled,
-			10, "foo", true, &evaltest.Foo{Prefix: "Hello"}, (*evaltest.Foo)(nil), nil)
+		evalEnv := env.GetEvalEnv()
+		evalEnv.Stack.PushInt(10)
+		evalEnv.Stack.Push("foo")
+		evalEnv.Stack.Push(true)
+		evalEnv.Stack.Push(&evaltest.Foo{Prefix: "Hello"})
+		evalEnv.Stack.Push((*evaltest.Foo)(nil))
+		evalEnv.Stack.Push(nil)
+		result := quasigo.Call(evalEnv, compiled)
 		var unboxedResult interface{}
 		if _, ok := test.result.(int); ok {
 			unboxedResult = result.IntValue()
@@ -231,7 +236,7 @@ func TestEval(t *testing.T) {
 			unboxedResult = result.Value()
 		}
 		if unboxedResult != test.result {
-			t.Errorf("eval %s:\nhave: %#v\nwant: %#v", test.src, unboxedResult, test.result)
+			t.Fatalf("eval %s:\nhave: %#v\nwant: %#v", test.src, unboxedResult, test.result)
 		}
 	}
 }

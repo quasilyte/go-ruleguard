@@ -71,6 +71,7 @@ func newRulesRunner(ctx *RunContext, buildContext *build.Context, state *engineS
 	gogrepState.Types = ctx.Types
 	gogrepSubState := gogrep.NewMatcherState()
 	gogrepSubState.Types = ctx.Types
+	evalEnv := state.env.GetEvalEnv()
 	rr := &rulesRunner{
 		bgContext:      context.Background(),
 		ctx:            ctx,
@@ -82,11 +83,12 @@ func newRulesRunner(ctx *RunContext, buildContext *build.Context, state *engineS
 		truncateLen:    ctx.TruncateLen,
 		filterParams: filterParams{
 			typematchState: typematch.NewMatcherState(),
-			env:            state.env.GetEvalEnv(),
+			env:            evalEnv,
 			importer:       importer,
 			ctx:            ctx,
 		},
 	}
+	evalEnv.Stack.Push(&rr.filterParams)
 	if ctx.TruncateLen == 0 {
 		rr.truncateLen = 60
 	}

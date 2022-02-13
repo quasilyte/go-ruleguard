@@ -9,51 +9,68 @@ import (
 )
 
 type benchTestCase struct {
-	name string
-	src  string
+	name   string
+	src    string
+	params string
+	args   []interface{}
 }
 
 var benchmarksNoAlloc = []*benchTestCase{
 	{
-		`ReturnFalse`,
-		`return false`,
+		name: `ReturnFalse`,
+		src:  `return false`,
 	},
 
 	{
-		`ReturnInt`,
-		`return 384723`,
+		name: `ReturnInt`,
+		src:  `return 384723`,
 	},
 
 	{
-		`LocalVars`,
-		`x := 1; y := x; return y`,
+		name:   `ParamInt`,
+		src:    `return x + y + z`,
+		params: `x, y, z int`,
+		args:   []interface{}{10, 20, 30},
 	},
 
 	{
-		`IfStmt`,
-		`x := 100; if x == 1 { x = 10 } else if x == 2 { x = 20 } else { x = 30 }; return x`,
+		name:   `ParamString`,
+		src:    `return len(s)`,
+		params: `s string`,
+		args:   []interface{}{"hello, world"},
 	},
 
 	{
-		`CallNative`,
-		`return imul(1, 5) + imul(2, 2)`,
+		name: `LocalVars`,
+		src:  `x := 1; y := x; return y`,
 	},
 
 	{
-		`CounterLoop`,
-		`j := 0; for j < 10000 { j++ }; return j`,
+		name: `IfStmt`,
+		src:  `x := 100; if x == 1 { x = 10 } else if x == 2 { x = 20 } else { x = 30 }; return x`,
 	},
 
 	{
-		`CounterLoopNested`,
-		`j := 0; for j < 10000 { k := 0; for k < 10 { k++; j++; } }; return j`,
+		name: `CallNative`,
+		src:  `return imul(1, 5) + imul(2, 2)`,
+	},
+
+	{
+		name: `CounterLoop`,
+		src:  `j := 0; for j < 10000 { j++ }; return j`,
+	},
+
+	{
+		name: `CounterLoopNested`,
+		src:  `j := 0; for j < 10000 { k := 0; for k < 10 { k++; j++; } }; return j`,
 	},
 }
 
 func TestNoAllocs(t *testing.T) {
 	for _, test := range benchmarksNoAlloc {
-		env, compiled := compileBenchFunc(t, test.src)
+		env, compiled := compileBenchFunc(t, test.params, test.src)
 		evalEnv := env.GetEvalEnv()
+		pushArgs(evalEnv, test.args...)
 
 		const numTests = 5
 		failures := 0
@@ -78,17 +95,17 @@ func TestNoAllocs(t *testing.T) {
 func BenchmarkEval(b *testing.B) {
 	var tests = []*benchTestCase{
 		{
-			`CallNativeVariadic0`,
-			`return fmt.Sprintf("no formatting")`,
+			name: `CallNativeVariadic0`,
+			src:  `return fmt.Sprintf("no formatting")`,
 		},
 		{
-			`CallNativeVariadic1`,
-			`return fmt.Sprintf("Hello, %s!", "world")`,
+			name: `CallNativeVariadic1`,
+			src:  `return fmt.Sprintf("Hello, %s!", "world")`,
 		},
 
 		{
-			`CallNativeVariadic2`,
-			`return fmt.Sprintf("%s:%d", "foo.go", 105)`,
+			name: `CallNativeVariadic2`,
+			src:  `return fmt.Sprintf("%s:%d", "foo.go", 105)`,
 		},
 	}
 
@@ -103,20 +120,33 @@ func BenchmarkEval(b *testing.B) {
 	for _, test := range tests {
 		test := test
 		b.Run(test.name, func(b *testing.B) {
-			env, compiled := compileBenchFunc(b, test.src)
+			env, compiled := compileBenchFunc(b, test.params, test.src)
+			evalEnv := env.GetEvalEnv()
+			pushArgs(evalEnv, test.args...)
 			b.ResetTimer()
-			runBench(b, env.GetEvalEnv(), compiled)
+			runBench(b, evalEnv, compiled)
 		})
 	}
 }
 
-func compileBenchFunc(t testing.TB, bodySrc string) (*quasigo.Env, *quasigo.Func) {
+func pushArgs(env *quasigo.EvalEnv, args ...interface{}) {
+	for _, arg := range args {
+		switch arg := arg.(type) {
+		case int:
+			env.Stack.PushInt(arg)
+		default:
+			env.Stack.Push(arg)
+		}
+	}
+}
+
+func compileBenchFunc(t testing.TB, paramsSig, bodySrc string) (*quasigo.Env, *quasigo.Func) {
 	makePackageSource := func(body string) string {
 		return `
 		  package test
 		  import "fmt"
 		  var _ = fmt.Sprintf
-		  func f() interface{} {
+		  func f(` + paramsSig + `) interface{} {
 			  ` + body + `
 		  }
 		  func imul(x, y int) int
