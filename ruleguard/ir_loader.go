@@ -691,6 +691,8 @@ func (l *irLoader) newFilter(filter ir.FilterExpr, info *filterInfo) (matchFilte
 		result.fn = makeConstSliceFilter(result.src, filter.Value.(string))
 	case ir.FilterVarAddressableOp:
 		result.fn = makeAddressableFilter(result.src, filter.Value.(string))
+	case ir.FilterVarComparableOp:
+		result.fn = makeComparableFilter(result.src, filter.Value.(string))
 
 	case ir.FilterFileImportsOp:
 		result.fn = makeFileImportsFilter(result.src, filter.Value.(string))

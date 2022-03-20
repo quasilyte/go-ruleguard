@@ -160,6 +160,21 @@ func makeAddressableFilter(src, varname string) filterFunc {
 	}
 }
 
+func makeComparableFilter(src, varname string) filterFunc {
+	return func(params *filterParams) matchFilterResult {
+		if list, ok := params.subNode(varname).(gogrep.ExprSlice); ok {
+			return exprListFilterApply(src, list, func(x ast.Expr) bool {
+				return types.Comparable(params.typeofNode(x))
+			})
+		}
+
+		if types.Comparable(params.typeofNode(params.subNode(varname))) {
+			return filterSuccess
+		}
+		return filterFailure(src)
+	}
+}
+
 func makeVarContainsFilter(src, varname string, pat *gogrep.Pattern) filterFunc {
 	return func(params *filterParams) matchFilterResult {
 		params.gogrepSubState.CapturePreset = params.match.CaptureList()

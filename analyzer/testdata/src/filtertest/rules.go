@@ -264,6 +264,10 @@ func testRules(m dsl.Matcher) {
 		Where(m["x"].Type.IdenticalTo(m["y"])).
 		Report(`true`)
 
+	m.Match(`typeTest($x, "comparable")`).
+		Where(m["x"].Comparable).
+		Report(`true`)
+
 	m.Match(`$x = time.Now().String()`,
 		`var $x = time.Now().String()`,
 		`var $x $_ = time.Now().String()`,

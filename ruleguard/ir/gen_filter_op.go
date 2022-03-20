@@ -41,6 +41,7 @@ func main() {
 		{name: "LtEq", comment: "$Args[0] <= $Args[1]", flags: flagIsBinaryExpr},
 
 		{name: "VarAddressable", comment: "m[$Value].Addressable", valueType: "string", flags: flagHasVar},
+		{name: "VarComparable", comment: "m[$Value].Comparable", valueType: "string", flags: flagHasVar},
 		{name: "VarPure", comment: "m[$Value].Pure", valueType: "string", flags: flagHasVar},
 		{name: "VarConst", comment: "m[$Value].Const", valueType: "string", flags: flagHasVar},
 		{name: "VarConstSlice", comment: "m[$Value].ConstSlice", valueType: "string", flags: flagHasVar},
