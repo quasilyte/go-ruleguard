@@ -133,6 +133,69 @@ func detectValue() {
 	valueTest(0, 5, "variadic value 5") // want `false`
 }
 
+func detectComparable() {
+	typeTest("", "comparable") // want `true`
+	typeTest(0, "comparable")  // want `true`
+
+	type good1 struct {
+		x, y int
+	}
+	type good2 struct {
+		nested good1
+		x      [2]byte
+		s      string
+	}
+	type good3 struct {
+		x *int
+	}
+	type good4 struct {
+		*good3
+		good2
+	}
+
+	typeTest(good1{}, "comparable")  // want `true`
+	typeTest(good2{}, "comparable")  // want `true`
+	typeTest(good3{}, "comparable")  // want `true`
+	typeTest(good4{}, "comparable")  // want `true`
+	typeTest(&good1{}, "comparable") // want `true`
+	typeTest(&good2{}, "comparable") // want `true`
+	typeTest(&good3{}, "comparable") // want `true`
+	typeTest(&good4{}, "comparable") // want `true`
+
+	var (
+		g1 good1
+		g2 good2
+		g3 good3
+		g4 good4
+	)
+	_ = g1 == good1{}
+	_ = g2 == good2{}
+	_ = g3 == good3{}
+	_ = g4 == good4{}
+	_ = g1 != good1{}
+	_ = g2 != good2{}
+	_ = g3 != good3{}
+	_ = g4 != good4{}
+
+	type bad1 struct {
+		_ [1]func()
+	}
+	type bad2 struct {
+		slice []int
+	}
+	type bad3 struct {
+		bad2
+	}
+
+	typeTest(bad1{}, "comparable")
+	typeTest(bad2{}, "comparable")
+	typeTest(bad3{}, "comparable")
+
+	typeTest(&bad1{}, "comparable") // want `true`
+	typeTest(&bad2{}, "comparable") // want `true`
+	typeTest(&bad3{}, "comparable") // want `true`
+}
+
 func detectType() {
 	{
 		var s fmt.Stringer

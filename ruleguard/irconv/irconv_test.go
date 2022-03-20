@@ -19,6 +19,7 @@ func TestConvFilterExpr(t *testing.T) {
 		{`m["x"].Pure`, `(VarPure ["x"])`},
 		{`m["x"].Const`, `(VarConst ["x"])`},
 		{`m["x"].Addressable`, `(VarAddressable ["x"])`},
+		{`m["x"].Comparable`, `(VarComparable ["x"])`},
 
 		// Parens should not break the conversion.
 		{`(m["x"].Pure)`, `(VarPure ["x"])`},
