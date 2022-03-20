@@ -127,6 +127,10 @@ type Var struct {
 	// See https://golang.org/ref/spec#Address_operators.
 	Addressable bool
 
+	// Comparable reports whether the corresponding expression value is comparable.
+	// See https://pkg.go.dev/go/types#Comparable.
+	Comparable bool
+
 	// Type is a type of a matched expr.
 	//
 	// For function call expressions, a type is a function result type,
