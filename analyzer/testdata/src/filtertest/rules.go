@@ -274,4 +274,12 @@ func testRules(m dsl.Matcher) {
 		`$x := time.Now().String()`).
 		Where(m["x"].Object.IsGlobal()).
 		Report(`global var`)
+
+	m.Match(`newIface("sink is io.Reader").($_)`).
+		Where(m["$$"].SinkType.Is(`io.Reader`)).
+		Report(`true`)
+
+	m.Match(`newIface("sink is interface{}").($_)`).
+		Where(m["$$"].SinkType.Is(`interface{}`)).
+		Report(`true`)
 }

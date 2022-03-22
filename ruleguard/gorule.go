@@ -110,7 +110,7 @@ func (params *filterParams) typeofNode(n ast.Node) types.Type {
 	if typ := params.ctx.Types.TypeOf(e); typ != nil {
 		return typ
 	}
-	return types.Typ[types.Invalid]
+	return invalidType
 }
 
 func mergeRuleSets(toMerge []*goRuleSet) (*goRuleSet, error) {
