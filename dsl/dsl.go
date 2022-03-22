@@ -141,6 +141,8 @@ type Var struct {
 	//	`$x` m["x"].Type is `a.b()` function call result type
 	Type ExprType
 
+	SinkType SinkType
+
 	// Object is an associated "go/types" Object.
 	Object TypesObject
 
@@ -210,6 +212,12 @@ func (TypesObject) Is(typ string) bool { return boolResult }
 
 // IsGlobal reports whether an associated types.Object is defined in global scope.
 func (TypesObject) IsGlobal() bool { return boolResult }
+
+type SinkType struct{}
+
+// Is reports whether a type is identical to a given type.
+// Works like ExprType.Is method.
+func (SinkType) Is(typ string) bool { return boolResult }
 
 // ExprType describes a type of a matcher expr.
 type ExprType struct {
