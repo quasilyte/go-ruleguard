@@ -181,6 +181,9 @@ const (
 
 	// m[`$$`].Node.Parent().Is($Args[0])
 	FilterRootNodeParentIsOp FilterOp = 47
+
+	// m[`$$`].SinkType.Is($Args[0])
+	FilterRootSinkTypeIsOp FilterOp = 48
 )
 
 var filterOpNames = map[FilterOp]string{
@@ -232,6 +235,7 @@ var filterOpNames = map[FilterOp]string{
 	FilterStringOp:                  `String`,
 	FilterIntOp:                     `Int`,
 	FilterRootNodeParentIsOp:        `RootNodeParentIs`,
+	FilterRootSinkTypeIsOp:          `RootSinkTypeIs`,
 }
 var filterOpFlags = map[FilterOp]uint64{
 	FilterAndOp:                     flagIsBinaryExpr,

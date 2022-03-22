@@ -746,6 +746,12 @@ func (conv *converter) convertFilterExprImpl(e ast.Expr) ir.FilterExpr {
 			return ir.FilterExpr{Op: ir.FilterVarObjectIsOp, Value: op.varName, Args: args}
 		case "Object.IsGlobal":
 			return ir.FilterExpr{Op: ir.FilterVarObjectIsGlobalOp, Value: op.varName}
+		case "SinkType.Is":
+			if op.varName != "$$" {
+				// TODO: remove this restriction.
+				panic(conv.errorf(e.Args[0], "sink type is only implemented for $$ var"))
+			}
+			return ir.FilterExpr{Op: ir.FilterRootSinkTypeIsOp, Value: op.varName, Args: args}
 		case "Type.HasPointers":
 			return ir.FilterExpr{Op: ir.FilterVarTypeHasPointersOp, Value: op.varName}
 		case "Type.Is":

@@ -608,6 +608,18 @@ func (l *irLoader) newFilter(filter ir.FilterExpr, info *filterInfo) (matchFilte
 		}
 		result.fn = makeNodeIsFilter(result.src, filter.Value.(string), tag)
 
+	case ir.FilterRootSinkTypeIsOp:
+		typeString := l.unwrapStringExpr(filter.Args[0])
+		if typeString == "" {
+			return result, l.errorf(filter.Line, nil, "expected a non-empty string argument")
+		}
+		ctx := typematch.Context{Itab: l.itab}
+		pat, err := typematch.Parse(&ctx, typeString)
+		if err != nil {
+			return result, l.errorf(filter.Line, err, "parse type expr")
+		}
+		result.fn = makeRootSinkTypeIsFilter(result.src, pat)
+
 	case ir.FilterVarTypeHasPointersOp:
 		result.fn = makeTypeHasPointersFilter(result.src, filter.Value.(string))
 

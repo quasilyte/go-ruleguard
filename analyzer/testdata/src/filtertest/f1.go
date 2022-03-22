@@ -955,3 +955,123 @@ func detectGlobal() {
 		print(globalVar)
 	}
 }
+
+func detectSinkType() {
+	// Call argument context.
+	_ = acceptReader(newIface("sink is io.Reader").(*bytes.Buffer)) // want `true`
+	_ = acceptReader(newIface("sink is io.Reader").(io.Reader))     // want `true`
+	_ = acceptReader((newIface("sink is io.Reader").(io.Reader)))   // want `true`
+	_ = acceptBuffer(newIface("sink is io.Reader").(*bytes.Buffer))
+	_ = acceptReaderVariadic(10, newIface("sink is io.Reader").(*bytes.Buffer))      // want `true`
+	_ = acceptReaderVariadic(10, newIface("sink is io.Reader").(*bytes.Buffer))      // want `true`
+	_ = acceptReaderVariadic(10, nil, newIface("sink is io.Reader").(*bytes.Buffer)) // want `true`
+	_ = acceptReaderVariadic(10, newIface("sink is io.Reader").([]io.Reader)...)
+	_ = acceptWriterVariadic(10, newIface("sink is io.Reader").(*bytes.Buffer))
+	_ = acceptWriterVariadic(10, nil, newIface("sink is io.Reader").(*bytes.Buffer))
+	_ = acceptWriterVariadic(10, nil, nil, newIface("sink is io.Reader").(*bytes.Buffer))
+	_ = acceptVariadic(10, newIface("sink is io.Reader").(*bytes.Buffer))
+	_ = acceptVariadic(10, nil, newIface("sink is io.Reader").(*bytes.Buffer))
+	_ = acceptVariadic(10, nil, nil, newIface("sink is io.Reader").(*bytes.Buffer))
+	fmt.Println(newIface("sink is interface{}").(int))          // want `true`
+	fmt.Println(1, newIface("sink is interface{}").(io.Reader)) // want `true`
+
+	// Type conversion context.
+	_ = io.Reader(newIface("sink is io.Reader").(*bytes.Buffer)) // want `true`
+	_ = io.Writer(newIface("sink is io.Reader").(*bytes.Buffer))
+
+	// Return stmt context.
+	{
+		_ = func() (io.Reader, io.Writer) {
+			return newIface("sink is io.Reader").(*bytes.Buffer), nil // want `true`
+		}
+		_ = func() (io.Reader, io.Writer) {
+			return nil, newIface("sink is io.Reader").(*bytes.Buffer)
+		}
+		_ = func() (io.Writer, io.Reader) {
+			return nil, newIface("sink is io.Reader").(*bytes.Buffer) // want `true`
+		}
+	}
+
+	// Assignment context.
+	{
+		var r io.Reader = (newIface("sink is io.Reader").(*bytes.Buffer)) // want `true`
+		var _ io.Reader = newIface("sink is io.Reader").(*bytes.Buffer)   // want `true`
+		var w io.Writer = newIface("sink is io.Reader").(*bytes.Buffer)
+		x := newIface("sink is io.Reader").(*bytes.Buffer)
+		_ = r
+		_ = w
+		_ = x
+		var readers map[string]io.Reader
+		readers["foo"] = newIface("sink is io.Reader").(*bytes.Buffer) // want `true`
+		var writers map[string]io.Writer
+		writers["foo"] = newIface("sink is io.Reader").(*bytes.Buffer)
+		var foo exampleStruct
+		foo.r = newIface("sink is io.Reader").(*bytes.Buffer) // want `true`
+		foo.buf = newIface("sink is io.Reader").(*bytes.Buffer)
+		foo.w = newIface("sink is io.Reader").(*bytes.Buffer)
+	}
+
+	// Index expr context
+	{
+		var readerKeys map[io.Reader]string
+		readerKeys[newIface("sink is io.Reader").(*bytes.Buffer)] = "ok"   // want `true`
+		readerKeys[(newIface("sink is io.Reader").(*bytes.Buffer))] = "ok" // want `true`
+		var writerKeys map[io.Writer]string
+		writerKeys[newIface("sink is io.Reader").(*bytes.Buffer)] = "ok"
+		writerKeys[(newIface("sink is io.Reader").(*bytes.Buffer))] = "ok"
+	}
+
+	// Composite lit element context.
+	_ = []io.Reader{
+		newIface("sink is io.Reader").(*bytes.Buffer), // want `true`
+	}
+	_ = []io.Reader{
+		10: newIface("sink is io.Reader").(*bytes.Buffer), // want `true`
+	}
+	_ = [10]io.Reader{
+		4: newIface("sink is io.Reader").(*bytes.Buffer), // want `true`
+	}
+	_ = map[string]io.Reader{
+		"foo": newIface("sink is io.Reader").(*bytes.Buffer), // want `true`
+	}
+	_ = map[io.Reader]string{
+		newIface("sink is io.Reader").(*bytes.Buffer): "foo", // want `true`
+	}
+	_ = map[io.Reader]string{
+		(newIface("sink is io.Reader").(*bytes.Buffer)): "foo", // want `true`
+	}
+	_ = []io.Writer{
+		(newIface("sink is io.Reader").(*bytes.Buffer)),
+	}
+	_ = exampleStruct{
+		w: newIface("sink is io.Reader").(*bytes.Buffer),
+		r: newIface("sink is io.Reader").(*bytes.Buffer), // want `true`
+	}
+	_ = []interface{}{
+		newIface("sink is interface{}").(*bytes.Buffer), // want `true`
+		newIface("sink is interface{}").(int),           // want `true`
+	}
+}
+
+func detectSinkType2() io.Reader {
+	return newIface("sink is io.Reader").(*bytes.Buffer) // want `true`
+}
+
+func detectSinkType3() io.Writer {
+	return newIface("sink is io.Reader").(*bytes.Buffer)
+}
+
+func newIface(key string) interface{} { return nil }
+
+func acceptReaderVariadic(a int, r ...io.Reader) int { return 0 }
+func acceptWriterVariadic(a int, r ...io.Writer) int { return 0 }
+func acceptVariadic(a int, r ...interface{}) int     { return 0 }
+func acceptReader(r io.Reader) int                   { return 0 }
+func acceptWriter(r io.Writer) int                   { return 0 }
+func acceptBuffer(b *bytes.Buffer) int               { return 0 }
+
+type exampleStruct struct {
+	r   io.Reader
+	w   io.Writer
+	buf *bytes.Buffer
+}
