@@ -5,7 +5,7 @@
 [![PkgGoDev](https://pkg.go.dev/badge/mod/github.com/quasilyte/go-ruleguard)](https://pkg.go.dev/mod/github.com/quasilyte/go-ruleguard)
 [![Go Report Card](https://goreportcard.com/badge/github.com/quasilyte/go-ruleguard)](https://goreportcard.com/report/github.com/quasilyte/go-ruleguard)
 
-![Logo](_docs/logo.svg)
+![Logo](_docs/logo2.svg)
 
 ## Overview
 
