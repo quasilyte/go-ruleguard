@@ -293,6 +293,8 @@ func testRules(m dsl.Matcher) {
 		Where(m["x"].Type.Implements(`interface { FooChan(k chan string) }`)).Report(`dynamic interface 3`)
 	m.Match(`$x.FooType($_)`).
 		Where(m["x"].Type.Implements(`interface { FooType(k io.Closer) }`)).Report(`dynamic interface 4`)
+	m.Match(`$x.FooGrouped($*_)`).
+		Where(m["x"].Type.Implements(`interface { FooGrouped(k io.Closer, l io.Closer) }`)).Report(`dynamic interface 4.1`)
 	m.Match(`$x.FooWithResult($_)`).
 		Where(m["x"].Type.Implements(`interface { FooWithResult(k string) string }`)).Report(`dynamic interface 5`)
 	m.Match(`$x.FooWithResult2($_)`).
