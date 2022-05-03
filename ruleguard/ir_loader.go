@@ -2,7 +2,6 @@ package ruleguard
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"go/ast"
 	"go/constant"
@@ -1023,7 +1022,7 @@ func (l *irLoader) mapAstExprToTypesType(param ast.Expr) (types.Type, error) {
 
 		return obj.Type(), nil
 	}
-	return nil, errors.New("on mapAstExprToTypesType: unsupported statement")
+	return nil, l.errorf(int(param.Pos()), nil, "unsupported statement provided: %T", param)
 }
 
 type filterInfo struct {
