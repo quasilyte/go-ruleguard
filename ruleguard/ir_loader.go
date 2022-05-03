@@ -503,32 +503,16 @@ func (l *irLoader) unwrapInterfaceExpr(filter ir.FilterExpr) (*types.Interface, 
 			return nil, l.errorf(filter.Line, nil, "%s is not an interface type", qn.Sel.Name)
 		}
 	case *ast.InterfaceType:
-		var methods []*types.Func
-
+		methods := make([]*types.Func, 0, len(qn.Methods.List))
 		for _, method := range qn.Methods.List {
-			var isVariadic bool
-			var vars []*types.Var
-			funcType := method.Type.(*ast.FuncType)
-			for _, field := range funcType.Params.List {
-				var ident *ast.Ident
-				switch p := field.Type.(type) {
-				case *ast.Ident:
-					ident = field.Type.(*ast.Ident)
-				case *ast.Ellipsis:
-					isVariadic = true
-					ident = p.Elt.(*ast.Ident)
-				}
-
-				for _, param := range field.Names {
-					vars = append(vars, types.NewVar(token.NoPos, nil, param.Name, typematch.BuiltinTypeByName[ident.Name]))
-				}
+			fnType, ok := method.Type.(*ast.FuncType)
+			if !ok {
+				continue
 			}
-
-			signature := types.NewSignature(nil, types.NewTuple(vars...), nil, isVariadic)
-			methods = append(methods, types.NewFunc(method.Pos(), nil, method.Names[0].Name, signature))
+			methods = append(methods, MapAstFuncTypeToTypesFunc(method.Names[0].Name, fnType))
 		}
 
-		iface = types.NewInterfaceType(methods, nil)
+		iface = types.NewInterfaceType(methods, nil).Complete()
 	default:
 		return nil, l.errorf(filter.Line, nil, "can't resolve %s type; try a fully-qualified name", typeString)
 	}
@@ -910,6 +894,51 @@ func (l *irLoader) newBinaryExprFilter(filter ir.FilterExpr, info *filterInfo) (
 	}
 
 	return result, nil
+}
+
+func MapAstFuncTypeToTypesFunc(name string, funcType *ast.FuncType) *types.Func {
+	var (
+		vars []*types.Var
+		res  []*types.Var
+	)
+
+	if funcType.Params != nil {
+		vars = make([]*types.Var, 0, len(funcType.Params.List))
+		for _, param := range funcType.Params.List {
+			tt := mapAstFieldToTypesType(param)
+			for _, name := range param.Names { // one param has several names when their type the same
+				vars = append(vars, types.NewVar(name.Pos(), nil, name.Name, tt))
+			}
+		}
+	}
+
+	if funcType.Results != nil {
+		res = make([]*types.Var, 0, len(funcType.Results.List))
+		for _, param := range funcType.Results.List {
+			tt := mapAstFieldToTypesType(param)
+			for _, name := range param.Names {
+				res = append(res, types.NewVar(name.Pos(), nil, name.Name, tt))
+			}
+		}
+	}
+
+	return types.NewFunc(funcType.Pos(),
+		nil,
+		name,
+		types.NewSignature(nil, types.NewTuple(vars...), types.NewTuple(res...), false),
+	)
+}
+
+func mapAstFieldToTypesType(param *ast.Field) types.Type {
+	switch p := param.Type.(type) {
+	case *ast.Ident:
+		return typematch.BuiltinTypeByName[p.Name]
+	case *ast.Ellipsis:
+	// TODO variadic type
+	case *ast.ChanType:
+
+	}
+	panic("unreachable statement")
 }
 
 type filterInfo struct {

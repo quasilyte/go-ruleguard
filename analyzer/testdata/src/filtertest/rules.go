@@ -284,8 +284,5 @@ func testRules(m dsl.Matcher) {
 		Report(`true`)
 
 	m.Match(`$x.FooBar($_)`).
-		Where(m["x"].Type.Implements(`interface { FooBar(k string); KekFoo(k int, s string) }`)).Report(`dynamic interface`)
-
-	m.Match(`$x.FooBar($_)`).
-		Where(m["x"].Type.Implements(`interface { FooBar(k string, fields ...int) }`)).Report(`dynamic interface`)
+		Where(m["x"].Type.Implements(`interface { FooBar(k string) }`)).Report(`dynamic interface`)
 }
