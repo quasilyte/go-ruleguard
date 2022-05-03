@@ -512,7 +512,7 @@ func (l *irLoader) unwrapInterfaceExpr(filter ir.FilterExpr) (*types.Interface, 
 				continue
 			}
 
-			fn, err := MapAstFuncTypeToTypesFunc(method.Names[0].Name, fnType)
+			fn, err := l.mapAstFuncTypeToTypesFunc(method.Names[0].Name, fnType)
 			if err != nil {
 				return nil, fmt.Errorf("on unwrapInterfaceExpr: %w", err)
 			}
@@ -904,7 +904,7 @@ func (l *irLoader) newBinaryExprFilter(filter ir.FilterExpr, info *filterInfo) (
 	return result, nil
 }
 
-func MapAstFuncTypeToTypesFunc(name string, funcType *ast.FuncType) (*types.Func, error) {
+func (l *irLoader) mapAstFuncTypeToTypesFunc(name string, funcType *ast.FuncType) (*types.Func, error) {
 	var (
 		vars []*types.Var
 		res  []*types.Var
@@ -913,7 +913,7 @@ func MapAstFuncTypeToTypesFunc(name string, funcType *ast.FuncType) (*types.Func
 	if funcType.Params != nil {
 		vars = make([]*types.Var, 0, len(funcType.Params.List))
 		for _, param := range funcType.Params.List {
-			tt, err := mapAstExprToTypesType(param.Type)
+			tt, err := l.mapAstExprToTypesType(param.Type)
 			if err != nil {
 				return nil, err
 			}
@@ -927,7 +927,7 @@ func MapAstFuncTypeToTypesFunc(name string, funcType *ast.FuncType) (*types.Func
 	if funcType.Results != nil {
 		res = make([]*types.Var, 0, len(funcType.Results.List))
 		for _, param := range funcType.Results.List {
-			tt, err := mapAstExprToTypesType(param.Type)
+			tt, err := l.mapAstExprToTypesType(param.Type)
 			if err != nil {
 				return nil, err
 			}
@@ -945,12 +945,12 @@ func MapAstFuncTypeToTypesFunc(name string, funcType *ast.FuncType) (*types.Func
 	), nil
 }
 
-func mapAstExprToTypesType(param ast.Expr) (types.Type, error) {
+func (l *irLoader) mapAstExprToTypesType(param ast.Expr) (types.Type, error) {
 	switch p := param.(type) {
 	case *ast.Ident:
 		return typematch.BuiltinTypeByName[p.Name], nil
 	case *ast.StarExpr:
-		el, err := mapAstExprToTypesType(p.X)
+		el, err := l.mapAstExprToTypesType(p.X)
 		if err != nil {
 			return nil, err
 		}
@@ -972,19 +972,19 @@ func mapAstExprToTypesType(param ast.Expr) (types.Type, error) {
 			return nil, nil
 		}
 
-		v, err := mapAstExprToTypesType(p.Value)
+		v, err := l.mapAstExprToTypesType(p.Value)
 		if err != nil {
 			return nil, err
 		}
 
 		return types.NewChan(dir, v), nil
 	case *ast.MapType:
-		key, err := mapAstExprToTypesType(p.Key)
+		key, err := l.mapAstExprToTypesType(p.Key)
 		if err != nil {
 			return nil, err
 		}
 
-		val, err := mapAstExprToTypesType(p.Value)
+		val, err := l.mapAstExprToTypesType(p.Value)
 		if err != nil {
 			return nil, err
 		}
@@ -992,17 +992,36 @@ func mapAstExprToTypesType(param ast.Expr) (types.Type, error) {
 		return types.NewMap(key, val), nil
 	case *ast.ArrayType:
 		// TODO add variadic
-		l, err := strconv.ParseInt(p.Len.(*ast.BasicLit).Value, 10, 64)
+		arrLen, err := strconv.ParseInt(p.Len.(*ast.BasicLit).Value, 10, 64)
 		if err != nil {
 			return nil, fmt.Errorf("on mapAstExprToTypesType: %w", err)
 		}
 
-		val, err := mapAstExprToTypesType(p.Elt)
+		val, err := l.mapAstExprToTypesType(p.Elt)
 		if err != nil {
 			return nil, err
 		}
 
-		return types.NewArray(val, l), nil
+		return types.NewArray(val, arrLen), nil
+	case *ast.SelectorExpr:
+		pkgName, ok := p.X.(*ast.Ident)
+		if !ok {
+			return nil, l.errorf(int(p.Pos()), nil, "invalid package name")
+		}
+		pkgPath, ok := l.itab.Lookup(pkgName.Name)
+		if !ok {
+			return nil, l.errorf(int(p.Pos()), nil, "package %s is not imported", pkgName.Name)
+		}
+		pkg, err := l.importer.Import(pkgPath)
+		if err != nil {
+			return nil, l.importErrorf(int(p.Pos()), err, "can't load %s", pkgPath)
+		}
+		obj := pkg.Scope().Lookup(p.Sel.Name)
+		if obj == nil {
+			return nil, l.errorf(int(p.Pos()), nil, "%s is not found in %s", p.Sel.Name, pkgPath)
+		}
+
+		return obj.Type(), nil
 	}
 	return nil, errors.New("on mapAstExprToTypesType: unsupported statement")
 }

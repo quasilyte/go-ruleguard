@@ -3,7 +3,9 @@
 
 package gorules
 
-import "github.com/quasilyte/go-ruleguard/dsl"
+import (
+	"github.com/quasilyte/go-ruleguard/dsl"
+)
 
 func testRules(m dsl.Matcher) {
 	m.Import(`github.com/quasilyte/go-ruleguard/analyzer/testdata/src/filtertest/foolib`)
@@ -283,6 +285,12 @@ func testRules(m dsl.Matcher) {
 		Where(m["$$"].SinkType.Is(`interface{}`)).
 		Report(`true`)
 
-	m.Match(`$x.FooBar($_)`).
-		Where(m["x"].Type.Implements(`interface { FooBar(k string) }`)).Report(`dynamic interface`)
+	m.Match(`$x.FooString($_)`).
+		Where(m["x"].Type.Implements(`interface { FooString(k string) }`)).Report(`dynamic interface 1`)
+	m.Match(`$x.FooMap($_)`).
+		Where(m["x"].Type.Implements(`interface { FooMap(k map[string]string) }`)).Report(`dynamic interface 2`)
+	m.Match(`$x.FooChan($_)`).
+		Where(m["x"].Type.Implements(`interface { FooChan(k chan string) }`)).Report(`dynamic interface 3`)
+	m.Match(`$x.FooType($_)`).
+		Where(m["x"].Type.Implements(`interface { FooType(k io.Closer) }`)).Report(`dynamic interface 4`)
 }
