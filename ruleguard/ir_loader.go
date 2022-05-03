@@ -931,8 +931,12 @@ func (l *irLoader) mapAstFuncTypeToTypesFunc(name string, funcType *ast.FuncType
 				return nil, err
 			}
 
-			for _, name := range param.Names {
-				res = append(res, types.NewVar(name.Pos(), nil, name.Name, tt))
+			if param.Names != nil { // named return
+				for _, name := range param.Names {
+					res = append(res, types.NewVar(name.Pos(), nil, name.Name, tt))
+				}
+			} else { // unnamed
+				res = append(res, types.NewVar(param.Pos(), nil, "", tt))
 			}
 		}
 	}

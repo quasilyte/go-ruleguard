@@ -1078,15 +1078,21 @@ type exampleStruct struct {
 
 type foo string
 
-func (foo) FooString(_ string)         {}
-func (foo) FooMap(_ map[string]string) {}
-func (foo) FooChan(_ chan string)      {}
-func (foo) FooType(_ io.Closer)        {}
+func (foo) FooString(_ string)                                {}
+func (foo) FooMap(_ map[string]string)                        {}
+func (foo) FooChan(_ chan string)                             {}
+func (foo) FooType(_ io.Closer)                               {}
+func (foo) FooWithResult(_ string) string                     { return "" }
+func (foo) FooWithResult2(_ string) (io.Closer, error)        { return nil, nil }
+func (foo) FooWithResult3(_ string) (cl io.Closer, err error) { return }
 
 func dynamicInterface() {
 	var f foo
-	f.FooString("123") // want `\Qdynamic interface 1`
-	f.FooMap(nil)      // want `\Qdynamic interface 2`
-	f.FooChan(nil)     // want `\Qdynamic interface 3`
-	f.FooType(nil)     // want `\Qdynamic interface 4`
+	f.FooString("123")   // want `\Qdynamic interface 1`
+	f.FooMap(nil)        // want `\Qdynamic interface 2`
+	f.FooChan(nil)       // want `\Qdynamic interface 3`
+	f.FooType(nil)       // want `\Qdynamic interface 4`
+	f.FooWithResult("")  // want `\Qdynamic interface 5`
+	f.FooWithResult2("") // want `\Qdynamic interface 6`
+	f.FooWithResult3("") // want `\Qdynamic interface 7`
 }
