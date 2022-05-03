@@ -2,6 +2,7 @@ package ruleguard
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/constant"
@@ -10,6 +11,7 @@ import (
 	"go/types"
 	"io/ioutil"
 	"regexp"
+	"strconv"
 
 	"github.com/quasilyte/gogrep"
 	"github.com/quasilyte/gogrep/nodetag"
@@ -509,7 +511,13 @@ func (l *irLoader) unwrapInterfaceExpr(filter ir.FilterExpr) (*types.Interface, 
 			if !ok {
 				continue
 			}
-			methods = append(methods, MapAstFuncTypeToTypesFunc(method.Names[0].Name, fnType))
+
+			fn, err := MapAstFuncTypeToTypesFunc(method.Names[0].Name, fnType)
+			if err != nil {
+				return nil, fmt.Errorf("on unwrapInterfaceExpr: %w", err)
+			}
+
+			methods = append(methods, fn)
 		}
 
 		iface = types.NewInterfaceType(methods, nil).Complete()
@@ -896,7 +904,7 @@ func (l *irLoader) newBinaryExprFilter(filter ir.FilterExpr, info *filterInfo) (
 	return result, nil
 }
 
-func MapAstFuncTypeToTypesFunc(name string, funcType *ast.FuncType) *types.Func {
+func MapAstFuncTypeToTypesFunc(name string, funcType *ast.FuncType) (*types.Func, error) {
 	var (
 		vars []*types.Var
 		res  []*types.Var
@@ -905,7 +913,11 @@ func MapAstFuncTypeToTypesFunc(name string, funcType *ast.FuncType) *types.Func 
 	if funcType.Params != nil {
 		vars = make([]*types.Var, 0, len(funcType.Params.List))
 		for _, param := range funcType.Params.List {
-			tt := mapAstFieldToTypesType(param)
+			tt, err := mapAstExprToTypesType(param.Type)
+			if err != nil {
+				return nil, err
+			}
+
 			for _, name := range param.Names { // one param has several names when their type the same
 				vars = append(vars, types.NewVar(name.Pos(), nil, name.Name, tt))
 			}
@@ -915,7 +927,11 @@ func MapAstFuncTypeToTypesFunc(name string, funcType *ast.FuncType) *types.Func 
 	if funcType.Results != nil {
 		res = make([]*types.Var, 0, len(funcType.Results.List))
 		for _, param := range funcType.Results.List {
-			tt := mapAstFieldToTypesType(param)
+			tt, err := mapAstExprToTypesType(param.Type)
+			if err != nil {
+				return nil, err
+			}
+
 			for _, name := range param.Names {
 				res = append(res, types.NewVar(name.Pos(), nil, name.Name, tt))
 			}
@@ -926,19 +942,69 @@ func MapAstFuncTypeToTypesFunc(name string, funcType *ast.FuncType) *types.Func 
 		nil,
 		name,
 		types.NewSignature(nil, types.NewTuple(vars...), types.NewTuple(res...), false),
-	)
+	), nil
 }
 
-func mapAstFieldToTypesType(param *ast.Field) types.Type {
-	switch p := param.Type.(type) {
+func mapAstExprToTypesType(param ast.Expr) (types.Type, error) {
+	switch p := param.(type) {
 	case *ast.Ident:
-		return typematch.BuiltinTypeByName[p.Name]
-	case *ast.Ellipsis:
-	// TODO variadic type
-	case *ast.ChanType:
+		return typematch.BuiltinTypeByName[p.Name], nil
+	case *ast.StarExpr:
+		el, err := mapAstExprToTypesType(p.X)
+		if err != nil {
+			return nil, err
+		}
 
+		return types.NewPointer(el), nil
+	case *ast.Ellipsis:
+		//TODO
+		return nil, errors.New("on mapAstExprToTypesType: variadic types not supported")
+	case *ast.ChanType:
+		var dir types.ChanDir
+		switch {
+		case p.Dir&ast.SEND != 0 && p.Dir&ast.RECV != 0:
+			dir = types.SendRecv
+		case p.Dir&ast.SEND != 0:
+			dir = types.SendOnly
+		case p.Dir&ast.RECV != 0:
+			dir = types.RecvOnly
+		default:
+			return nil, nil
+		}
+
+		v, err := mapAstExprToTypesType(p.Value)
+		if err != nil {
+			return nil, err
+		}
+
+		return types.NewChan(dir, v), nil
+	case *ast.MapType:
+		key, err := mapAstExprToTypesType(p.Key)
+		if err != nil {
+			return nil, err
+		}
+
+		val, err := mapAstExprToTypesType(p.Value)
+		if err != nil {
+			return nil, err
+		}
+
+		return types.NewMap(key, val), nil
+	case *ast.ArrayType:
+		// TODO add variadic
+		l, err := strconv.ParseInt(p.Len.(*ast.BasicLit).Value, 10, 64)
+		if err != nil {
+			return nil, fmt.Errorf("on mapAstExprToTypesType: %w", err)
+		}
+
+		val, err := mapAstExprToTypesType(p.Elt)
+		if err != nil {
+			return nil, err
+		}
+
+		return types.NewArray(val, l), nil
 	}
-	panic("unreachable statement")
+	return nil, errors.New("on mapAstExprToTypesType: unsupported statement")
 }
 
 type filterInfo struct {
