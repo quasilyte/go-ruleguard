@@ -1081,5 +1081,5 @@ type foo string
 func (foo) FooBar(_ string) {}
 func dynamicInterface() {
 	var f foo
-	f.FooBar("123") // want `dynamic interface`
+	f.FooBar("123") // want `\Qdynamic interface`
 }
