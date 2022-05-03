@@ -958,7 +958,7 @@ func (l *irLoader) mapAstExprToTypesType(param ast.Expr) (types.Type, error) {
 		return types.NewPointer(el), nil
 	case *ast.Ellipsis:
 		//TODO
-		return nil, errors.New("on mapAstExprToTypesType: variadic types not supported")
+		return nil, l.errorf(int(p.Pos()), nil, "on mapAstExprToTypesType: variadic types not supported")
 	case *ast.ChanType:
 		var dir types.ChanDir
 		switch {
@@ -994,7 +994,7 @@ func (l *irLoader) mapAstExprToTypesType(param ast.Expr) (types.Type, error) {
 		// TODO add variadic
 		arrLen, err := strconv.ParseInt(p.Len.(*ast.BasicLit).Value, 10, 64)
 		if err != nil {
-			return nil, fmt.Errorf("on mapAstExprToTypesType: %w", err)
+			return nil, l.errorf(int(p.Pos()), nil, "invalid length provided: "+err.Error())
 		}
 
 		val, err := l.mapAstExprToTypesType(p.Elt)
