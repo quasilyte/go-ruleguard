@@ -282,4 +282,10 @@ func testRules(m dsl.Matcher) {
 	m.Match(`newIface("sink is interface{}").($_)`).
 		Where(m["$$"].SinkType.Is(`interface{}`)).
 		Report(`true`)
+
+	m.Match(`$x.FooBar($_)`).
+		Where(m["x"].Type.Implements(`interface { FooBar(k string); KekFoo(k int, s string) }`)).Report(`dynamic interface`)
+
+	m.Match(`$x.FooBar($_)`).
+		Where(m["x"].Type.Implements(`interface { FooBar(k string, fields ...int) }`)).Report(`dynamic interface`)
 }

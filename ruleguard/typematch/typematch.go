@@ -135,7 +135,7 @@ func Parse(ctx *Context, s string) (*Pattern, error) {
 }
 
 var (
-	builtinTypeByName = map[string]types.Type{
+	BuiltinTypeByName = map[string]types.Type{
 		"bool":       types.Typ[types.Bool],
 		"int":        types.Typ[types.Int],
 		"int8":       types.Typ[types.Int8],
@@ -167,7 +167,7 @@ var (
 func parseExpr(ctx *Context, e ast.Expr) *pattern {
 	switch e := e.(type) {
 	case *ast.Ident:
-		basic, ok := builtinTypeByName[e.Name]
+		basic, ok := BuiltinTypeByName[e.Name]
 		if ok {
 			return &pattern{op: opBuiltinType, value: basic}
 		}

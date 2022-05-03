@@ -478,30 +478,61 @@ func (l *irLoader) unwrapInterfaceExpr(filter ir.FilterExpr) (*types.Interface, 
 	if err != nil {
 		return nil, l.errorf(filter.Line, err, "parse %s type expr", typeString)
 	}
-	qn, ok := n.(*ast.SelectorExpr)
-	if !ok {
+
+	var iface *types.Interface
+	switch qn := n.(type) {
+	case *ast.SelectorExpr:
+		pkgName, ok := qn.X.(*ast.Ident)
+		if !ok {
+			return nil, l.errorf(filter.Line, nil, "invalid package name")
+		}
+		pkgPath, ok := l.itab.Lookup(pkgName.Name)
+		if !ok {
+			return nil, l.errorf(filter.Line, nil, "package %s is not imported", pkgName.Name)
+		}
+		pkg, err := l.importer.Import(pkgPath)
+		if err != nil {
+			return nil, l.importErrorf(filter.Line, err, "can't load %s", pkgPath)
+		}
+		obj := pkg.Scope().Lookup(qn.Sel.Name)
+		if obj == nil {
+			return nil, l.errorf(filter.Line, nil, "%s is not found in %s", qn.Sel.Name, pkgPath)
+		}
+		iface, ok = obj.Type().Underlying().(*types.Interface)
+		if !ok {
+			return nil, l.errorf(filter.Line, nil, "%s is not an interface type", qn.Sel.Name)
+		}
+	case *ast.InterfaceType:
+		var methods []*types.Func
+
+		for _, method := range qn.Methods.List {
+			var isVariadic bool
+			var vars []*types.Var
+			funcType := method.Type.(*ast.FuncType)
+			for _, field := range funcType.Params.List {
+				var ident *ast.Ident
+				switch p := field.Type.(type) {
+				case *ast.Ident:
+					ident = field.Type.(*ast.Ident)
+				case *ast.Ellipsis:
+					isVariadic = true
+					ident = p.Elt.(*ast.Ident)
+				}
+
+				for _, param := range field.Names {
+					vars = append(vars, types.NewVar(token.NoPos, nil, param.Name, typematch.BuiltinTypeByName[ident.Name]))
+				}
+			}
+
+			signature := types.NewSignature(nil, types.NewTuple(vars...), nil, isVariadic)
+			methods = append(methods, types.NewFunc(method.Pos(), nil, method.Names[0].Name, signature))
+		}
+
+		iface = types.NewInterfaceType(methods, nil)
+	default:
 		return nil, l.errorf(filter.Line, nil, "can't resolve %s type; try a fully-qualified name", typeString)
 	}
-	pkgName, ok := qn.X.(*ast.Ident)
-	if !ok {
-		return nil, l.errorf(filter.Line, nil, "invalid package name")
-	}
-	pkgPath, ok := l.itab.Lookup(pkgName.Name)
-	if !ok {
-		return nil, l.errorf(filter.Line, nil, "package %s is not imported", pkgName.Name)
-	}
-	pkg, err := l.importer.Import(pkgPath)
-	if err != nil {
-		return nil, l.importErrorf(filter.Line, err, "can't load %s", pkgPath)
-	}
-	obj := pkg.Scope().Lookup(qn.Sel.Name)
-	if obj == nil {
-		return nil, l.errorf(filter.Line, nil, "%s is not found in %s", qn.Sel.Name, pkgPath)
-	}
-	iface, ok := obj.Type().Underlying().(*types.Interface)
-	if !ok {
-		return nil, l.errorf(filter.Line, nil, "%s is not an interface type", qn.Sel.Name)
-	}
+
 	return iface, nil
 }
 
