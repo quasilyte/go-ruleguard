@@ -909,16 +909,28 @@ func (l *irLoader) mapAstFuncTypeToTypesFunc(name string, funcType *ast.FuncType
 		res  []*types.Var
 	)
 
+	mapField := func(param *ast.Field, results []*types.Var) ([]*types.Var, error) {
+		tt, err := l.mapAstExprToTypesType(param.Type)
+		if err != nil {
+			return nil, err
+		}
+
+		if param.Names != nil {
+			for _, name := range param.Names { // one param has several names when their type the same
+				results = append(results, types.NewVar(name.Pos(), nil, name.Name, tt))
+			}
+		} else { // unnamed
+			results = append(results, types.NewVar(param.Pos(), nil, "", tt))
+		}
+		return results, nil
+	}
+
+	var err error
 	if funcType.Params != nil {
 		vars = make([]*types.Var, 0, len(funcType.Params.List))
 		for _, param := range funcType.Params.List {
-			tt, err := l.mapAstExprToTypesType(param.Type)
-			if err != nil {
+			if vars, err = mapField(param, vars); err != nil {
 				return nil, err
-			}
-
-			for _, name := range param.Names { // one param has several names when their type the same
-				vars = append(vars, types.NewVar(name.Pos(), nil, name.Name, tt))
 			}
 		}
 	}
@@ -926,17 +938,8 @@ func (l *irLoader) mapAstFuncTypeToTypesFunc(name string, funcType *ast.FuncType
 	if funcType.Results != nil {
 		res = make([]*types.Var, 0, len(funcType.Results.List))
 		for _, param := range funcType.Results.List {
-			tt, err := l.mapAstExprToTypesType(param.Type)
-			if err != nil {
+			if res, err = mapField(param, res); err != nil {
 				return nil, err
-			}
-
-			if param.Names != nil { // named return
-				for _, name := range param.Names {
-					res = append(res, types.NewVar(name.Pos(), nil, name.Name, tt))
-				}
-			} else { // unnamed
-				res = append(res, types.NewVar(param.Pos(), nil, "", tt))
 			}
 		}
 	}
@@ -959,6 +962,13 @@ func (l *irLoader) mapAstExprToTypesType(param ast.Expr) (types.Type, error) {
 		}
 
 		return types.NewPointer(el), nil
+	case *ast.FuncType:
+		fn, err := l.mapAstFuncTypeToTypesFunc("", p)
+		if err != nil {
+			return nil, err
+		}
+
+		return fn.Type(), nil
 	case *ast.Ellipsis:
 		//TODO
 		return nil, l.errorf(int(p.Pos()), nil, "on mapAstExprToTypesType: variadic types not supported")

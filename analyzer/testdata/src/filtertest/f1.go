@@ -1086,6 +1086,8 @@ func (foo) FooWithResult(_ string) string                     { return "" }
 func (foo) FooWithResult2(_ string) (io.Closer, error)        { return nil, nil }
 func (foo) FooWithResult3(_ string) (cl io.Closer, err error) { return }
 func (foo) FooGrouped(_, _ io.Closer)                         {}
+func (foo) FooFunc(_ func(x string) error) error              { return nil }
+func (foo) FooFunc2(func(string) error) error             { return nil }
 
 func dynamicInterface() {
 	var f foo
@@ -1097,4 +1099,6 @@ func dynamicInterface() {
 	f.FooWithResult("")    // want `\Qdynamic interface 5`
 	f.FooWithResult2("")   // want `\Qdynamic interface 6`
 	f.FooWithResult3("")   // want `\Qdynamic interface 7`
+	f.FooFunc(nil)         // want `\Qdynamic interface 8`
+	f.FooFunc2(nil)        // want `\Qdynamic interface 8.1`
 }

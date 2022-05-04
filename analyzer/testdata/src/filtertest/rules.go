@@ -301,4 +301,8 @@ func testRules(m dsl.Matcher) {
 		Where(m["x"].Type.Implements(`interface { FooWithResult2(k string) (io.Closer, error) }`)).Report(`dynamic interface 6`)
 	m.Match(`$x.FooWithResult3($_)`).
 		Where(m["x"].Type.Implements(`interface { FooWithResult3(k string) (cl io.Closer, err error) }`)).Report(`dynamic interface 7`)
+	m.Match(`$x.FooFunc($_)`).
+		Where(m["x"].Type.Implements(`interface { FooFunc(x func (x string) error) error }`)).Report(`dynamic interface 8`)
+	m.Match(`$x.FooFunc2($_)`).
+		Where(m["x"].Type.Implements(`interface { FooFunc2(func (string) error) error }`)).Report(`dynamic interface 8.1`)
 }
