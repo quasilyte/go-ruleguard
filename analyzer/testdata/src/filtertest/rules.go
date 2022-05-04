@@ -289,20 +289,22 @@ func testRules(m dsl.Matcher) {
 		Where(m["x"].Type.Implements(`interface { FooString(k string) }`)).Report(`dynamic interface 1`)
 	m.Match(`$x.FooMap($_)`).
 		Where(m["x"].Type.Implements(`interface { FooMap(k map[string]string) }`)).Report(`dynamic interface 2`)
+	m.Match(`$x.FooArray($_)`).
+		Where(m["x"].Type.Implements(`interface { FooArray(k [32]byte) }`)).Report(`dynamic interface 3`)
 	m.Match(`$x.FooChan($_)`).
-		Where(m["x"].Type.Implements(`interface { FooChan(k chan string) }`)).Report(`dynamic interface 3`)
+		Where(m["x"].Type.Implements(`interface { FooChan(k chan string) }`)).Report(`dynamic interface 4`)
 	m.Match(`$x.FooType($_)`).
-		Where(m["x"].Type.Implements(`interface { FooType(k io.Closer) }`)).Report(`dynamic interface 4`)
+		Where(m["x"].Type.Implements(`interface { FooType(k io.Closer) }`)).Report(`dynamic interface 5`)
 	m.Match(`$x.FooGrouped($*_)`).
-		Where(m["x"].Type.Implements(`interface { FooGrouped(k io.Closer, l io.Closer) }`)).Report(`dynamic interface 4.1`)
+		Where(m["x"].Type.Implements(`interface { FooGrouped(k io.Closer, l io.Closer) }`)).Report(`dynamic interface 6`)
 	m.Match(`$x.FooWithResult($_)`).
-		Where(m["x"].Type.Implements(`interface { FooWithResult(k string) string }`)).Report(`dynamic interface 5`)
+		Where(m["x"].Type.Implements(`interface { FooWithResult(k string) string }`)).Report(`dynamic interface 7`)
 	m.Match(`$x.FooWithResult2($_)`).
-		Where(m["x"].Type.Implements(`interface { FooWithResult2(k string) (io.Closer, error) }`)).Report(`dynamic interface 6`)
+		Where(m["x"].Type.Implements(`interface { FooWithResult2(k string) (io.Closer, error) }`)).Report(`dynamic interface 8`)
 	m.Match(`$x.FooWithResult3($_)`).
-		Where(m["x"].Type.Implements(`interface { FooWithResult3(k string) (cl io.Closer, err error) }`)).Report(`dynamic interface 7`)
+		Where(m["x"].Type.Implements(`interface { FooWithResult3(k string) (cl io.Closer, err error) }`)).Report(`dynamic interface 9`)
 	m.Match(`$x.FooFunc($_)`).
-		Where(m["x"].Type.Implements(`interface { FooFunc(x func (x string) error) error }`)).Report(`dynamic interface 8`)
+		Where(m["x"].Type.Implements(`interface { FooFunc(x func (x string) error) error }`)).Report(`dynamic interface 10`)
 	m.Match(`$x.FooFunc2($_)`).
-		Where(m["x"].Type.Implements(`interface { FooFunc2(func (string) error) error }`)).Report(`dynamic interface 8.1`)
+		Where(m["x"].Type.Implements(`interface { FooFunc2(func (string) error) error }`)).Report(`dynamic interface 11`)
 }

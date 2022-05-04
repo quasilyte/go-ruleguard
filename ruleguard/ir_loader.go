@@ -1004,7 +1004,6 @@ func (l *irLoader) mapAstExprToTypesType(param ast.Expr) (types.Type, error) {
 
 		return types.NewMap(key, val), nil
 	case *ast.ArrayType:
-		// TODO add variadic
 		arrLen, err := strconv.ParseInt(p.Len.(*ast.BasicLit).Value, 10, 64)
 		if err != nil {
 			return nil, l.errorf(int(p.Pos()), nil, "invalid length provided: "+err.Error())

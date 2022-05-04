@@ -1080,6 +1080,7 @@ type foo string
 
 func (foo) FooString(_ string)                                {}
 func (foo) FooMap(_ map[string]string)                        {}
+func (foo) FooArray(_ [32]byte)                               {}
 func (foo) FooChan(_ chan string)                             {}
 func (foo) FooType(_ io.Closer)                               {}
 func (foo) FooWithResult(_ string) string                     { return "" }
@@ -1087,18 +1088,19 @@ func (foo) FooWithResult2(_ string) (io.Closer, error)        { return nil, nil 
 func (foo) FooWithResult3(_ string) (cl io.Closer, err error) { return }
 func (foo) FooGrouped(_, _ io.Closer)                         {}
 func (foo) FooFunc(_ func(x string) error) error              { return nil }
-func (foo) FooFunc2(func(string) error) error             { return nil }
+func (foo) FooFunc2(func(string) error) error                 { return nil }
 
 func dynamicInterface() {
 	var f foo
 	f.FooString("")        // want `\Qdynamic interface 1`
 	f.FooMap(nil)          // want `\Qdynamic interface 2`
-	f.FooChan(nil)         // want `\Qdynamic interface 3`
-	f.FooType(nil)         // want `\Qdynamic interface 4`
-	f.FooGrouped(nil, nil) // want `\Qdynamic interface 4.1`
-	f.FooWithResult("")    // want `\Qdynamic interface 5`
-	f.FooWithResult2("")   // want `\Qdynamic interface 6`
-	f.FooWithResult3("")   // want `\Qdynamic interface 7`
-	f.FooFunc(nil)         // want `\Qdynamic interface 8`
-	f.FooFunc2(nil)        // want `\Qdynamic interface 8.1`
+	f.FooArray([32]byte{}) // want `\Qdynamic interface 3`
+	f.FooChan(nil)         // want `\Qdynamic interface 4`
+	f.FooType(nil)         // want `\Qdynamic interface 5`
+	f.FooGrouped(nil, nil) // want `\Qdynamic interface 6`
+	f.FooWithResult("")    // want `\Qdynamic interface 7`
+	f.FooWithResult2("")   // want `\Qdynamic interface 8`
+	f.FooWithResult3("")   // want `\Qdynamic interface 9`
+	f.FooFunc(nil)         // want `\Qdynamic interface 10`
+	f.FooFunc2(nil)        // want `\Qdynamic interface 11`
 }
