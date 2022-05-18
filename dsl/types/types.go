@@ -29,6 +29,9 @@ type (
 
 	// An Interface represents an interface type.
 	Interface struct{}
+
+	// A struct represents a struct type.
+	Struct struct{}
 )
 
 // NewArray returns a new array type for the given element type and length.
@@ -53,3 +56,13 @@ func NewPointer(elem Type) *Pointer { return nil }
 
 // Elem returns the element type for the given pointer.
 func (*Pointer) Elem() Type { return nil }
+
+func (*Struct) NumFields() int { return 0 }
+
+func (*Struct) Field(i int) *Var { return nil }
+
+type Var struct{}
+
+func (*Var) Embedded() bool { return false }
+
+func (*Var) Type() Type { return nil }
