@@ -8,6 +8,28 @@ import (
 	"github.com/quasilyte/go-ruleguard/dsl/types"
 )
 
+func embedsMutex(ctx *dsl.VarFilterContext) bool {
+	typ := ctx.Type.Underlying()
+	asPointer := types.AsPointer(typ)
+	if asPointer != nil {
+		typ = asPointer.Elem().Underlying()
+	}
+	asStruct := types.AsStruct(typ)
+	if asStruct == nil {
+		return false
+	}
+	mutexType := ctx.GetType(`sync.Mutex`)
+	i := 0
+	for i < asStruct.NumFields() {
+		field := asStruct.Field(i)
+		if field.Embedded() && types.Identical(field.Type(), mutexType) {
+			return true
+		}
+		i++
+	}
+	return false
+}
+
 func derefPointer(ptr *types.Pointer) *types.Pointer {
 	return types.AsPointer(ptr.Elem())
 }
@@ -160,5 +182,9 @@ func testRules(m dsl.Matcher) {
 
 	m.Match(`test($x, "indirection of 3 or more pointers")`).
 		Where(m["x"].Filter(tooManyPointers)).
+		Report(`true`)
+
+	m.Match(`test($x, "embeds a mutex")`).
+		Where(m["x"].Filter(embedsMutex)).
 		Report(`true`)
 }

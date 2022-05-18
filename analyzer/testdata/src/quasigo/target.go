@@ -1,6 +1,9 @@
 package quasigo
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
 func f() {
 	var i int
@@ -91,6 +94,23 @@ func f() {
 	test(new(*int), "indirection of 3 or more pointers")
 	test(new(int), "indirection of 3 or more pointers")
 	test(true, "indirection of 3 or more pointers")
+
+	test(withEmbeddedMutex1{}, "embeds a mutex")  // want `true`
+	test(withEmbeddedMutex2{}, "embeds a mutex")  // want `true`
+	test(&withEmbeddedMutex1{}, "embeds a mutex") // want `true`
+	test(&withEmbeddedMutex2{}, "embeds a mutex") // want `true`
+	{
+		var m withEmbeddedMutex2
+		test(m, "embeds a mutex")  // want `true`
+		test(&m, "embeds a mutex") // want `true`
+		m2 := &withEmbeddedMutex1{}
+		test(m2, "embeds a mutex")  // want `true`
+		test(&m2, "embeds a mutex") // OK: double pointer
+	}
+	test(withMutex{}, "embeds a mutex")       // OK: not embedded
+	test(withNestedMutex{}, "embeds a mutex") // OK: not embedded
+	test(withoutMutex{}, "embeds a mutex")    // OK: no mutex at all
+	test(1, "embeds a mutex")                 // OK: not a struct
 }
 
 type myString string
@@ -108,3 +128,26 @@ func (*stringerByPtr) String() string  { return "" }
 func (stringerByValue) String() string { return "" }
 
 func test(args ...interface{}) {}
+
+type withEmbeddedMutex1 struct {
+	sync.Mutex
+}
+
+type withEmbeddedMutex2 struct {
+	x int
+	sync.Mutex
+	y int
+}
+
+type withMutex struct {
+	mu sync.Mutex
+	x  int
+}
+
+type withNestedMutex struct {
+	nested withEmbeddedMutex1
+}
+
+type withoutMutex struct {
+	x int
+}
