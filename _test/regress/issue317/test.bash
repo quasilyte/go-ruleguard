@@ -4,7 +4,7 @@ apk update && apk add git
 
 cd /root
 
-GO111MODULE=on go get -v github.com/quasilyte/go-ruleguard/cmd/ruleguard@master
+GO111MODULE=on go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@master
 go get -v github.com/quasilyte/go-ruleguard/dsl
 go get -v github.com/quasilyte/uber-rules
 go get -v github.com/quasilyte/go-ruleguard/rules
