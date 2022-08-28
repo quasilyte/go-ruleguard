@@ -2,7 +2,7 @@ set -e
 
 cd /root
 
-GO111MODULE=on go get -v github.com/quasilyte/go-ruleguard/cmd/ruleguard@master
+GO111MODULE=on go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@master
 go get -v github.com/quasilyte/go-ruleguard/dsl
 
 # Try running with different rules file order.
