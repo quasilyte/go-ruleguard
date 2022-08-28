@@ -48,6 +48,7 @@ var tests = []struct {
 	{name: "localfunc"},
 	{name: "goversion", flags: map[string]string{"go": "1.16"}},
 	{name: "imports"},
+	{name: "generics"},
 
 	{name: "quickfix", quickfixes: true},
 }

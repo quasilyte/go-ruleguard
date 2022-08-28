@@ -9,6 +9,7 @@ require (
 	github.com/quasilyte/go-ruleguard/rules v0.0.0-20211022131956-028d6511ab71
 	github.com/quasilyte/gogrep v0.0.0-20220120141003-628d8b3623b5
 	github.com/quasilyte/stdinfo v0.0.0-20220114132959-f7386bf02567
+	golang.org/x/exp/typeparams v0.0.0-20220827204233-334a2380cb91
 	golang.org/x/tools v0.1.12
 )
 
