@@ -436,12 +436,18 @@ func makeTypeSizeConstFilter(src, varname string, op token.Token, rhsValue const
 		if list, ok := params.subNode(varname).(gogrep.ExprSlice); ok {
 			return exprListFilterApply(src, list, func(x ast.Expr) bool {
 				typ := params.typeofNode(x)
+				if isTypeParam(typ) {
+					return false
+				}
 				lhsValue := constant.MakeInt64(params.ctx.Sizes.Sizeof(typ))
 				return constant.Compare(lhsValue, op, rhsValue)
 			})
 		}
 
 		typ := params.typeofNode(params.subExpr(varname))
+		if isTypeParam(typ) {
+			return filterFailure(src)
+		}
 		lhsValue := constant.MakeInt64(params.ctx.Sizes.Sizeof(typ))
 		if constant.Compare(lhsValue, op, rhsValue) {
 			return filterSuccess
@@ -453,8 +459,11 @@ func makeTypeSizeConstFilter(src, varname string, op token.Token, rhsValue const
 func makeTypeSizeFilter(src, varname string, op token.Token, rhsVarname string) filterFunc {
 	return func(params *filterParams) matchFilterResult {
 		lhsTyp := params.typeofNode(params.subExpr(varname))
-		lhsValue := constant.MakeInt64(params.ctx.Sizes.Sizeof(lhsTyp))
 		rhsTyp := params.typeofNode(params.subExpr(rhsVarname))
+		if isTypeParam(lhsTyp) || isTypeParam(rhsTyp) {
+			return filterFailure(src)
+		}
+		lhsValue := constant.MakeInt64(params.ctx.Sizes.Sizeof(lhsTyp))
 		rhsValue := constant.MakeInt64(params.ctx.Sizes.Sizeof(rhsTyp))
 		if constant.Compare(lhsValue, op, rhsValue) {
 			return filterSuccess

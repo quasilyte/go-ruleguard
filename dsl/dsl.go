@@ -222,6 +222,9 @@ func (SinkType) Is(typ string) bool { return boolResult }
 // ExprType describes a type of a matcher expr.
 type ExprType struct {
 	// Size represents expression type size in bytes.
+	//
+	// For expressions of unknown size, like type params in generics,
+	// any filter using this operand will fail.
 	Size int
 }
 
