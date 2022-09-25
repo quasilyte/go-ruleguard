@@ -68,7 +68,8 @@ Flags:
 Create a test `rules.go` file:
 
 ```go
-// +build ignore
+//go:build ruleguard
+// +build ruleguard
 
 package gorules
 
@@ -162,6 +163,55 @@ The `rules.go` file is written in terms of [`dsl`](https://godoc.org/github.com/
 A rule definition always starts with [`Match(patterns...)`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Match) method call and ends with [`Report(message)`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Report) method call.
 
 There can be additional calls in between these two. For example, a [`Where(cond)`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Where) call applies constraints to a match to decide whether its accepted or rejected. So even if there is a match for a pattern, it won't produce a report message unless it satisfies a `Where()` condition.
+
+## Troubleshooting
+
+For ruleguard to work the `dsl` package must be available at _runtime_. If it's not, you are going to see an error like:
+
+```
+$ ruleguard -rules rules.go .
+ruleguard: load rules: parse rules file: typechecker error: rules.go:6:8: could not import github.com/quasilyte/go-ruleguard/dsl (can't find import: "github.com/quasilyte/go-ruleguard/dsl")
+```
+
+This is fixed by adding the dsl package to the module:
+
+```
+$ ruleguard-test go get github.com/quasilyte/go-ruleguard/dsl
+go: downloading github.com/quasilyte/go-ruleguard v0.3.18
+go: downloading github.com/quasilyte/go-ruleguard/dsl v0.3.21
+go: added github.com/quasilyte/go-ruleguard/dsl v0.3.21
+$ ruleguard-test ruleguard -rules rules.go .
+.../test.go:6:5: boolExprSimplify: suggestion: 1 == 0 (rules.go:9)
+```
+
+If you have followed past advise of using a build constraint in the rules.go file, like this:
+
+```
+$ ruleguard-test head -4 rules.go
+//go:build ignore
+// +build ignore
+
+package gorules
+```
+
+you are going to notice that `go.mod` file lists the dsl as an indirect dependency:
+
+```
+$ grep dsl go.mod
+require github.com/quasilyte/go-ruleguard/dsl v0.3.21 // indirect
+```
+
+If you run `go mod tidy` now, you are going to notice the the dsl package dissapears from the `go.mod` file:
+
+```
+$ go mod tidy
+$ grep dsl go.mod
+$ 
+```
+
+This is because `go mod tidy` behaves as if all the build constaints are in effect, _with the exception of `ignore`_. [This is documented in the go website](https://go.dev/ref/mod#go-mod-tidy).
+
+This is fixed by using a different build constraint, like `ruleguard` or `rules`.
 
 ## Documentation
 
