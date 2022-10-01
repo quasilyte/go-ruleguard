@@ -138,7 +138,7 @@ func TestRenderMessage(t *testing.T) {
 			Node:    &ast.Ident{Name: "dd"},
 			Capture: capture,
 		}
-		have := rr.renderMessage(test.msg, astMatchData{match: m}, false)
+		have := rr.renderMessage(test.msg, matchData{match: m}, false)
 		if diff := cmp.Diff(have, test.want); diff != "" {
 			t.Errorf("render %s %v:\n(+want -have)\n%s", test.msg, test.vars, diff)
 		}

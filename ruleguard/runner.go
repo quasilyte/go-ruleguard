@@ -183,7 +183,7 @@ func (rr *rulesRunner) runCommentRules(comment *ast.Comment) {
 	file := rr.ctx.Fset.File(comment.Pos())
 
 	for _, rule := range rr.rules.universal.commentRules {
-		var m commentMatchData
+		var m matchData
 		if rule.captureGroups {
 			result := rule.pat.FindStringSubmatchIndex(comment.Text)
 			if result == nil {
@@ -200,13 +200,13 @@ func (rr *rulesRunner) runCommentRules(comment *ast.Comment) {
 				// Consider this pattern: `(?P<x>foo)|(bar)`.
 				// If we have `bar` input string, <x> will remain empty.
 				if beginPos < 0 || endPos < 0 {
-					m.capture = append(m.capture, gogrep.CapturedNode{
+					m.match.Capture = append(m.match.Capture, gogrep.CapturedNode{
 						Name: name,
 						Node: &ast.Comment{Slash: comment.Pos()},
 					})
 					continue
 				}
-				m.capture = append(m.capture, gogrep.CapturedNode{
+				m.match.Capture = append(m.match.Capture, gogrep.CapturedNode{
 					Name: name,
 					Node: &ast.Comment{
 						Slash: file.Pos(beginPos + file.Offset(comment.Pos())),
@@ -214,7 +214,7 @@ func (rr *rulesRunner) runCommentRules(comment *ast.Comment) {
 					},
 				})
 			}
-			m.node = &ast.Comment{
+			m.match.Node = &ast.Comment{
 				Slash: file.Pos(result[0] + file.Offset(comment.Pos())),
 				Text:  comment.Text[result[0]:result[1]],
 			}
@@ -224,7 +224,7 @@ func (rr *rulesRunner) runCommentRules(comment *ast.Comment) {
 			if result == nil {
 				continue
 			}
-			m.node = &ast.Comment{
+			m.match.Node = &ast.Comment{
 				Slash: file.Pos(result[0] + file.Offset(comment.Pos())),
 				Text:  comment.Text[result[0]:result[1]],
 			}
@@ -307,7 +307,7 @@ func (rr *rulesRunner) reject(rule goRule, reason string, m matchData) {
 	}
 }
 
-func (rr *rulesRunner) handleCommentMatch(rule goCommentRule, m commentMatchData) bool {
+func (rr *rulesRunner) handleCommentMatch(rule goCommentRule, m matchData) bool {
 	if rule.base.filter.fn != nil {
 		rr.filterParams.match = m
 		filterResult := rule.base.filter.fn(&rr.filterParams)
@@ -345,13 +345,13 @@ func (rr *rulesRunner) handleCommentMatch(rule goCommentRule, m commentMatchData
 
 func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 	if rule.filter.fn != nil || rule.do != nil {
-		rr.filterParams.match = astMatchData{match: m}
+		rr.filterParams.match = matchData{match: m}
 	}
 
 	if rule.filter.fn != nil {
 		filterResult := rule.filter.fn(&rr.filterParams)
 		if !filterResult.Matched() {
-			rr.reject(rule, filterResult.RejectReason(), astMatchData{match: m})
+			rr.reject(rule, filterResult.RejectReason(), matchData{match: m})
 			return false
 		}
 	}
@@ -379,9 +379,9 @@ func (rr *rulesRunner) handleMatch(rule goRule, m gogrep.MatchData) bool {
 			suggestText = rr.filterParams.suggestString
 		}
 	} else {
-		messageText = rr.renderMessage(rule.msg, astMatchData{match: m}, true)
+		messageText = rr.renderMessage(rule.msg, matchData{match: m}, true)
 		if rule.suggestion != "" {
-			suggestText = rr.renderMessage(rule.suggestion, astMatchData{match: m}, false)
+			suggestText = rr.renderMessage(rule.suggestion, matchData{match: m}, false)
 		}
 	}
 
