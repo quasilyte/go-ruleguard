@@ -7,9 +7,9 @@ require (
 	github.com/google/go-cmp v0.5.8
 	github.com/quasilyte/go-ruleguard/dsl v0.3.21
 	github.com/quasilyte/go-ruleguard/rules v0.0.0-20211022131956-028d6511ab71
-	github.com/quasilyte/gogrep v0.0.0-20220828223005-86e4605de09f
+	github.com/quasilyte/gogrep v0.0.0-20221002170714-e78263da2dd3
 	github.com/quasilyte/stdinfo v0.0.0-20220114132959-f7386bf02567
-	golang.org/x/exp/typeparams v0.0.0-20220827204233-334a2380cb91
+	golang.org/x/exp/typeparams v0.0.0-20221002003631-540bb7301a08
 	golang.org/x/tools v0.1.12
 )
 

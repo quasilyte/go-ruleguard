@@ -60,7 +60,7 @@ func BenchmarkEngineRun(b *testing.B) {
 	}
 	`
 	e := benchNewEngine(b, src)
-	ctx, files := benchRunContext(b)
+	ctx, files := benchRunContext(e, b)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -115,7 +115,7 @@ func embedsMutex(ctx *dsl.VarFilterContext) bool {
 }
 	`
 	e := benchNewEngine(b, src)
-	ctx, files := benchRunContext(b)
+	ctx, files := benchRunContext(e, b)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -127,7 +127,7 @@ func embedsMutex(ctx *dsl.VarFilterContext) bool {
 	}
 }
 
-func benchRunContext(b *testing.B) (*RunContext, []*ast.File) {
+func benchRunContext(e *Engine, b *testing.B) (*RunContext, []*ast.File) {
 	b.Helper()
 
 	fset := token.NewFileSet()
@@ -163,6 +163,7 @@ func benchRunContext(b *testing.B) (*RunContext, []*ast.File) {
 		Report: func(data *ReportData) {
 			// Do nothing.
 		},
+		State: NewRunnerState(e),
 	}
 
 	return ctx, files

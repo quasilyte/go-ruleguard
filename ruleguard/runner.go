@@ -56,47 +56,77 @@ type rulesRunner struct {
 	// For named submatches we can't use it as the node can be located
 	// deeper into the tree than the current node.
 	// In those cases we need a more complicated algorithm.
-	nodePath nodePath
+	nodePath *nodePath
 
 	filterParams filterParams
 }
 
+func newRunnerState(es *engineState) *RunnerState {
+	gogrepState := gogrep.NewMatcherState()
+	gogrepSubState := gogrep.NewMatcherState()
+	state := &RunnerState{
+		gogrepState:    gogrepState,
+		gogrepSubState: gogrepSubState,
+		nodePath:       newNodePath(),
+		evalEnv:        es.env.GetEvalEnv(),
+		typematchState: typematch.NewMatcherState(),
+		object:         &rulesRunner{},
+	}
+	return state
+}
+
+func (state *RunnerState) Reset() {
+	state.nodePath.stack = state.nodePath.stack[:0]
+	state.evalEnv.Stack.Reset()
+}
+
 func newRulesRunner(ctx *RunContext, buildContext *build.Context, state *engineState, rules *goRuleSet) *rulesRunner {
+	runnerState := ctx.State
+	if runnerState == nil {
+		runnerState = newRunnerState(state)
+	} else {
+		runnerState.Reset()
+	}
+
 	importer := newGoImporter(state, goImporterConfig{
 		fset:         ctx.Fset,
 		debugImports: ctx.DebugImports,
 		debugPrint:   ctx.DebugPrint,
 		buildContext: buildContext,
 	})
-	gogrepState := gogrep.NewMatcherState()
+	gogrepState := runnerState.gogrepState
 	gogrepState.Types = ctx.Types
-	gogrepSubState := gogrep.NewMatcherState()
+	gogrepSubState := runnerState.gogrepSubState
 	gogrepSubState.Types = ctx.Types
-	evalEnv := state.env.GetEvalEnv()
-	rr := &rulesRunner{
+	evalEnv := runnerState.evalEnv
+
+	rr := runnerState.object
+	*rr = rulesRunner{
 		bgContext:      context.Background(),
 		ctx:            ctx,
 		importer:       importer,
 		rules:          rules,
 		gogrepState:    gogrepState,
 		gogrepSubState: gogrepSubState,
-		nodePath:       newNodePath(),
+		nodePath:       runnerState.nodePath,
 		truncateLen:    ctx.TruncateLen,
 		filterParams: filterParams{
-			typematchState: typematch.NewMatcherState(),
+			typematchState: runnerState.typematchState,
 			env:            evalEnv,
 			importer:       importer,
 			ctx:            ctx,
 		},
 	}
+
 	evalEnv.Stack.Push(&rr.filterParams)
 	if ctx.TruncateLen == 0 {
 		rr.truncateLen = 60
 	}
 	rr.filterParams.nodeText = rr.nodeText
 	rr.filterParams.nodeString = rr.nodeString
-	rr.filterParams.nodePath = &rr.nodePath
+	rr.filterParams.nodePath = rr.nodePath
 	rr.filterParams.gogrepSubState = &rr.gogrepSubState
+
 	return rr
 }
 
@@ -160,7 +190,7 @@ func (rr *rulesRunner) run(f *ast.File) error {
 
 	if rr.rules.universal.categorizedNum != 0 {
 		var inspector astWalker
-		inspector.nodePath = &rr.nodePath
+		inspector.nodePath = rr.nodePath
 		inspector.filterParams = &rr.filterParams
 		inspector.Walk(f, func(n ast.Node, tag nodetag.Value) {
 			rr.runRules(n, tag)
