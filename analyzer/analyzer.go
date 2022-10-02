@@ -39,6 +39,8 @@ var Analyzer = &analysis.Analyzer{
 // This should only be useful for analyzer testing.
 var ForceNewEngine = false
 
+var runnerStatePool sync.Pool
+
 var (
 	globalEngineMu      sync.Mutex
 	globalEngine        *ruleguard.Engine
@@ -135,6 +137,14 @@ func runAnalyzer(pass *analysis.Pass) (interface{}, error) {
 		},
 	}
 
+	if runnerStatePool.New != nil {
+		state := runnerStatePool.Get().(*ruleguard.RunnerState)
+		ctx.State = state
+		defer func() {
+			runnerStatePool.Put(state)
+		}()
+	}
+
 	for _, f := range pass.Files {
 		if err := engine.Run(ctx, f); err != nil {
 			return nil, err
@@ -166,6 +176,11 @@ func prepareEngine() (*ruleguard.Engine, error) {
 		return nil, err
 	}
 	globalEngine = engine
+	runnerStatePool = sync.Pool{
+		New: func() interface{} {
+			return ruleguard.NewRunnerState(globalEngine)
+		},
+	}
 	return engine, nil
 }
 
