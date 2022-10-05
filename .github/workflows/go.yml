@@ -13,7 +13,7 @@
           "with": {"go-version": 1.18},
           id: "go",
         },
-        {name: "Check out code into the Go module directory", uses: "actions/checkout@v1"},
+        {name: "Check out code into the Go module directory", uses: "actions/checkout@v3.1.0"},
         {name: "Linter", run: "make lint"},
         {name: "Test", run: "make test"},
         {name: "Test release", run: "make test-release"},
