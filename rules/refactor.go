@@ -16,4 +16,8 @@ func sortFuncs(m dsl.Matcher) {
 	m.Match(`sort.Slice($s, func($i, $j int) bool { return $s[$i] < $s[$j] })`).
 		Where(m["s"].Type.Is(`[]int`)).
 		Suggest(`sort.Ints($s)`)
+
+	m.Match(`sort.Slice($s, func($i, $j int) bool { return $s[$i] < $s[$j] })`).
+		Where(m["s"].Type.Is(`[]float64`)).
+		Suggest(`sort.Float64s($s)`)
 }
