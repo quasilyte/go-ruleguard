@@ -201,7 +201,7 @@ $ grep dsl go.mod
 require github.com/quasilyte/go-ruleguard/dsl v0.3.21 // indirect
 ```
 
-If you run `go mod tidy` now, you are going to notice the the dsl package dissapears from the `go.mod` file:
+If you run `go mod tidy` now, you are going to notice the dsl package disappears from the `go.mod` file:
 
 ```
 $ go mod tidy
@@ -209,7 +209,7 @@ $ grep dsl go.mod
 $ 
 ```
 
-This is because `go mod tidy` behaves as if all the build constaints are in effect, _with the exception of `ignore`_. [This is documented in the go website](https://go.dev/ref/mod#go-mod-tidy).
+This is because `go mod tidy` behaves as if all the build constraints are in effect, _with the exception of `ignore`_. [This is documented in the go website](https://go.dev/ref/mod#go-mod-tidy).
 
 This is fixed by using a different build constraint, like `ruleguard` or `rules`.
 
