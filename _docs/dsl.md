@@ -15,7 +15,7 @@ You write the rules, ruleguard tries to execute them precisely and efficiently.
 We can describe a file structure like this:
 
 1. It has a package clause (package name should be `gorules`).
-2. An import clause (at the bare minimum, you'll need [`dsl`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl) package).
+2. An import clause (at the bare minimum, you'll need [`dsl`](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl) package).
 3. Function declarations.
 
 There are 3 kinds of functions you can declare:
@@ -26,14 +26,14 @@ There are 3 kinds of functions you can declare:
 
 ### Matcher functions
 
-Every **matcher function** accepts exactly 1 argument, a [`dsl.Matcher`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher), and defines some **rules**.
+Every **matcher function** accepts exactly 1 argument, a [`dsl.Matcher`](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl#Matcher), and defines some **rules**.
 
-Every **rule** definition starts with a [`Match()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Match) or [`MatchComment()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.MatchComment) method call.
+Every **rule** definition starts with a [`Match()`](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl#Matcher.Match) or [`MatchComment()`](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl#Matcher.MatchComment) method call.
 
 * For `Match()`, you specify one or more [AST patterns](https://github.com/quasilyte/gogrep) that should represent what kind of Go code a rule is supposed to match.
 * For `MatchComment()`, you provide one or more regular expressions that should match a comment of interest.
 
-Another mandatory part is [`Report()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Report) or [`Suggest()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Suggest) that describe a rule match action. `Report()` will print a warning message while `Suggest()` can be used to provide a quickfix action (a syntax rewrite pattern).
+Another mandatory part is [`Report()`](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl#Matcher.Report) or [`Suggest()`](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl#Matcher.Suggest) that describe a rule match action. `Report()` will print a warning message while `Suggest()` can be used to provide a quickfix action (a syntax rewrite pattern).
 
 Here is a small yet useful, example of ruleguard file:
 
@@ -85,7 +85,7 @@ The rule is matched if:
 1. At least 1 AST pattern from `Match()` is matched
 2. Filters from `Where()` accept the given match
 
-There are 2 types of filters that can be used in [`Where()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Where) call:
+There are 2 types of filters that can be used in [`Where()`](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl#Matcher.Where) call:
 
 1. Submatch (named variable-based) filters
 2. Context filters (current file, etc)
@@ -124,7 +124,7 @@ When using `MatchComment`, submatches will have a type of `*ast.Comment`. Text-r
 
 The filter concept is crucial to avoid false-positives in rules.
 
-Please refer to the godoc page of a [`dsl`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl) package to get an up-to-date list of supported filters.
+Please refer to the godoc page of a [`dsl`](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl) package to get an up-to-date list of supported filters.
 
 ## Custom filters
 
@@ -187,7 +187,7 @@ When you use a type filter, the parser must know how to match a given type again
 
 In normal Go programs, the unqualified type name like `Foo` makes sense, it refers to a current package symbol table.
 
-In ruleguard files, you either have to [`Import()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Import) the package and use the qualified name or use a fully-qualified name without import.
+In ruleguard files, you either have to [`Import()`](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl#Matcher.Import) the package and use the qualified name or use a fully-qualified name without import.
 
 Here are two ways to use a `Bar` type from the `foo/bar` package in filters:
 
@@ -215,7 +215,7 @@ m.Import(`html/template`)
 
 ### Type pattern matching
 
-Methods like [`ExprType.Is()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#ExprType.Is) accept a string argument that describes a Go type. It can be as simple as `"[]string"` that matches only a string slice, but it can also include a pattern-like variables:
+Methods like [`ExprType.Is()`](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl#ExprType.Is) accept a string argument that describes a Go type. It can be as simple as `"[]string"` that matches only a string slice, but it can also include a pattern-like variables:
 
 * `[]$T` matches any slice.
 * `[$len]$T` matches any array.
@@ -227,7 +227,7 @@ Methods like [`ExprType.Is()`](https://godoc.org/github.com/quasilyte/go-rulegua
 * `struct{$*_; $x}` struct that has $x-typed last field.
 
 Note: when matching types, make sure to think whether you need to match a type or the **underlying type**.
-To match the underlying type, use [`ExprType.Underlying()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#ExprType.Underlying) method.
+To match the underlying type, use [`ExprType.Underlying()`](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl#ExprType.Underlying) method.
 
 You may recognize that it's the same pattern behavior as in AST patterns.
 
@@ -312,7 +312,7 @@ In case if you don't want to have a direct bundle dependency, run a `go get` bef
 
 Installed bundle packages can be imported as normal Go packages.
 
-Importing the bundle package is not enough to add its rules, you need to call [`ImportRules()`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#ImportRules) function for that.
+Importing the bundle package is not enough to add its rules, you need to call [`ImportRules()`](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl#ImportRules) function for that.
 
 ```go
 package gorules
@@ -352,7 +352,7 @@ It’s possible to use an empty (`""`) prefix, but you’ll risk getting a name 
 
 ### Creating a ruleguard bundle
 
-A package that exports rules must define a [`Bundle`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Bundle) object:
+A package that exports rules must define a [`Bundle`](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl#Bundle) object:
 
 ```go
 // Bundle holds the rules package metadata.
