@@ -49,7 +49,8 @@ func (e *engine) LoadedGroups() []GoRuleGroup {
 
 func (e *engine) SetLoadedGroups(groups []GoRuleGroup) {
 	e.ruleSet.groups = make(map[string]*GoRuleGroup, len(groups))
-	for _, gr := range groups {
+	for i := range groups {
+		gr := groups[i]
 		e.ruleSet.groups[gr.Name] = &gr
 	}
 }
