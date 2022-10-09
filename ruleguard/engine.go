@@ -50,10 +50,12 @@ func (e *engine) LoadedGroups() []GoRuleGroup {
 
 func (e *engine) FilterLoadedGroups(name string) {
 	var filteredRules [nodetag.NumBuckets][]goRule
+	var num int
 	for tag, ruleGroup := range e.ruleSet.universal.rulesByTag {
 		for _, rule := range ruleGroup { // can we put whole group?
 			if rule.group.Name == name {
 				filteredRules[tag] = append(filteredRules[tag], rule)
+				num++
 			}
 		}
 	}
@@ -62,6 +64,7 @@ func (e *engine) FilterLoadedGroups(name string) {
 	for _, rule := range e.ruleSet.universal.commentRules {
 		if rule.base.group.Name == name {
 			commentRules = append(commentRules, rule)
+			num++
 		}
 	}
 
@@ -72,9 +75,11 @@ func (e *engine) FilterLoadedGroups(name string) {
 		}
 	}
 
+	e.ruleSet = &goRuleSet{universal: &scopedGoRuleSet{}}
 	e.ruleSet.groups = filteredGroupRules
 	e.ruleSet.universal.rulesByTag = filteredRules
 	e.ruleSet.universal.commentRules = commentRules
+	e.ruleSet.universal.categorizedNum = num
 }
 
 func (e *engine) Load(ctx *LoadContext, buildContext *build.Context, filename string, r io.Reader) error {

@@ -69,7 +69,9 @@ func (e *Engine) LoadedGroups() []GoRuleGroup {
 }
 
 func (e *Engine) FilterLoadedGroups(name string) {
-	e.impl.FilterLoadedGroups(name)
+	impl := *e.impl
+	impl.FilterLoadedGroups(name)
+	e.impl = &impl
 }
 
 // Run executes all loaded rules on a given file.
