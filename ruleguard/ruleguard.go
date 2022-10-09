@@ -68,6 +68,10 @@ func (e *Engine) LoadedGroups() []GoRuleGroup {
 	return e.impl.LoadedGroups()
 }
 
+func (e *Engine) SetLoadedGroups(groups []GoRuleGroup) {
+	e.impl.SetLoadedGroups(groups)
+}
+
 // Run executes all loaded rules on a given file.
 // Matched rules invoke `RunContext.Report()` method.
 //

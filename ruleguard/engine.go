@@ -47,6 +47,13 @@ func (e *engine) LoadedGroups() []GoRuleGroup {
 	return result
 }
 
+func (e *engine) SetLoadedGroups(groups []GoRuleGroup) {
+	e.ruleSet.groups = make(map[string]*GoRuleGroup, len(groups))
+	for _, gr := range groups {
+		e.ruleSet.groups[gr.Name] = &gr
+	}
+}
+
 func (e *engine) Load(ctx *LoadContext, buildContext *build.Context, filename string, r io.Reader) error {
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
