@@ -8,7 +8,7 @@
 
 ## Overview
 
-[analysis](https://godoc.org/golang.org/x/tools/go/analysis)-based Go linter that runs dynamically loaded rules.
+[analysis](https://pkg.go.dev/golang.org/x/tools/go/analysis)-based Go linter that runs dynamically loaded rules.
 
 You write the rules, `ruleguard` checks whether they are satisfied.
 
@@ -158,11 +158,11 @@ First, it parses [ruleguard](_docs/dsl.md) files (e.g. `rules.go`) during the st
 
 Loaded rules are then used to check the specified targets (Go files, packages).
 
-The `rules.go` file is written in terms of [`dsl`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl) API. Ruleguard files contain a set of functions that serve as a rule groups. Every such function accepts a single [`dsl.Matcher`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher) argument that is then used to define and configure rules inside the group.
+The `rules.go` file is written in terms of [`dsl`](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl) API. Ruleguard files contain a set of functions that serve as a rule groups. Every such function accepts a single [`dsl.Matcher`](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl#Matcher) argument that is then used to define and configure rules inside the group.
 
-A rule definition always starts with [`Match(patterns...)`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Match) method call and ends with [`Report(message)`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Report) method call.
+A rule definition always starts with [`Match(patterns...)`](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl#Matcher.Match) method call and ends with [`Report(message)`](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl#Matcher.Report) method call.
 
-There can be additional calls in between these two. For example, a [`Where(cond)`](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl#Matcher.Where) call applies constraints to a match to decide whether its accepted or rejected. So even if there is a match for a pattern, it won't produce a report message unless it satisfies a `Where()` condition.
+There can be additional calls in between these two. For example, a [`Where(cond)`](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl#Matcher.Where) call applies constraints to a match to decide whether its accepted or rejected. So even if there is a match for a pattern, it won't produce a report message unless it satisfies a `Where()` condition.
 
 ## Troubleshooting
 
@@ -201,7 +201,7 @@ $ grep dsl go.mod
 require github.com/quasilyte/go-ruleguard/dsl v0.3.21 // indirect
 ```
 
-If you run `go mod tidy` now, you are going to notice the the dsl package dissapears from the `go.mod` file:
+If you run `go mod tidy` now, you are going to notice the dsl package disappears from the `go.mod` file:
 
 ```
 $ go mod tidy
@@ -209,7 +209,7 @@ $ grep dsl go.mod
 $ 
 ```
 
-This is because `go mod tidy` behaves as if all the build constaints are in effect, _with the exception of `ignore`_. [This is documented in the go website](https://go.dev/ref/mod#go-mod-tidy).
+This is because `go mod tidy` behaves as if all the build constraints are in effect, _with the exception of `ignore`_. [This is documented in the go website](https://go.dev/ref/mod#go-mod-tidy).
 
 This is fixed by using a different build constraint, like `ruleguard` or `rules`.
 
@@ -217,8 +217,8 @@ This is fixed by using a different build constraint, like `ruleguard` or `rules`
 
 * [Ruleguard by example](https://go-ruleguard.github.io/by-example/) tour
 * [Ruleguard files](_docs/dsl.md) format documentation
-* [dsl package](https://godoc.org/github.com/quasilyte/go-ruleguard/dsl) reference
-* [ruleguard package](https://godoc.org/github.com/quasilyte/go-ruleguard/ruleguard) reference
+* [dsl package](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl) reference
+* [ruleguard package](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/ruleguard) reference
 * Introduction article: [EN](https://quasilyte.dev/blog/post/ruleguard/), [RU](https://habr.com/ru/post/481696/)
 * [Using ruleguard from the golangci-lint](https://quasilyte.dev/blog/post/ruleguard/#using-from-the-golangci-lint)
 
