@@ -100,7 +100,7 @@ func exposedMutex(m dsl.Matcher) {
 
 	m.Match(`type $name struct { $*_; sync.RWMutex; $*_ }`).
 		Where(isExported(m["name"])).
-		Report("don not embed sync.RWMutex")
+		Report("do not embed sync.RWMutex")
 }
 ```
 
@@ -162,7 +162,7 @@ The `rules.go` file is written in terms of [`dsl`](https://pkg.go.dev/github.com
 
 A rule definition always starts with [`Match(patterns...)`](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl#Matcher.Match) method call and ends with [`Report(message)`](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl#Matcher.Report) method call.
 
-There can be additional calls in between these two. For example, a [`Where(cond)`](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl#Matcher.Where) call applies constraints to a match to decide whether its accepted or rejected. So even if there is a match for a pattern, it won't produce a report message unless it satisfies a `Where()` condition.
+There can be additional calls in between these two. For example, a [`Where(cond)`](https://pkg.go.dev/github.com/quasilyte/go-ruleguard/dsl#Matcher.Where) call applies constraints to a match to decide whether it's accepted or rejected. So even if there is a match for a pattern, it won't produce a report message unless it satisfies a `Where()` condition.
 
 ## Troubleshooting
 
