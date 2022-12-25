@@ -10,6 +10,7 @@ import (
 	"go/types"
 	"io/ioutil"
 	"regexp"
+	"strconv"
 
 	"github.com/quasilyte/gogrep"
 	"github.com/quasilyte/gogrep/nodetag"
@@ -478,30 +479,51 @@ func (l *irLoader) unwrapInterfaceExpr(filter ir.FilterExpr) (*types.Interface, 
 	if err != nil {
 		return nil, l.errorf(filter.Line, err, "parse %s type expr", typeString)
 	}
-	qn, ok := n.(*ast.SelectorExpr)
-	if !ok {
+
+	var iface *types.Interface
+	switch qn := n.(type) {
+	case *ast.SelectorExpr:
+		pkgName, ok := qn.X.(*ast.Ident)
+		if !ok {
+			return nil, l.errorf(filter.Line, nil, "invalid package name")
+		}
+		pkgPath, ok := l.itab.Lookup(pkgName.Name)
+		if !ok {
+			return nil, l.errorf(filter.Line, nil, "package %s is not imported", pkgName.Name)
+		}
+		pkg, err := l.importer.Import(pkgPath)
+		if err != nil {
+			return nil, l.importErrorf(filter.Line, err, "can't load %s", pkgPath)
+		}
+		obj := pkg.Scope().Lookup(qn.Sel.Name)
+		if obj == nil {
+			return nil, l.errorf(filter.Line, nil, "%s is not found in %s", qn.Sel.Name, pkgPath)
+		}
+		iface, ok = obj.Type().Underlying().(*types.Interface)
+		if !ok {
+			return nil, l.errorf(filter.Line, nil, "%s is not an interface type", qn.Sel.Name)
+		}
+	case *ast.InterfaceType:
+		methods := make([]*types.Func, 0, len(qn.Methods.List))
+		for _, method := range qn.Methods.List {
+			fnType, ok := method.Type.(*ast.FuncType)
+			if !ok {
+				continue
+			}
+
+			fn, err := l.mapAstFuncTypeToTypesFunc(method.Names[0].Name, fnType)
+			if err != nil {
+				return nil, fmt.Errorf("on unwrapInterfaceExpr: %w", err)
+			}
+
+			methods = append(methods, fn)
+		}
+
+		iface = types.NewInterfaceType(methods, nil).Complete()
+	default:
 		return nil, l.errorf(filter.Line, nil, "can't resolve %s type; try a fully-qualified name", typeString)
 	}
-	pkgName, ok := qn.X.(*ast.Ident)
-	if !ok {
-		return nil, l.errorf(filter.Line, nil, "invalid package name")
-	}
-	pkgPath, ok := l.itab.Lookup(pkgName.Name)
-	if !ok {
-		return nil, l.errorf(filter.Line, nil, "package %s is not imported", pkgName.Name)
-	}
-	pkg, err := l.importer.Import(pkgPath)
-	if err != nil {
-		return nil, l.importErrorf(filter.Line, err, "can't load %s", pkgPath)
-	}
-	obj := pkg.Scope().Lookup(qn.Sel.Name)
-	if obj == nil {
-		return nil, l.errorf(filter.Line, nil, "%s is not found in %s", qn.Sel.Name, pkgPath)
-	}
-	iface, ok := obj.Type().Underlying().(*types.Interface)
-	if !ok {
-		return nil, l.errorf(filter.Line, nil, "%s is not an interface type", qn.Sel.Name)
-	}
+
 	return iface, nil
 }
 
@@ -879,6 +901,141 @@ func (l *irLoader) newBinaryExprFilter(filter ir.FilterExpr, info *filterInfo) (
 	}
 
 	return result, nil
+}
+
+func (l *irLoader) mapAstFuncTypeToTypesFunc(name string, funcType *ast.FuncType) (*types.Func, error) {
+	var (
+		vars []*types.Var
+		res  []*types.Var
+	)
+
+	mapField := func(param *ast.Field, results []*types.Var) ([]*types.Var, error) {
+		tt, err := l.mapAstExprToTypesType(param.Type)
+		if err != nil {
+			return nil, err
+		}
+
+		if param.Names != nil {
+			for _, name := range param.Names { // one param has several names when their type the same
+				results = append(results, types.NewVar(name.Pos(), nil, name.Name, tt))
+			}
+		} else { // unnamed
+			results = append(results, types.NewVar(param.Pos(), nil, "", tt))
+		}
+		return results, nil
+	}
+
+	var err error
+	if funcType.Params != nil {
+		vars = make([]*types.Var, 0, len(funcType.Params.List))
+		for _, param := range funcType.Params.List {
+			if vars, err = mapField(param, vars); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	if funcType.Results != nil {
+		res = make([]*types.Var, 0, len(funcType.Results.List))
+		for _, param := range funcType.Results.List {
+			if res, err = mapField(param, res); err != nil {
+				return nil, err
+			}
+		}
+	}
+
+	return types.NewFunc(funcType.Pos(),
+		nil,
+		name,
+		types.NewSignature(nil, types.NewTuple(vars...), types.NewTuple(res...), false),
+	), nil
+}
+
+func (l *irLoader) mapAstExprToTypesType(param ast.Expr) (types.Type, error) {
+	switch p := param.(type) {
+	case *ast.Ident:
+		return typematch.BuiltinTypeByName[p.Name], nil
+	case *ast.StarExpr:
+		el, err := l.mapAstExprToTypesType(p.X)
+		if err != nil {
+			return nil, err
+		}
+
+		return types.NewPointer(el), nil
+	case *ast.FuncType:
+		fn, err := l.mapAstFuncTypeToTypesFunc("", p)
+		if err != nil {
+			return nil, err
+		}
+
+		return fn.Type(), nil
+	case *ast.Ellipsis:
+		//TODO
+		return nil, l.errorf(int(p.Pos()), nil, "on mapAstExprToTypesType: variadic types not supported")
+	case *ast.ChanType:
+		var dir types.ChanDir
+		switch {
+		case p.Dir&ast.SEND != 0 && p.Dir&ast.RECV != 0:
+			dir = types.SendRecv
+		case p.Dir&ast.SEND != 0:
+			dir = types.SendOnly
+		case p.Dir&ast.RECV != 0:
+			dir = types.RecvOnly
+		default:
+			return nil, nil
+		}
+
+		v, err := l.mapAstExprToTypesType(p.Value)
+		if err != nil {
+			return nil, err
+		}
+
+		return types.NewChan(dir, v), nil
+	case *ast.MapType:
+		key, err := l.mapAstExprToTypesType(p.Key)
+		if err != nil {
+			return nil, err
+		}
+
+		val, err := l.mapAstExprToTypesType(p.Value)
+		if err != nil {
+			return nil, err
+		}
+
+		return types.NewMap(key, val), nil
+	case *ast.ArrayType:
+		arrLen, err := strconv.ParseInt(p.Len.(*ast.BasicLit).Value, 10, 64)
+		if err != nil {
+			return nil, l.errorf(int(p.Pos()), nil, "invalid length provided: "+err.Error())
+		}
+
+		val, err := l.mapAstExprToTypesType(p.Elt)
+		if err != nil {
+			return nil, err
+		}
+
+		return types.NewArray(val, arrLen), nil
+	case *ast.SelectorExpr:
+		pkgName, ok := p.X.(*ast.Ident)
+		if !ok {
+			return nil, l.errorf(int(p.Pos()), nil, "invalid package name")
+		}
+		pkgPath, ok := l.itab.Lookup(pkgName.Name)
+		if !ok {
+			return nil, l.errorf(int(p.Pos()), nil, "package %s is not imported", pkgName.Name)
+		}
+		pkg, err := l.importer.Import(pkgPath)
+		if err != nil {
+			return nil, l.importErrorf(int(p.Pos()), err, "can't load %s", pkgPath)
+		}
+		obj := pkg.Scope().Lookup(p.Sel.Name)
+		if obj == nil {
+			return nil, l.errorf(int(p.Pos()), nil, "%s is not found in %s", p.Sel.Name, pkgPath)
+		}
+
+		return obj.Type(), nil
+	}
+	return nil, l.errorf(int(param.Pos()), nil, "unsupported statement provided: %T", param)
 }
 
 type filterInfo struct {
