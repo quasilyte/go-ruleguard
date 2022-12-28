@@ -213,6 +213,10 @@ func (TypesObject) Is(typ string) bool { return boolResult }
 // IsGlobal reports whether an associated types.Object is defined in global scope.
 func (TypesObject) IsGlobal() bool { return boolResult }
 
+// IsVariadicParam reports whether this object represents a function variadic param.
+// This property is not propagated between the assignments.
+func (TypesObject) IsVariadicParam() bool { return boolResult }
+
 type SinkType struct{}
 
 // Is reports whether a type is identical to a given type.
