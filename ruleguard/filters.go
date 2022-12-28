@@ -401,6 +401,28 @@ func makeLineFilter(src, varname string, op token.Token, rhsVarname string) filt
 	}
 }
 
+func makeObjectIsVariadicParamFilter(src, varname string) filterFunc {
+	return func(params *filterParams) matchFilterResult {
+		if params.currentFunc == nil {
+			return filterFailure(src)
+		}
+		funcObj, ok := params.ctx.Types.ObjectOf(params.currentFunc.Name).(*types.Func)
+		if !ok {
+			return filterFailure(src)
+		}
+		funcSig := funcObj.Type().(*types.Signature)
+		if !funcSig.Variadic() {
+			return filterFailure(src)
+		}
+		paramObj := funcSig.Params().At(funcSig.Params().Len() - 1)
+		obj := params.ctx.Types.ObjectOf(identOf(params.subExpr(varname)))
+		if paramObj != obj {
+			return filterFailure(src)
+		}
+		return filterSuccess
+	}
+}
+
 func makeObjectIsGlobalFilter(src, varname string) filterFunc {
 	return func(params *filterParams) matchFilterResult {
 		obj := params.ctx.Types.ObjectOf(identOf(params.subExpr(varname)))

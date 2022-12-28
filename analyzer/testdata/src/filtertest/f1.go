@@ -68,8 +68,27 @@ func detectFunc() {
 	}
 }
 
-func detectObject() {
+func detectObject(x int, rest ...interface{}) {
 	var vec vector2D
+
+	{
+		{
+			// Shadowed variadic param.
+			rest := []int{1}
+			objectTest(rest, "object is variadic param")
+		}
+
+		objectTest(rest, "object is variadic param")   // want `true`
+		objectTest((rest), "object is variadic param") // want `true`
+
+		objectTest(24, "object is variadic param")
+		objectTest(x, "object is variadic param")
+		objectTest(rest[:], "object is variadic param")
+		objectTest(rest[1:], "object is variadic param")
+
+		reassigned := rest
+		objectTest(reassigned, "object is variadic param")
+	}
 
 	{
 		objectTest(fmt.Println, "object is pkgname") // want `true`
