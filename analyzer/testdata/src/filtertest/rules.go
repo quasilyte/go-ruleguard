@@ -282,4 +282,8 @@ func testRules(m dsl.Matcher) {
 	m.Match(`newIface("sink is interface{}").($_)`).
 		Where(m["$$"].SinkType.Is(`interface{}`)).
 		Report(`true`)
+
+	m.Match(`objectTest($x, "object is variadic param")`).
+		Where(m["x"].Object.IsVariadicParam()).
+		Report(`true`)
 }
