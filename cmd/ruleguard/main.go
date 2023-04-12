@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/quasilyte/go-ruleguard/analyzer"
 	"golang.org/x/tools/go/analysis/singlechecker"
+	
+	"github.com/quasilyte/go-ruleguard/analyzer"
 )
 
 func main() {

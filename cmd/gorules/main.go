@@ -2,8 +2,6 @@ package main
 
 import (
 	"bytes"
-	"os"
-
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -14,10 +12,12 @@ import (
 	"go/types"
 	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/cespare/subcmd"
+
 	"github.com/quasilyte/go-ruleguard/ruleguard"
 	"github.com/quasilyte/go-ruleguard/ruleguard/irconv"
 	"github.com/quasilyte/go-ruleguard/ruleguard/irprint"
