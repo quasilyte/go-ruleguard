@@ -25,3 +25,9 @@ func emptyError() {
 	_ = errors.New("") // want `\Qempty errors are hard to debug`
 	_ = errors.New(``) // want `\Qempty errors are hard to debug`
 }
+
+func emptySlice() {
+	x := []int{}           // want `\QemptySlice: zero-length slice declaring nil slice is better
+	a := make([]int, 0, 0) // want `\QemptySlice: zero-length slice declaring nil slice is better
+	fmt.Println(x, a)
+}

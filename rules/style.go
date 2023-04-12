@@ -32,3 +32,13 @@ func emptyError(m dsl.Matcher) {
 	m.Match(`fmt.Errorf("")`, `errors.New("")`).
 		Report(`empty errors are hard to debug`)
 }
+
+//doc:summary reports empty slice declaration
+//doc:before  x := []int{}
+//doc:after   var x []int
+//doc:tags    style
+func emptySlice(m dsl.Matcher) {
+	m.Match(`var $name = make([]$type, 0)`, `$name := []$type{}`, `$name := make([]$type, 0, 0)`, `$name := make([]$type, 0)`).
+		Report(`zero-length slice declaring nil slice is better`).
+		Suggest(`var $name []$type`)
+}
