@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo/internal/evaltest"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo/stdlib/qfmt"
