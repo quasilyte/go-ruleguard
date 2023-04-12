@@ -7,10 +7,11 @@ import (
 	"go/types"
 	"io"
 
+	"github.com/quasilyte/gogrep"
+
 	"github.com/quasilyte/go-ruleguard/ruleguard/ir"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
 	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
-	"github.com/quasilyte/gogrep"
 )
 
 // Engine is the main ruleguard package API object.
