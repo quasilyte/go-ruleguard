@@ -7,14 +7,13 @@
   "linters": {
     "enable": [
       "errcheck",
-      "gas",
+      "gosec",
       "gocritic",
       "gofmt",
       "goimports",
       "govet",
       "gosimple",
       "ineffassign",
-      "megacheck",
       "misspell",
       "nakedret",
       "staticcheck",
