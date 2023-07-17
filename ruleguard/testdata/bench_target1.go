@@ -18,11 +18,12 @@ package main
 
 // Import declaration declares library packages referenced in this file.
 import (
-	"fmt"      // A package in the Go standard library.
-	m "math"   // Math library with local alias m.
-	"net/http" // Yes, a web server!
-	"os"       // OS functions like working with the file system
-	"strconv"  // String conversions.
+	"fmt"       // A package in the Go standard library.
+	"io/ioutil" // Implements some I/O utility functions.
+	m "math"    // Math library with local alias m.
+	"net/http"  // Yes, a web server!
+	"os"        // OS functions like working with the file system
+	"strconv"   // String conversions.
 )
 
 // A function definition. Main is special. It is the entry point for the
@@ -415,6 +416,6 @@ func requestServer() {
 	resp, err := http.Get("http://localhost:8080")
 	fmt.Println(err)
 	defer resp.Body.Close()
-	body, err := os.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
 	fmt.Printf("\nWebserver said: %s", string(body))
 }
