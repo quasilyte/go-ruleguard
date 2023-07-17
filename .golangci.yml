@@ -6,13 +6,11 @@
   "fast": false,
   "linters": {
     "enable": [
-      "deadcode",
       "errcheck",
       "gas",
       "gocritic",
       "gofmt",
       "goimports",
-      "golint",
       "govet",
       "gosimple",
       "ineffassign",
@@ -20,22 +18,28 @@
       "misspell",
       "nakedret",
       "staticcheck",
-      "structcheck",
       "typecheck",
       "unconvert",
       "unparam",
       "unused",
-      "varcheck",
     ],
   },
   "disable": [
+    "deadcode", # deprecated
     "depguard",
     "dupl",
+    "exhaustivestruct", # deprecated
     "gocyclo",
-    "interfacer",
+    "golint", # deprecated
+    "ifshort", # deprecated
+    "interfacer", # deprecated
     "lll",
-    "maligned",
+    "maligned", # deprecated
+    "nosnakecase", # deprecated
     "prealloc",
+    "scopelint", # deprecated
+    "structcheck", # deprecated
+    "varcheck", # deprecated
   ],
   "linters-settings": {
     "gocritic": {
