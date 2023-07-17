@@ -17,7 +17,7 @@ var (
 
 	stringerIface = types.NewInterfaceType([]*types.Func{
 		types.NewFunc(token.NoPos, nil, "String",
-			types.NewSignature(nil, types.NewTuple(), types.NewTuple(types.NewVar(token.NoPos, nil, "result", typeString)), false)),
+			types.NewSignatureType(nil, nil, nil, types.NewTuple(), types.NewTuple(types.NewVar(token.NoPos, nil, "result", typeString)), false)),
 	}, nil)
 
 	intVar     = types.NewVar(token.NoPos, nil, "_", typeInt)
@@ -95,30 +95,30 @@ func TestIdentical(t *testing.T) {
 		{`unsafe.Pointer`, typeUnsafePtr},
 		{`[]unsafe.Pointer`, types.NewSlice(typeUnsafePtr)},
 
-		{`func()`, types.NewSignature(nil, nil, nil, false)},
-		{`func(int)`, types.NewSignature(nil, types.NewTuple(intVar), nil, false)},
-		{`func(int, string)`, types.NewSignature(nil, types.NewTuple(intVar, stringVar), nil, false)},
-		{`func() int`, types.NewSignature(nil, nil, types.NewTuple(intVar), false)},
-		{`func(string) int`, types.NewSignature(nil, types.NewTuple(stringVar), types.NewTuple(intVar), false)},
-		{`func(int) int`, types.NewSignature(nil, types.NewTuple(intVar), types.NewTuple(intVar), false)},
-		{`func() (string, int)`, types.NewSignature(nil, nil, types.NewTuple(stringVar, intVar), false)},
+		{`func()`, types.NewSignatureType(nil, nil, nil, nil, nil, false)},
+		{`func(int)`, types.NewSignatureType(nil, nil, nil, types.NewTuple(intVar), nil, false)},
+		{`func(int, string)`, types.NewSignatureType(nil, nil, nil, types.NewTuple(intVar, stringVar), nil, false)},
+		{`func() int`, types.NewSignatureType(nil, nil, nil, nil, types.NewTuple(intVar), false)},
+		{`func(string) int`, types.NewSignatureType(nil, nil, nil, types.NewTuple(stringVar), types.NewTuple(intVar), false)},
+		{`func(int) int`, types.NewSignatureType(nil, nil, nil, types.NewTuple(intVar), types.NewTuple(intVar), false)},
+		{`func() (string, int)`, types.NewSignatureType(nil, nil, nil, nil, types.NewTuple(stringVar, intVar), false)},
 
-		{`func($_)`, types.NewSignature(nil, types.NewTuple(intVar), nil, false)},
-		{`func($_)`, types.NewSignature(nil, types.NewTuple(stringVar), nil, false)},
-		{`func($_) int`, types.NewSignature(nil, types.NewTuple(intVar), types.NewTuple(intVar), false)},
-		{`func($_) int`, types.NewSignature(nil, types.NewTuple(stringVar), types.NewTuple(intVar), false)},
+		{`func($_)`, types.NewSignatureType(nil, nil, nil, types.NewTuple(intVar), nil, false)},
+		{`func($_)`, types.NewSignatureType(nil, nil, nil, types.NewTuple(stringVar), nil, false)},
+		{`func($_) int`, types.NewSignatureType(nil, nil, nil, types.NewTuple(intVar), types.NewTuple(intVar), false)},
+		{`func($_) int`, types.NewSignatureType(nil, nil, nil, types.NewTuple(stringVar), types.NewTuple(intVar), false)},
 
-		{`func($*_) int`, types.NewSignature(nil, types.NewTuple(stringVar), types.NewTuple(intVar), false)},
-		{`func($*_) int`, types.NewSignature(nil, nil, types.NewTuple(intVar), false)},
-		{`func($*_) $_`, types.NewSignature(nil, nil, types.NewTuple(intVar), false)},
+		{`func($*_) int`, types.NewSignatureType(nil, nil, nil, types.NewTuple(stringVar), types.NewTuple(intVar), false)},
+		{`func($*_) int`, types.NewSignatureType(nil, nil, nil, nil, types.NewTuple(intVar), false)},
+		{`func($*_) $_`, types.NewSignatureType(nil, nil, nil, nil, types.NewTuple(intVar), false)},
 
-		{`func($t, $t)`, types.NewSignature(nil, types.NewTuple(stringVar, stringVar), nil, false)},
-		{`func($t, $t)`, types.NewSignature(nil, types.NewTuple(intVar, intVar), nil, false)},
+		{`func($t, $t)`, types.NewSignatureType(nil, nil, nil, types.NewTuple(stringVar, stringVar), nil, false)},
+		{`func($t, $t)`, types.NewSignatureType(nil, nil, nil, types.NewTuple(intVar, intVar), nil, false)},
 
 		// Any func.
-		{`func($*_) $*_`, types.NewSignature(nil, nil, nil, false)},
-		{`func($*_) $*_`, types.NewSignature(nil, types.NewTuple(stringVar, stringVar), nil, false)},
-		{`func($*_) $*_`, types.NewSignature(nil, types.NewTuple(stringVar), types.NewTuple(intVar), false)},
+		{`func($*_) $*_`, types.NewSignatureType(nil, nil, nil, nil, nil, false)},
+		{`func($*_) $*_`, types.NewSignatureType(nil, nil, nil, types.NewTuple(stringVar, stringVar), nil, false)},
+		{`func($*_) $*_`, types.NewSignatureType(nil, nil, nil, types.NewTuple(stringVar), types.NewTuple(intVar), false)},
 
 		{`struct{}`, typeEstruct},
 		{`struct{int}`, types.NewStruct([]*types.Var{intVar}, nil)},
@@ -203,21 +203,21 @@ func TestIdenticalNegative(t *testing.T) {
 		{`syntax.Regexp`, namedType2("regexp2/syntax", "Regexp")},
 		{`syntax.Regexp`, namedType2("regexp2/syntax", "Blah")},
 
-		{`func(int)`, types.NewSignature(nil, nil, nil, false)},
-		{`func() int`, types.NewSignature(nil, types.NewTuple(intVar), nil, false)},
-		{`func(int, int)`, types.NewSignature(nil, types.NewTuple(intVar, stringVar), nil, false)},
-		{`func() string`, types.NewSignature(nil, nil, types.NewTuple(intVar), false)},
-		{`func(string, string) int`, types.NewSignature(nil, types.NewTuple(stringVar), types.NewTuple(intVar), false)},
-		{`func(string) string`, types.NewSignature(nil, nil, types.NewTuple(stringVar, intVar), false)},
+		{`func(int)`, types.NewSignatureType(nil, nil, nil, nil, nil, false)},
+		{`func() int`, types.NewSignatureType(nil, nil, nil, types.NewTuple(intVar), nil, false)},
+		{`func(int, int)`, types.NewSignatureType(nil, nil, nil, types.NewTuple(intVar, stringVar), nil, false)},
+		{`func() string`, types.NewSignatureType(nil, nil, nil, nil, types.NewTuple(intVar), false)},
+		{`func(string, string) int`, types.NewSignatureType(nil, nil, nil, types.NewTuple(stringVar), types.NewTuple(intVar), false)},
+		{`func(string) string`, types.NewSignatureType(nil, nil, nil, nil, types.NewTuple(stringVar, intVar), false)},
 
-		{`func($_) int`, types.NewSignature(nil, types.NewTuple(intVar), types.NewTuple(stringVar), false)},
+		{`func($_) int`, types.NewSignatureType(nil, nil, nil, types.NewTuple(intVar), types.NewTuple(stringVar), false)},
 
-		{`func($t, $t)`, types.NewSignature(nil, types.NewTuple(intVar, stringVar), nil, false)},
-		{`func($t, $t)`, types.NewSignature(nil, types.NewTuple(stringVar, intVar), nil, false)},
+		{`func($t, $t)`, types.NewSignatureType(nil, nil, nil, types.NewTuple(intVar, stringVar), nil, false)},
+		{`func($t, $t)`, types.NewSignatureType(nil, nil, nil, types.NewTuple(stringVar, intVar), nil, false)},
 
-		{`func($*_) int`, types.NewSignature(nil, types.NewTuple(stringVar), types.NewTuple(stringVar), false)},
-		{`func($*_) int`, types.NewSignature(nil, nil, nil, false)},
-		{`func($*_) $_`, types.NewSignature(nil, nil, nil, false)},
+		{`func($*_) int`, types.NewSignatureType(nil, nil, nil, types.NewTuple(stringVar), types.NewTuple(stringVar), false)},
+		{`func($*_) int`, types.NewSignatureType(nil, nil, nil, nil, nil, false)},
+		{`func($*_) $_`, types.NewSignatureType(nil, nil, nil, nil, nil, false)},
 
 		// Any func negative.
 		{`func($*_) $*_`, typeInt},
@@ -256,7 +256,7 @@ func TestIdenticalNegative(t *testing.T) {
 
 		// TODO: this should fail as $* is named.
 		// We don't support named $* now, but they should be supported.
-		//{`struct{$*x; int; $*x}`, structType(stringVar, intVar, intVar)},
+		// {`struct{$*x; int; $*x}`, structType(stringVar, intVar, intVar)},
 	}
 
 	state := NewMatcherState()
