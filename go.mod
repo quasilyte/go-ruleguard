@@ -10,7 +10,7 @@ require (
 	github.com/quasilyte/gogrep v0.5.0
 	github.com/quasilyte/stdinfo v0.0.0-20220114132959-f7386bf02567
 	golang.org/x/exp/typeparams v0.0.0-20230307190834-24139beb5833
-	golang.org/x/tools v0.11.0
+	golang.org/x/tools v0.11.1
 )
 
 require (
