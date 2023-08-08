@@ -23,7 +23,7 @@
     unstable: {
       name: "Build unstable",
       "runs-on": "ubuntu-latest",
-      strategy: { matrix: { "go-version": [ "1.21.0-rc.3"] } },
+      strategy: { matrix: { "go-version": [ "1.21"] } },
       steps: [
         { name: "Check out code into the Go module directory", uses: "actions/checkout@v3" },
         {
