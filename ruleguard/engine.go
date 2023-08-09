@@ -248,7 +248,7 @@ func inferBuildContext() *build.Context {
 	// Inherit most fields from the build.Default.
 	ctx := build.Default
 
-	env, err := goenv.Read()
+	env, err := goenv.Read([]string{"GOROOT", "GOPATH", "GOARCH", "GOOS", "CGO_ENABLED"})
 	if err != nil {
 		return &ctx
 	}
