@@ -6,12 +6,14 @@ import (
 	"strings"
 )
 
-func Read(varNames []string) (map[string]string, error) {
-	out, err := exec.Command("go", append([]string{"env"}, varNames...)...).CombinedOutput()
+func Read() (map[string]string, error) {
+	// pass in a fixed set of var names to avoid needing to unescape output
+	// pass in literals here instead of a variable list to avoid security linter warnings about command injection
+	out, err := exec.Command("go", "env", "GOROOT", "GOPATH", "GOARCH", "GOOS", "CGO_ENABLED").CombinedOutput()
 	if err != nil {
 		return nil, err
 	}
-	return parseGoEnv(varNames, out)
+	return parseGoEnv([]string{"GOROOT", "GOPATH", "GOARCH", "GOOS", "CGO_ENABLED"}, out)
 }
 
 func parseGoEnv(varNames []string, data []byte) (map[string]string, error) {
