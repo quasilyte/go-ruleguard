@@ -6,11 +6,12 @@
     build: {
       name: "Build",
       "runs-on": "ubuntu-latest",
+      strategy: { matrix: { "go-version": [ "stable", "oldstable"] } },
       steps: [
         {
           name: "Set up Go 1.18",
-          uses: "actions/setup-go@v1",
-          "with": {"go-version": 1.18},
+          uses: "actions/setup-go@v4",
+          with: { "go-version": "${{ matrix.go-version }}" },
           id: "go",
         },
         {name: "Check out code into the Go module directory", uses: "actions/checkout@v1"},
