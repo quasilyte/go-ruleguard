@@ -7,69 +7,83 @@ import (
 
 func TestParse(t *testing.T) {
 	tests := []struct {
-		goos   string
 		lines  []string
 		goroot string
 		gopath string
+		err    bool
 	}{
+		// handle windows line-endings
 		{
-			goos: "windows",
 			lines: []string{
-				"set GOROOT=C:\\Program Files\\Go\r\n",
-				"set GOPATH=C:\\Users\\me\\go\r\n",
+				"C:\\Program Files\\Go\r\n",
+				"C:\\Users\\me\\go\r\n",
 			},
 			goroot: "C:\\Program Files\\Go",
 			gopath: "C:\\Users\\me\\go",
 		},
 
-		// Don't do trim on Windows.
+		// preserve trailing spaces on windows
 		{
-			goos: "windows",
 			lines: []string{
-				"set GOROOT=C:\\Program Files\\Go \r\n",
-				"set GOPATH=C:\\Users\\me\\go  \r\n",
+				"C:\\Program Files\\Go \r\n",
+				"C:\\Users\\me\\go  \r\n",
 			},
 			goroot: "C:\\Program Files\\Go ",
 			gopath: "C:\\Users\\me\\go  ",
 		},
 
+		// handle linux line-endings
 		{
-			goos: "linux",
 			lines: []string{
-				"GOROOT=\"/usr/local/go\"\n",
-				"GOPATH=\"/home/me/go\"\n",
+				"/usr/local/go\n",
+				"/home/me/go\n",
 			},
 			goroot: "/usr/local/go",
 			gopath: "/home/me/go",
 		},
 
-		// Trim lines on Linux.
+		// preserve trailing spaces on linux
 		{
-			goos: "linux",
 			lines: []string{
-				" GOROOT=\"/usr/local/go\"  \n",
-				"GOPATH=\"/home/me/go\"  \n",
-			},
-			goroot: "/usr/local/go",
-			gopath: "/home/me/go",
-		},
-
-		// Quotes preserve the whitespace.
-		{
-			goos: "linux",
-			lines: []string{
-				" GOROOT=\"/usr/local/go \"  \n",
-				"GOPATH=\"/home/me/go \"  \n",
+				"/usr/local/go \n",
+				"/home/me/go \n",
 			},
 			goroot: "/usr/local/go ",
 			gopath: "/home/me/go ",
+		},
+
+		// handle empty value
+		{
+			lines: []string{
+				"\n",
+				"/home/me/go\n",
+			},
+			goroot: "",
+			gopath: "/home/me/go",
+		},
+
+		// handle short output
+		{
+			lines: []string{
+				"/usr/local/go",
+			},
+			goroot: "/usr/local/go",
+			gopath: "",
+		},
+
+		// handle empty output
+		{
+			lines:  []string{},
+			goroot: "",
+			gopath: "",
+			err:    true,
 		},
 	}
 
 	for i, test := range tests {
 		data := []byte(strings.Join(test.lines, ""))
-		vars, err := parseGoEnv(data, test.goos)
-		if err != nil {
+		vars, err := parseGoEnv([]string{"GOROOT", "GOPATH"}, data)
+		if err != nil != test.err {
 			t.Fatalf("test %d failed: %v", i, err)
 		}
 		if vars["GOROOT"] != test.goroot {
