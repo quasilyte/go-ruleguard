@@ -20,21 +20,5 @@
         { name: "Test release", run: "make test-release" },
       ],
     },
-    unstable: {
-      name: "Build unstable",
-      "runs-on": "ubuntu-latest",
-      strategy: { matrix: { "go-version": [ "1.21"] } },
-      steps: [
-        { name: "Check out code into the Go module directory", uses: "actions/checkout@v3" },
-        {
-          name: "Set up Go ${{ matrix.go-version }}",
-          uses: "actions/setup-go@v4",
-          with: { "go-version": "${{ matrix.go-version }}" },
-          id: "go",
-        },
-        { name: "Test", run: "make test" },
-        { name: "Test release", run: "make test-release" },
-      ],
-    },
   },
 }
