@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"go/token"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -232,7 +231,7 @@ func newEngine() (*ruleguard.Engine, error) {
 		filenames := strings.Split(flagRules, ",")
 		for _, filename := range filenames {
 			filename = strings.TrimSpace(filename)
-			data, err := ioutil.ReadFile(filename)
+			data, err := os.ReadFile(filename)
 			if err != nil {
 				return nil, fmt.Errorf("read rules file: %v", err)
 			}

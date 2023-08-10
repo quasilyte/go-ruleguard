@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"go/token"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -180,7 +179,7 @@ var rulesFile = %s
 		}
 		t.Run(test.name, func(t *testing.T) {
 			rulesFilename := filepath.Join(wd, "testdata", "src", test.name, "rules.go")
-			data, err := ioutil.ReadFile(rulesFilename)
+			data, err := os.ReadFile(rulesFilename)
 			if err != nil {
 				t.Fatalf("%s: %v", test.name, err)
 			}
@@ -205,7 +204,7 @@ var rulesFile = %s
 			}
 			var irfileBuf bytes.Buffer
 			irprint.File(&irfileBuf, irfile)
-			mainFile, err := ioutil.TempFile("", "ruleguard-test*.go")
+			mainFile, err := os.CreateTemp("", "ruleguard-test*.go")
 			if err != nil {
 				t.Fatal(err)
 			}
