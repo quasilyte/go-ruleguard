@@ -60,7 +60,7 @@ func appendCombine2(xs []int, aa []int, bb []int) []int {
 }
 
 func badCall(s string, xs []int) {
-	_ = strings.Replace(s, "a", "b", 0) // want `\Qn=0 argument does nothing, maybe n=-1 is indended?`
+	_ = strings.Replace(s, "a", "b", 0) // want `\Qn=0 argument does nothing, maybe n=-1 is intended?`
 	_ = append(xs)                      // want `\Qappend called with 1 argument does nothing`
 }
 

@@ -106,7 +106,7 @@ type Var struct {
 	Const bool
 
 	// ConstSlice reports whether expr matched by var is a slice literal
-	// consisting of contant elements.
+	// consisting of constant elements.
 	//
 	// We need a separate Const-like predicate here because Go doesn't
 	// treat slices of const elements as constants, so including
