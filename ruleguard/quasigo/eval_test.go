@@ -87,7 +87,7 @@ func TestEval(t *testing.T) {
 		{`foo.Method1(40)`, "Hello40"},
 		{`newFoo("x").Method1(11)`, "x11"},
 
-		// Accesing the fields.
+		// Accessing the fields.
 		{`foo.Prefix`, "Hello"},
 
 		// Nil checks.
