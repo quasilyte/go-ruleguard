@@ -230,7 +230,7 @@ func gocriticBadCall(m dsl.Matcher) {
 		`bytes.Replace($_, $_, $_, 0)`,
 		`strings.SplitN($_, $_, 0)`,
 		`bytes.SplitN($_, $_, 0)`).
-		Report(`n=0 argument does nothing, maybe n=-1 is indended?`)
+		Report(`n=0 argument does nothing, maybe n=-1 is intended?`)
 
 	m.Match(`append($_)`).
 		Report(`append called with 1 argument does nothing`)

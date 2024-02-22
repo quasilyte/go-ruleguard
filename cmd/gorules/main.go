@@ -2,8 +2,6 @@ package main
 
 import (
 	"bytes"
-	"os"
-
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -12,8 +10,8 @@ import (
 	"go/parser"
 	"go/token"
 	"go/types"
-	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -86,7 +84,7 @@ func docCommand(args []string) error {
 	filenames := strings.Split(*flagRules, ",")
 	for _, filename := range filenames {
 		filename = strings.TrimSpace(filename)
-		data, err := ioutil.ReadFile(filename)
+		data, err := os.ReadFile(filename)
 		if err != nil {
 			return fmt.Errorf("read rules file: %v", err)
 		}
@@ -164,7 +162,7 @@ func precompileCommand(args []string) error {
 
 	fset := token.NewFileSet()
 	filename := strings.TrimSpace(*flagRules)
-	fileData, err := ioutil.ReadFile(filename)
+	fileData, err := os.ReadFile(filename)
 	if err != nil {
 		return fmt.Errorf("read %s: %v", filename, err)
 	}

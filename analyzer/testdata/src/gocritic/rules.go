@@ -54,7 +54,7 @@ func testRules(m dsl.Matcher) {
 		Report(`$dst=append($x,$a,$b) is faster`)
 
 	m.Match(`strings.Replace($_, $_, $_, 0)`).
-		Report(`n=0 argument does nothing, maybe n=-1 is indended?`)
+		Report(`n=0 argument does nothing, maybe n=-1 is intended?`)
 
 	m.Match(`append($_)`).
 		Report(`append called with 1 argument does nothing`)
