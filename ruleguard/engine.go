@@ -20,6 +20,7 @@ import (
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo/stdlib/qstrconv"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo/stdlib/qstrings"
 	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
+	"github.com/quasilyte/gogrep/nodetag"
 	"github.com/quasilyte/stdinfo"
 )
 
@@ -44,6 +45,40 @@ func (e *engine) LoadedGroups() []GoRuleGroup {
 		return result[i].Name < result[j].Name
 	})
 	return result
+}
+
+func (e *engine) FilterLoadedGroups(name string) {
+	var filteredRules [nodetag.NumBuckets][]goRule
+	num := map[string]int{}
+	for tag, ruleGroup := range e.ruleSet.universal.rulesByTag {
+		for _, rule := range ruleGroup { // can we put whole group?
+			if rule.group.Name == name {
+				filteredRules[tag] = append(filteredRules[tag], rule)
+				num[name]++
+			}
+		}
+	}
+
+	var commentRules []goCommentRule
+	for _, rule := range e.ruleSet.universal.commentRules {
+		if rule.base.group.Name == name {
+			commentRules = append(commentRules, rule)
+			num[name]++
+		}
+	}
+
+	filteredGroupRules := make(map[string]*GoRuleGroup)
+	for _, ruleGroup := range e.ruleSet.groups {
+		if ruleGroup.Name == name {
+			filteredGroupRules[name] = ruleGroup
+		}
+	}
+
+	e.ruleSet = &goRuleSet{universal: &scopedGoRuleSet{}}
+	e.ruleSet.groups = filteredGroupRules
+	e.ruleSet.universal.rulesByTag = filteredRules
+	e.ruleSet.universal.commentRules = commentRules
+	e.ruleSet.universal.categorizedNum = len(num)
 }
 
 func (e *engine) Load(ctx *LoadContext, buildContext *build.Context, filename string, r io.Reader) error {
