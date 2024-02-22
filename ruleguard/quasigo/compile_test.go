@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
 )
 

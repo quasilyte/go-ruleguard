@@ -7,8 +7,9 @@ import (
 	"go/token"
 	"go/types"
 
-	"github.com/quasilyte/go-ruleguard/ruleguard/goutil"
 	"golang.org/x/tools/go/ast/astutil"
+
+	"github.com/quasilyte/go-ruleguard/ruleguard/goutil"
 )
 
 var voidType = &types.Tuple{}

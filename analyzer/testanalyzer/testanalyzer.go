@@ -5,9 +5,10 @@ import (
 	"go/token"
 	"path/filepath"
 
+	"golang.org/x/tools/go/analysis"
+
 	"github.com/quasilyte/go-ruleguard/ruleguard"
 	"github.com/quasilyte/go-ruleguard/ruleguard/ir"
-	"golang.org/x/tools/go/analysis"
 )
 
 func New(ruleSet *ir.File) *analysis.Analyzer {

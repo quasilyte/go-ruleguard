@@ -6,10 +6,11 @@ import (
 	"go/types"
 	"regexp"
 
-	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
-	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
 	"github.com/quasilyte/gogrep"
 	"github.com/quasilyte/gogrep/nodetag"
+
+	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
+	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
 )
 
 type goRuleSet struct {

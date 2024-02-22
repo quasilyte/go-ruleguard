@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/cespare/subcmd"
+
 	"github.com/quasilyte/go-ruleguard/ruleguard"
 	"github.com/quasilyte/go-ruleguard/ruleguard/irconv"
 	"github.com/quasilyte/go-ruleguard/ruleguard/irprint"

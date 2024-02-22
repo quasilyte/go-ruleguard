@@ -13,6 +13,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/quasilyte/stdinfo"
+
 	"github.com/quasilyte/go-ruleguard/internal/goenv"
 	"github.com/quasilyte/go-ruleguard/ruleguard/ir"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo"
@@ -20,7 +22,6 @@ import (
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo/stdlib/qstrconv"
 	"github.com/quasilyte/go-ruleguard/ruleguard/quasigo/stdlib/qstrings"
 	"github.com/quasilyte/go-ruleguard/ruleguard/typematch"
-	"github.com/quasilyte/stdinfo"
 )
 
 type engine struct {
