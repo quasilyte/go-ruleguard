@@ -150,13 +150,13 @@ func TestParseFilterFuncError(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		file := fmt.Sprintf(`
+		file := `
 			package gorules
 			import "github.com/quasilyte/go-ruleguard/dsl"
 			type Foo struct { X int }
 			func (foo *Foo) String() string { return "" }
 			func g(ctx *dsl.VarFilterContext) bool { return false }
-			` + test.src)
+			` + test.src
 		e := NewEngine()
 		ctx := &LoadContext{
 			Fset: token.NewFileSet(),
