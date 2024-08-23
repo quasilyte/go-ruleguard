@@ -223,7 +223,7 @@ func typeIdentical(x, y types.Type, p *ifacePair) bool {
 
 	case *types.Alias:
 		// an alias type is identical if the type it's an alias of is identical to it.
-		return typeIdentical(x.Rhs(), y, p)
+		return typeIdentical(types.Unalias(x), y, p)
 
 	case nil:
 		// avoid a crash in case of nil type

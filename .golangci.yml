@@ -1,9 +1,8 @@
 {
   "run": {
     # timeout for analysis, e.g. 30s, 5m, default is 1m
-    "deadline": "3m",
+    "timeout": "3m",
   },
-  "fast": false,
   "linters": {
     "enable": [
       "errcheck",
@@ -22,29 +21,22 @@
       "unparam",
       "unused",
     ],
+    "disable": [
+      "depguard",
+      "dupl",
+      "gocyclo",
+      "lll",
+      "prealloc",
+    ],
   },
-  "disable": [
-    "deadcode", # deprecated
-    "depguard",
-    "dupl",
-    "exhaustivestruct", # deprecated
-    "gocyclo",
-    "golint", # deprecated
-    "ifshort", # deprecated
-    "interfacer", # deprecated
-    "lll",
-    "maligned", # deprecated
-    "nosnakecase", # deprecated
-    "prealloc",
-    "scopelint", # deprecated
-    "structcheck", # deprecated
-    "varcheck", # deprecated
-  ],
   "linters-settings": {
     "gocritic": {
       "enabled-checks": [
         "commentedOutCode",
       ],
     },
+    "gosec": {
+      "excludes": ["G115"]
+    }
   },
 }

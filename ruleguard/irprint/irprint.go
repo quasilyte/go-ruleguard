@@ -95,7 +95,8 @@ func (p *printer) printReflectElemNoNewline(key string, v reflect.Value, insideL
 		}
 	}
 
-	if v.Type().Kind() == reflect.Struct {
+	switch v.Type().Kind() {
+	case reflect.Struct:
 		if !insideList {
 			p.buf.WriteString(v.Type().String())
 		}
@@ -104,7 +105,8 @@ func (p *printer) printReflectElemNoNewline(key string, v reflect.Value, insideL
 			p.printReflectElem(v.Type().Field(i).Name, v.Field(i), false)
 		}
 		p.writef("},")
-	} else if v.Type().Kind() == reflect.Slice {
+
+	case reflect.Slice:
 		if isCompactSlice(v) {
 			p.writef("%s{", v.Type())
 			for j := 0; j < v.Len(); j++ {
@@ -119,7 +121,7 @@ func (p *printer) printReflectElemNoNewline(key string, v reflect.Value, insideL
 			p.writef("},")
 		}
 
-	} else {
+	default:
 		switch val := v.Interface().(type) {
 		case int64:
 			p.writef("int64(%v),", val)
