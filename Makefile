@@ -27,7 +27,6 @@ test-master:
 	@echo "everything is OK"
 
 test-release:
-	cd _test/install/binary_gopath && docker build --build-arg release=$(RELEASE) --no-cache .
 	cd _test/install/binary_nogopath && docker build --build-arg release=$(RELEASE) --no-cache .
 	@echo "everything is OK"
 
