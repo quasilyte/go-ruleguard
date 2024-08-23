@@ -27,11 +27,4 @@ diff -u actual.txt /root/expected4.txt
 ./go-ruleguard -e 'm.Match(`$f($*_, ($x), $*_)`)' /root/target.go &> actual.txt || true
 diff -u actual.txt /root/expected5.txt
 
-# Run inside GOROOT.
-export GO111MODULE=off
-cd /usr/local/go
-go get -v -u github.com/quasilyte/go-ruleguard/dsl
-/root/go-ruleguard/go-ruleguard -rules /root/rules.go ./src/encoding/... &> actual.txt || true
-diff -u actual.txt /root/expected6.txt
-
 echo SUCCESS

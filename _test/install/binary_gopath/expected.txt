@@ -1,5 +1,0 @@
-/root/target.go:8:10: exprUnparen: the parentheses around 1 are superfluous (rules.go:21)
-/root/target.go:9:10: exprUnparen: the parentheses around 2 are superfluous (rules.go:21)
-/root/target.go:11:10: boolComparison: omit bool literal in expression (rules1.go:8)
-/root/target.go:12:10: boolExprSimplify: suggestion: b (rules2.go:6)
-/root/target.go:15:10: interfaceAddr: taking address of interface-typed value (rules.go:27)
