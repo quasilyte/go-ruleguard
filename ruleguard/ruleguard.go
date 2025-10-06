@@ -68,6 +68,12 @@ func (e *Engine) LoadedGroups() []GoRuleGroup {
 	return e.impl.LoadedGroups()
 }
 
+func (e *Engine) FilterLoadedGroups(name string) {
+	impl := *e.impl
+	impl.FilterLoadedGroups(name)
+	e.impl = &impl
+}
+
 // Run executes all loaded rules on a given file.
 // Matched rules invoke `RunContext.Report()` method.
 //
