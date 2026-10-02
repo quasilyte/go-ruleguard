@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"go/ast"
 	"go/build"
+	"go/parser"
 	"go/token"
 	"go/types"
 	"io"
@@ -215,8 +216,57 @@ func (state *engineState) FindType(importer *goImporter, currentPkg *types.Packa
 }
 
 func (state *engineState) findTypeNoCache(importer *goImporter, currentPkg *types.Package, fqn string) (types.Type, error) {
+	if bracketPos := strings.IndexByte(fqn, '['); bracketPos != -1 && strings.HasSuffix(fqn, "]") {
+		baseFQN := fqn[:bracketPos]
+		baseType, err := state.findTypeNoCache(importer, currentPkg, baseFQN)
+		if err != nil {
+			return nil, err
+		}
+		argsExpr, err := parser.ParseExpr("t" + fqn[bracketPos:])
+		if err != nil {
+			return nil, err
+		}
+		var typeArgs []types.Type
+		switch e := argsExpr.(type) {
+		case *ast.IndexExpr:
+			argStr := types.ExprString(e.Index)
+			arg, err := state.findTypeNoCache(importer, currentPkg, argStr)
+			if err != nil {
+				return nil, err
+			}
+			typeArgs = append(typeArgs, arg)
+		case *ast.IndexListExpr:
+			for _, index := range e.Indices {
+				argStr := types.ExprString(index)
+				arg, err := state.findTypeNoCache(importer, currentPkg, argStr)
+				if err != nil {
+					return nil, err
+				}
+				typeArgs = append(typeArgs, arg)
+			}
+		}
+		inst, err := types.Instantiate(nil, baseType, typeArgs, false)
+		if err != nil {
+			return nil, err
+		}
+		state.typeByFQN[fqn] = inst
+		return inst, nil
+	}
+
 	pos := strings.LastIndexByte(fqn, '.')
 	if pos == -1 {
+		if currentPkg != nil {
+			if obj := currentPkg.Scope().Lookup(fqn); obj != nil {
+				typ := obj.Type()
+				state.typeByFQN[fqn] = typ
+				return typ, nil
+			}
+		}
+		if obj := types.Universe.Lookup(fqn); obj != nil {
+			typ := obj.Type()
+			state.typeByFQN[fqn] = typ
+			return typ, nil
+		}
 		return nil, fmt.Errorf("%s is not a valid FQN", fqn)
 	}
 	pkgPath := fqn[:pos]

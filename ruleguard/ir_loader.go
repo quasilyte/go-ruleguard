@@ -10,6 +10,8 @@ import (
 	"go/types"
 	"os"
 	"regexp"
+	"strconv"
+	"strings"
 
 	"github.com/quasilyte/gogrep"
 	"github.com/quasilyte/gogrep/nodetag"
@@ -474,35 +476,277 @@ func (l *irLoader) unwrapInterfaceExpr(filter ir.FilterExpr) (*types.Interface, 
 		return iface, nil
 	}
 
+	if bracketPos := strings.IndexByte(typeString, '['); bracketPos != -1 && strings.HasSuffix(typeString, "]") {
+		baseStr := typeString[:bracketPos]
+		baseNamed, err := l.lookupNamedType(filter.Line, baseStr)
+		if err != nil {
+			return nil, err
+		}
+		argsExpr, err := parser.ParseExpr("t" + typeString[bracketPos:])
+		if err != nil {
+			return nil, l.errorf(filter.Line, err, "parse %s type expr", typeString)
+		}
+		var typeArgs []types.Type
+		switch e := argsExpr.(type) {
+		case *ast.IndexExpr:
+			arg, err := l.resolveTypeArg(filter.Line, e.Index)
+			if err != nil {
+				return nil, err
+			}
+			typeArgs = append(typeArgs, arg)
+		case *ast.IndexListExpr:
+			for _, idx := range e.Indices {
+				arg, err := l.resolveTypeArg(filter.Line, idx)
+				if err != nil {
+					return nil, err
+				}
+				typeArgs = append(typeArgs, arg)
+			}
+		default:
+			return nil, l.errorf(filter.Line, nil, "invalid type arguments in %s", typeString)
+		}
+		inst, err := types.Instantiate(nil, baseNamed, typeArgs, false)
+		if err != nil {
+			return nil, l.errorf(filter.Line, err, "instantiate %s", typeString)
+		}
+		iface, ok := inst.Underlying().(*types.Interface)
+		if !ok {
+			return nil, l.errorf(filter.Line, nil, "%s is not an interface type", typeString)
+		}
+		return iface, nil
+	}
+
 	n, err := parser.ParseExpr(typeString)
 	if err != nil {
 		return nil, l.errorf(filter.Line, err, "parse %s type expr", typeString)
 	}
-	qn, ok := n.(*ast.SelectorExpr)
-	if !ok {
+
+	switch qn := n.(type) {
+	case *ast.SelectorExpr:
+		pkgName, ok := qn.X.(*ast.Ident)
+		if !ok {
+			return nil, l.errorf(filter.Line, nil, "invalid package name")
+		}
+		pkgPath, ok := l.itab.Lookup(pkgName.Name)
+		if !ok {
+			return nil, l.errorf(filter.Line, nil, "package %s is not imported", pkgName.Name)
+		}
+		pkg, err := l.importer.Import(pkgPath)
+		if err != nil {
+			return nil, l.importErrorf(filter.Line, err, "can't load %s", pkgPath)
+		}
+		obj := pkg.Scope().Lookup(qn.Sel.Name)
+		if obj == nil {
+			return nil, l.errorf(filter.Line, nil, "%s is not found in %s", qn.Sel.Name, pkgPath)
+		}
+		iface, ok := obj.Type().Underlying().(*types.Interface)
+		if !ok {
+			return nil, l.errorf(filter.Line, nil, "%s is not an interface type", qn.Sel.Name)
+		}
+		return iface, nil
+
+	case *ast.Ident:
+		if l.pkg != nil {
+			if obj := l.pkg.Scope().Lookup(qn.Name); obj != nil {
+				iface, ok := obj.Type().Underlying().(*types.Interface)
+				if !ok {
+					return nil, l.errorf(filter.Line, nil, "%s is not an interface type", qn.Name)
+				}
+				return iface, nil
+			}
+		}
+		if obj := types.Universe.Lookup(qn.Name); obj != nil {
+			iface, ok := obj.Type().Underlying().(*types.Interface)
+			if !ok {
+				return nil, l.errorf(filter.Line, nil, "%s is not an interface type", qn.Name)
+			}
+			return iface, nil
+		}
+		return nil, l.errorf(filter.Line, nil, "can't resolve %s type; try a fully-qualified name", typeString)
+
+	default:
 		return nil, l.errorf(filter.Line, nil, "can't resolve %s type; try a fully-qualified name", typeString)
 	}
-	pkgName, ok := qn.X.(*ast.Ident)
-	if !ok {
-		return nil, l.errorf(filter.Line, nil, "invalid package name")
+}
+
+func (l *irLoader) lookupNamedType(line int, name string) (*types.Named, error) {
+	typ, err := l.state.FindType(l.importer, l.pkg, name)
+	if err == nil {
+		if named, ok := typ.(*types.Named); ok {
+			return named, nil
+		}
 	}
-	pkgPath, ok := l.itab.Lookup(pkgName.Name)
-	if !ok {
-		return nil, l.errorf(filter.Line, nil, "package %s is not imported", pkgName.Name)
-	}
-	pkg, err := l.importer.Import(pkgPath)
+	n, err := parser.ParseExpr(name)
 	if err != nil {
-		return nil, l.importErrorf(filter.Line, err, "can't load %s", pkgPath)
+		return nil, l.errorf(line, err, "parse %s type expr", name)
 	}
-	obj := pkg.Scope().Lookup(qn.Sel.Name)
-	if obj == nil {
-		return nil, l.errorf(filter.Line, nil, "%s is not found in %s", qn.Sel.Name, pkgPath)
+	switch qn := n.(type) {
+	case *ast.SelectorExpr:
+		pkgName, ok := qn.X.(*ast.Ident)
+		if !ok {
+			return nil, l.errorf(line, nil, "invalid package name")
+		}
+		pkgPath, ok := l.itab.Lookup(pkgName.Name)
+		if !ok {
+			return nil, l.errorf(line, nil, "package %s is not imported", pkgName.Name)
+		}
+		pkg, err := l.importer.Import(pkgPath)
+		if err != nil {
+			return nil, l.importErrorf(line, err, "can't load %s", pkgPath)
+		}
+		obj := pkg.Scope().Lookup(qn.Sel.Name)
+		if obj == nil {
+			return nil, l.errorf(line, nil, "%s is not found in %s", qn.Sel.Name, pkgPath)
+		}
+		named, ok := obj.Type().(*types.Named)
+		if !ok {
+			return nil, l.errorf(line, nil, "%s is not a named type", qn.Sel.Name)
+		}
+		return named, nil
+
+	case *ast.Ident:
+		if l.pkg != nil {
+			if obj := l.pkg.Scope().Lookup(qn.Name); obj != nil {
+				named, ok := obj.Type().(*types.Named)
+				if !ok {
+					return nil, l.errorf(line, nil, "%s is not a named type", qn.Name)
+				}
+				return named, nil
+			}
+		}
+		if obj := types.Universe.Lookup(qn.Name); obj != nil {
+			named, ok := obj.Type().(*types.Named)
+			if !ok {
+				return nil, l.errorf(line, nil, "%s is not a named type", qn.Name)
+			}
+			return named, nil
+		}
+		return nil, l.errorf(line, nil, "can't resolve %s type; try a fully-qualified name", name)
+
+	default:
+		return nil, l.errorf(line, nil, "can't resolve %s type; try a fully-qualified name", name)
 	}
-	iface, ok := obj.Type().Underlying().(*types.Interface)
-	if !ok {
-		return nil, l.errorf(filter.Line, nil, "%s is not an interface type", qn.Sel.Name)
+}
+
+func (l *irLoader) resolveTypeArg(line int, expr ast.Expr) (types.Type, error) {
+	switch e := expr.(type) {
+	case *ast.Ident:
+		if e.Name == "any" {
+			return types.NewInterfaceType(nil, nil), nil
+		}
+		if typ, ok := typeByName[e.Name]; ok {
+			return typ, nil
+		}
+		if l.pkg != nil {
+			if obj := l.pkg.Scope().Lookup(e.Name); obj != nil {
+				return obj.Type(), nil
+			}
+		}
+		if obj := types.Universe.Lookup(e.Name); obj != nil {
+			return obj.Type(), nil
+		}
+		return nil, l.errorf(line, nil, "can't resolve %s type; try a fully-qualified name", e.Name)
+
+	case *ast.SelectorExpr:
+		pkgName, ok := e.X.(*ast.Ident)
+		if !ok {
+			return nil, l.errorf(line, nil, "invalid package name")
+		}
+		pkgPath, ok := l.itab.Lookup(pkgName.Name)
+		if !ok {
+			return nil, l.errorf(line, nil, "package %s is not imported", pkgName.Name)
+		}
+		pkg, err := l.importer.Import(pkgPath)
+		if err != nil {
+			return nil, l.importErrorf(line, err, "can't load %s", pkgPath)
+		}
+		obj := pkg.Scope().Lookup(e.Sel.Name)
+		if obj == nil {
+			return nil, l.errorf(line, nil, "%s is not found in %s", e.Sel.Name, pkgPath)
+		}
+		return obj.Type(), nil
+
+	case *ast.StarExpr:
+		elem, err := l.resolveTypeArg(line, e.X)
+		if err != nil {
+			return nil, err
+		}
+		return types.NewPointer(elem), nil
+
+	case *ast.ArrayType:
+		elem, err := l.resolveTypeArg(line, e.Elt)
+		if err != nil {
+			return nil, err
+		}
+		if e.Len == nil {
+			return types.NewSlice(elem), nil
+		}
+		lit, ok := e.Len.(*ast.BasicLit)
+		if !ok || lit.Kind != token.INT {
+			return nil, l.errorf(line, nil, "invalid array length")
+		}
+		length, err := strconv.Atoi(lit.Value)
+		if err != nil {
+			return nil, l.errorf(line, err, "parse array length")
+		}
+		return types.NewArray(elem, int64(length)), nil
+
+	case *ast.MapType:
+		k, err := l.resolveTypeArg(line, e.Key)
+		if err != nil {
+			return nil, err
+		}
+		v, err := l.resolveTypeArg(line, e.Value)
+		if err != nil {
+			return nil, err
+		}
+		return types.NewMap(k, v), nil
+
+	case *ast.ChanType:
+		elem, err := l.resolveTypeArg(line, e.Value)
+		if err != nil {
+			return nil, err
+		}
+		return types.NewChan(types.ChanDir(e.Dir), elem), nil
+
+	case *ast.InterfaceType:
+		if len(e.Methods.List) == 0 {
+			return types.NewInterfaceType(nil, nil), nil
+		}
+		return nil, l.errorf(line, nil, "non-empty interface literals not supported as type argument")
+
+	case *ast.ParenExpr:
+		return l.resolveTypeArg(line, e.X)
+
+	case *ast.IndexExpr:
+		base, err := l.resolveTypeArg(line, e.X)
+		if err != nil {
+			return nil, err
+		}
+		arg, err := l.resolveTypeArg(line, e.Index)
+		if err != nil {
+			return nil, err
+		}
+		return types.Instantiate(nil, base, []types.Type{arg}, false)
+
+	case *ast.IndexListExpr:
+		base, err := l.resolveTypeArg(line, e.X)
+		if err != nil {
+			return nil, err
+		}
+		args := make([]types.Type, len(e.Indices))
+		for i, idx := range e.Indices {
+			arg, err := l.resolveTypeArg(line, idx)
+			if err != nil {
+				return nil, err
+			}
+			args[i] = arg
+		}
+		return types.Instantiate(nil, base, args, false)
+
+	default:
+		return nil, l.errorf(line, nil, "unexpected %T type argument", expr)
 	}
-	return iface, nil
 }
 
 func (l *irLoader) unwrapRegexpExpr(filter ir.FilterExpr) (textmatch.Pattern, error) {
