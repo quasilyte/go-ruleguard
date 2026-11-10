@@ -173,6 +173,12 @@ func (state *engineState) AddCachedPackage(pkgPath string, pkg *types.Package) {
 }
 
 func (state *engineState) addCachedPackage(pkgPath string, pkg *types.Package) {
+	if pkg == nil {
+		return
+	}
+	if _, ok := state.pkgCache[pkgPath]; ok {
+		return
+	}
 	state.pkgCache[pkgPath] = pkg
 
 	// Also add all complete packages that are dependencies of the pkg.
@@ -183,7 +189,7 @@ func (state *engineState) addCachedPackage(pkgPath string, pkg *types.Package) {
 	// as these packages are reachable via pkg, so they'll
 	// not be freed by GC anyway.
 	for _, imported := range pkg.Imports() {
-		if imported.Complete() {
+		if imported != nil && imported.Complete() {
 			state.addCachedPackage(imported.Path(), imported)
 		}
 	}
