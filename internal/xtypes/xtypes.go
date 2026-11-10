@@ -9,12 +9,25 @@ import (
 // Implements reports whether type v implements iface.
 //
 // Unlike types.Implements(), it permits X and Y named types
-// to be considered identical even if their addresses are different.
+// to be considered identical even if their addresses are different,
+// and supports matching generic interfaces with type parameters.
 func Implements(v types.Type, iface *types.Interface) bool {
 	if iface.Empty() {
 		return true
 	}
 
+	if interfaceHasTypeParams(iface) {
+		return implementsGeneric(v, iface)
+	}
+
+	if types.Implements(v, iface) {
+		return true
+	}
+
+	return implementsMethods(v, iface)
+}
+
+func implementsMethods(v types.Type, iface *types.Interface) bool {
 	if v, _ := v.Underlying().(*types.Interface); v != nil {
 		for i := 0; i < iface.NumMethods(); i++ {
 			m := iface.Method(i)
@@ -26,7 +39,7 @@ func Implements(v types.Type, iface *types.Interface) bool {
 				return false
 			}
 		}
-		return true
+		return checkEmbeddeds(v, iface)
 	}
 
 	// A concrete type v implements iface if it implements all methods of iface.
@@ -48,8 +61,356 @@ func Implements(v types.Type, iface *types.Interface) bool {
 		}
 	}
 
+	return checkEmbeddeds(v, iface)
+}
+
+func checkEmbeddeds(v types.Type, iface *types.Interface) bool {
+	for i := 0; i < iface.NumEmbeddeds(); i++ {
+		emb := iface.EmbeddedType(i)
+		if emb.String() == "comparable" {
+			if !types.Comparable(v) {
+				return false
+			}
+			continue
+		}
+		if embIface, ok := emb.Underlying().(*types.Interface); ok {
+			if !Implements(v, embIface) {
+				return false
+			}
+		}
+	}
 	return true
 }
+
+func implementsGeneric(v types.Type, iface *types.Interface) bool {
+	subst := make(map[*typeparams.TypeParam]types.Type)
+
+	for i := 0; i < iface.NumMethods(); i++ {
+		m := iface.Method(i)
+		obj, _, _ := types.LookupFieldOrMethod(v, false, m.Pkg(), m.Name())
+		if obj == nil {
+			return false
+		}
+		f, ok := obj.(*types.Func)
+		if !ok {
+			return false
+		}
+		if !unifyTypes(m.Type(), f.Type(), subst) {
+			return false
+		}
+	}
+
+	methods := make([]*types.Func, iface.NumMethods())
+	for i := 0; i < iface.NumMethods(); i++ {
+		m := iface.Method(i)
+		newSig := substType(m.Type(), subst)
+		sig, ok := newSig.(*types.Signature)
+		if !ok {
+			return false
+		}
+		methods[i] = types.NewFunc(m.Pos(), m.Pkg(), m.Name(), sig)
+	}
+
+	var embeddeds []types.Type
+	for i := 0; i < iface.NumEmbeddeds(); i++ {
+		embeddeds = append(embeddeds, substType(iface.EmbeddedType(i), subst))
+	}
+
+	unrolled := types.NewInterfaceType(methods, embeddeds)
+	unrolled.Complete()
+
+	if types.Implements(v, unrolled) {
+		return true
+	}
+
+	return implementsMethods(v, unrolled)
+}
+
+func interfaceHasTypeParams(iface *types.Interface) bool {
+	for i := 0; i < iface.NumMethods(); i++ {
+		if hasTypeParams(iface.Method(i).Type()) {
+			return true
+		}
+	}
+	return false
+}
+
+func hasTypeParams(t types.Type) bool {
+	switch t := t.(type) {
+	case *typeparams.TypeParam:
+		return true
+	case *types.Named:
+		targs := t.TypeArgs()
+		if targs != nil {
+			for i := 0; i < targs.Len(); i++ {
+				if hasTypeParams(targs.At(i)) {
+					return true
+				}
+			}
+		}
+		return false
+	case *types.Pointer:
+		return hasTypeParams(t.Elem())
+	case *types.Slice:
+		return hasTypeParams(t.Elem())
+	case *types.Array:
+		return hasTypeParams(t.Elem())
+	case *types.Map:
+		return hasTypeParams(t.Key()) || hasTypeParams(t.Elem())
+	case *types.Chan:
+		return hasTypeParams(t.Elem())
+	case *types.Signature:
+		if t.Params() != nil {
+			for i := 0; i < t.Params().Len(); i++ {
+				if hasTypeParams(t.Params().At(i).Type()) {
+					return true
+				}
+			}
+		}
+		if t.Results() != nil {
+			for i := 0; i < t.Results().Len(); i++ {
+				if hasTypeParams(t.Results().At(i).Type()) {
+					return true
+				}
+			}
+		}
+		return false
+	case *types.Tuple:
+		for i := 0; i < t.Len(); i++ {
+			if hasTypeParams(t.At(i).Type()) {
+				return true
+			}
+		}
+		return false
+	case *types.Interface:
+		for i := 0; i < t.NumMethods(); i++ {
+			if hasTypeParams(t.Method(i).Type()) {
+				return true
+			}
+		}
+		return false
+	default:
+		return false
+	}
+}
+
+func unifyTypes(pattern, concrete types.Type, subst map[*typeparams.TypeParam]types.Type) bool {
+	if tp, ok := pattern.(*typeparams.TypeParam); ok {
+		if existing, ok := subst[tp]; ok {
+			return Identical(existing, concrete)
+		}
+		subst[tp] = concrete
+		return true
+	}
+
+	if p, ok := pattern.(*types.Pointer); ok {
+		c, ok := concrete.(*types.Pointer)
+		if !ok {
+			return false
+		}
+		return unifyTypes(p.Elem(), c.Elem(), subst)
+	}
+
+	if p, ok := pattern.(*types.Slice); ok {
+		c, ok := concrete.(*types.Slice)
+		if !ok {
+			return false
+		}
+		return unifyTypes(p.Elem(), c.Elem(), subst)
+	}
+
+	if p, ok := pattern.(*types.Array); ok {
+		c, ok := concrete.(*types.Array)
+		if !ok || p.Len() != c.Len() {
+			return false
+		}
+		return unifyTypes(p.Elem(), c.Elem(), subst)
+	}
+
+	if p, ok := pattern.(*types.Map); ok {
+		c, ok := concrete.(*types.Map)
+		if !ok {
+			return false
+		}
+		return unifyTypes(p.Key(), c.Key(), subst) && unifyTypes(p.Elem(), c.Elem(), subst)
+	}
+
+	if p, ok := pattern.(*types.Chan); ok {
+		c, ok := concrete.(*types.Chan)
+		if !ok || p.Dir() != c.Dir() {
+			return false
+		}
+		return unifyTypes(p.Elem(), c.Elem(), subst)
+	}
+
+	if p, ok := pattern.(*types.Signature); ok {
+		c, ok := concrete.(*types.Signature)
+		if !ok || p.Variadic() != c.Variadic() {
+			return false
+		}
+		pParams := p.Params()
+		cParams := c.Params()
+		pLen := 0
+		if pParams != nil {
+			pLen = pParams.Len()
+		}
+		cLen := 0
+		if cParams != nil {
+			cLen = cParams.Len()
+		}
+		if pLen != cLen {
+			return false
+		}
+		for i := 0; i < pLen; i++ {
+			if !unifyTypes(pParams.At(i).Type(), cParams.At(i).Type(), subst) {
+				return false
+			}
+		}
+		pRes := p.Results()
+		cRes := c.Results()
+		pRLen := 0
+		if pRes != nil {
+			pRLen = pRes.Len()
+		}
+		cRLen := 0
+		if cRes != nil {
+			cRLen = cRes.Len()
+		}
+		if pRLen != cRLen {
+			return false
+		}
+		for i := 0; i < pRLen; i++ {
+			if !unifyTypes(pRes.At(i).Type(), cRes.At(i).Type(), subst) {
+				return false
+			}
+		}
+		return true
+	}
+
+	if p, ok := pattern.(*types.Tuple); ok {
+		c, ok := concrete.(*types.Tuple)
+		if !ok || p.Len() != c.Len() {
+			return false
+		}
+		for i := 0; i < p.Len(); i++ {
+			if !unifyTypes(p.At(i).Type(), c.At(i).Type(), subst) {
+				return false
+			}
+		}
+		return true
+	}
+
+	if p, ok := pattern.(*types.Named); ok {
+		c, ok := concrete.(*types.Named)
+		if !ok {
+			return false
+		}
+		if p.Obj().Name() != c.Obj().Name() {
+			return false
+		}
+		pTargs := p.TypeArgs()
+		cTargs := c.TypeArgs()
+		if pTargs != nil && cTargs != nil {
+			if pTargs.Len() != cTargs.Len() {
+				return false
+			}
+			for i := 0; i < pTargs.Len(); i++ {
+				if !unifyTypes(pTargs.At(i), cTargs.At(i), subst) {
+					return false
+				}
+			}
+			return true
+		}
+		return Identical(p, c)
+	}
+
+	return Identical(pattern, concrete)
+}
+
+func substType(t types.Type, subst map[*typeparams.TypeParam]types.Type) types.Type {
+	if tp, ok := t.(*typeparams.TypeParam); ok {
+		if repl, ok := subst[tp]; ok {
+			return repl
+		}
+		if tp.Constraint() != nil && tp.Constraint().String() == "comparable" {
+			return types.Typ[types.Int]
+		}
+		return types.NewInterfaceType(nil, nil)
+	}
+
+	if ptr, ok := t.(*types.Pointer); ok {
+		return types.NewPointer(substType(ptr.Elem(), subst))
+	}
+
+	if sl, ok := t.(*types.Slice); ok {
+		return types.NewSlice(substType(sl.Elem(), subst))
+	}
+
+	if arr, ok := t.(*types.Array); ok {
+		return types.NewArray(substType(arr.Elem(), subst), arr.Len())
+	}
+
+	if m, ok := t.(*types.Map); ok {
+		return types.NewMap(substType(m.Key(), subst), substType(m.Elem(), subst))
+	}
+
+	if ch, ok := t.(*types.Chan); ok {
+		return types.NewChan(ch.Dir(), substType(ch.Elem(), subst))
+	}
+
+	if sig, ok := t.(*types.Signature); ok {
+		var params []*types.Var
+		if sig.Params() != nil {
+			for i := 0; i < sig.Params().Len(); i++ {
+				v := sig.Params().At(i)
+				params = append(params, types.NewVar(v.Pos(), v.Pkg(), v.Name(), substType(v.Type(), subst)))
+			}
+		}
+		var results []*types.Var
+		if sig.Results() != nil {
+			for i := 0; i < sig.Results().Len(); i++ {
+				v := sig.Results().At(i)
+				results = append(results, types.NewVar(v.Pos(), v.Pkg(), v.Name(), substType(v.Type(), subst)))
+			}
+		}
+		return types.NewSignatureType(sig.Recv(), nil, nil, types.NewTuple(params...), types.NewTuple(results...), sig.Variadic())
+	}
+
+	if named, ok := t.(*types.Named); ok {
+		targs := named.TypeArgs()
+		if targs != nil && targs.Len() > 0 {
+			var newArgs []types.Type
+			changed := false
+			for i := 0; i < targs.Len(); i++ {
+				origArg := targs.At(i)
+				newArg := substType(origArg, subst)
+				if newArg != origArg {
+					changed = true
+				}
+				newArgs = append(newArgs, newArg)
+			}
+			if changed {
+				inst, err := types.Instantiate(nil, named.Origin(), newArgs, false)
+				if err == nil {
+					return inst
+				}
+			}
+		}
+		return named
+	}
+
+	if tup, ok := t.(*types.Tuple); ok {
+		var vars []*types.Var
+		for i := 0; i < tup.Len(); i++ {
+			v := tup.At(i)
+			vars = append(vars, types.NewVar(v.Pos(), v.Pkg(), v.Name(), substType(v.Type(), subst)))
+		}
+		return types.NewTuple(vars...)
+	}
+
+	return t
+}
+
 
 // Identical reports whether x and y are identical types.
 //
