@@ -13,8 +13,7 @@ cp /root/rules.go rules.go
 rm -rf $GOPATH
 unset GOPATH
 
-wget "https://github.com/quasilyte/go-ruleguard/releases/download/$release/ruleguard-linux-amd64.zip"
-unzip ruleguard-linux-amd64.zip
+GOBIN=/root/test go install github.com/quasilyte/go-ruleguard/cmd/ruleguard@$release
 
 go mod init test
 go get -v -u github.com/quasilyte/go-ruleguard/dsl@master
